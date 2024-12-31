@@ -8,6 +8,7 @@ const DoctorCard = ({ image, name, specialty }) => (
     overflow="hidden"
     boxShadow="md"
     textAlign="center"
+      cursor="pointer"
   >
     <Image src={image} alt={name} w="full" h="300px" objectFit="cover" />
     <Box bg="blue.800" p={6} color="white">

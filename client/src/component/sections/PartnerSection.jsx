@@ -1,8 +1,9 @@
 import { Box, Container, Heading, Text, SimpleGrid, VStack } from "@chakra-ui/react";
 import PartnerCard from "../common/PartnerCard";
+import { Pointer } from "lucide-react";
 
 const PartnersSection = () => (
-  <Box py={20} bg="#F8FBFF">
+  <Box py={20} bg="#F8FBFF" r>
     <Container maxW="container.xl">
       <VStack spacing={12}>
         <Box textAlign="center">

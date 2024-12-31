@@ -44,7 +44,7 @@ const ServiceCard = ({ icon, title, description }) => (
     >
       <Box
         color="cyan.400"
-        fontSize="4xl" // Increased font size for emphasis
+        fontSize="4xl" 
         transition="all 0.4s"
         _groupHover={{ transform: "scale(1.1) rotate(5deg)" }}
         className="group-hover:text-white"

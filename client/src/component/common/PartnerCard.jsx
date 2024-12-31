@@ -8,6 +8,7 @@ const PartnerCard = ({ image, title, description, price, time }) => (
     boxShadow="md"
     transition="all 0.3s"
     _hover={{ transform: "translateY(-5px)", boxShadow: "lg" }}
+    cursor="pointer"
   >
     <Box position="relative">
       <Image src={image} alt={title} w="full" h="200px" objectFit="cover" />

@@ -38,11 +38,11 @@ const Navbar = () => {
 
           {/* Desktop Buttons Section */}
           <div className="hidden md:flex items-center space-x-4">
-            <a href="#" className="text-blue-500 hover:text-blue-600">
+            <a href="/register" className="text-blue-500 hover:text-blue-600">
               SignUp
             </a>
             <a
-              href="#"
+              href="/login"
               className="bg-[#00A9FF] text-white px-6 py-2 rounded-md hover:bg-blue-600 flex items-center"
             >
               Login
@@ -106,13 +106,13 @@ const Navbar = () => {
             </a>
             <div className="border-t border-gray-200 pt-4">
               <a
-                href="#"
+                href="/register"
                 className="text-blue-500 hover:text-blue-600 block py-2"
               >
                 SignUp
               </a>
               <a
-                href="#"
+                href="/login"
                 className="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 flex items-center justify-center mt-2"
               >
                 Login
