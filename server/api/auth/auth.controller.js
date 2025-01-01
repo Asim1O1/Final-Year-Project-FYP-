@@ -1,6 +1,5 @@
 import bcryptjs from "bcryptjs";
-
-import User from "../../models/user.model";
+import userModel from "../../models/user.model.js";
 import {
   validateLoginInput,
   validateRegisterInput,
