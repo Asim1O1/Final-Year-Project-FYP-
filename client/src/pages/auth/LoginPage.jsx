@@ -14,9 +14,13 @@ import AuthLayout from "../../layouts/AuthLayout";
 import ImageSection from "../../component/auth/ImageSection";
 import InputForm from "../../component/auth/InputForm";
 import PasswordToggle from "../../component/auth/PasswordToggle";
+import { notification } from "antd";
+import { loginUser } from "../../features/auth/authSlice";
+import { useDispatch } from "react-redux";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -30,7 +34,22 @@ const LoginPage = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {};
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const result = await dispatch(loginUser(formData));
+    console.log("The result is", result);
+
+    if (loginUser.fulfilled.match(result)) {
+      navigate("/login");
+    } else if (loginUser.rejected.match(result)) {
+      notification.error({
+        message: "Login Failed",
+        description:
+          result?.payload?.error || "Something went wrong. Please try again.",
+        duration: 3,
+      });
+    }
+  };
 
   return (
     <AuthLayout>

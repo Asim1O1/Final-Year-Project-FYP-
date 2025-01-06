@@ -10,13 +10,22 @@ import {
   Text,
   Select,
 } from "@chakra-ui/react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link as RouterLink } from "react-router-dom";
 import AuthLayout from "../../layouts/AuthLayout";
 import ImageSection from "../../component/auth/ImageSection";
 import InputForm from "../../component/auth/InputForm";
 import PasswordToggle from "../../component/auth/PasswordToggle";
+import { registerUser } from "../../features/auth/authSlice";
+import { notification } from "antd";
+import { useNavigate } from "react-router-dom";
 
 const RegisterPage = () => {
+  const dispatch = useDispatch();
+  const { isLoading, error } = useSelector((state) => state.auth);
+
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     fullName: "",
     userName: "",
@@ -27,7 +36,6 @@ const RegisterPage = () => {
     gender: "",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -36,14 +44,23 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    try {
-      // Add your registration logic here
-      console.log(formData);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+    const result = await dispatch(registerUser(formData));
+    console.log("The result is", result)
+
+    if (registerUser.fulfilled.match(result)) {
+      notification.success({
+        message: "Registration Successful",
+        description: result?.payload?.message || "Your account has been created successfully!",
+        duration: 3, // Duration in seconds
+      });
+      navigate("/login")
+    } else if (registerUser.rejected.match(result)) {
+      notification.error({
+        message: "Registration Failed",
+        description:
+          result?.payload?.error || "Something went wrong. Please try again.",
+        duration: 3,
+      });
     }
   };
 
@@ -155,7 +172,7 @@ const RegisterPage = () => {
                   bg="#00A9FF"
                   color="white"
                   size="lg"
-                  isLoading={loading}
+                  isLoading={isLoading}
                   loadingText="Creating account..."
                   mt={2}
                   _hover={{
