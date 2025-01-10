@@ -22,11 +22,11 @@ const Navbar = () => {
 
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center space-x-16 ">
-            <a href="#" className="text-gray-600 hover:text-gray-900 ">
+            <a href="/" className="text-gray-600 hover:text-gray-900 ">
               Home
             </a>
-            <a href="#" className="text-gray-600 hover:text-gray-900">
-              Product
+            <a href="/hospitals" className="text-gray-600 hover:text-gray-900">
+              Hospitals
             </a>
             <a href="#" className="text-gray-600 hover:text-gray-900">
               Pricing
