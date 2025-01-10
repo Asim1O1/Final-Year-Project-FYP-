@@ -40,7 +40,7 @@ const LoginPage = () => {
     console.log("The result is", result);
 
     if (loginUser.fulfilled.match(result)) {
-      navigate("/login");
+      navigate("/");
     } else if (loginUser.rejected.match(result)) {
       notification.error({
         message: "Login Failed",

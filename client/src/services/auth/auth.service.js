@@ -34,8 +34,8 @@ const registerService = async (userData) => {
 
     return createApiResponse({
       isSuccess: false,
- 
-      error: errorMessage
+
+      error: errorMessage,
     });
   }
 };
@@ -64,14 +64,11 @@ const loginService = async (userCredentials) => {
     console.error("Error in loginService function:", error?.response);
 
     const errorMessage =
-      error?.response?.data?.error?.[0] ||
-      error?.response?.data?.message ||
-      "An error occurred during login.";
+      error?.response?.data?.message || "An error occurred during login.";
 
     return createApiResponse({
       isSuccess: false,
       error: errorMessage,
-     
     });
   }
 };
