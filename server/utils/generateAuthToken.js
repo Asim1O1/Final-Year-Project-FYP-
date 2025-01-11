@@ -3,7 +3,7 @@ import appConfig from "../config/appConfig.js";
 
 export const generateAccessToken = (userId) => {
   try {
-    const jwtSecret = appConfig.jwtSecret;
+    const jwtSecret = appConfig.jwt_secret;
     if (!jwtSecret) throw new Error("JWT Secret is not defined!");
     return jwt.sign({ sub: userId }, jwtSecret, { expiresIn: "30m" });
   } catch (error) {
@@ -12,7 +12,7 @@ export const generateAccessToken = (userId) => {
 };
 export const generateRefreshToken = (userId) => {
   try {
-    const refreshTokenSecret = appConfig.refreshTokenSecret;
+    const refreshTokenSecret = appConfig.refresh_secret;
     if (!refreshTokenSecret)
       throw new Error("Refresh Token Secret is not defined!");
 

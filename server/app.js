@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 
 import authRoute from "./api/auth/auth.route.js"
+import hospitalRoute from "./api/hospital/hospital.route.js"
 
 const app = express();
 
@@ -17,9 +18,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ROUTES
-app.use("/api/auth", authRoute)
- 
+  // ROUTES
+  app.use("/api/auth", authRoute)
+  app.use("/api/hospitals", hospitalRoute);
 
 app.get("/", (req, res) => {
   res.status(200).send("MedConnect platform up and running!");
