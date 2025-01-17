@@ -66,18 +66,18 @@ export const validateHospitalInput = Joi.object({
       "string.empty": "Specialty cannot be empty.",
       "string.min": "Specialty must be at least 3 characters long.",
     }),
-  medicalTests: Joi.array().items(
-    Joi.object({
-      name: Joi.string().min(3).required().messages({
-        "string.empty": "Test name is required.",
-        "string.min": "Test name must be at least 3 characters long.",
-      }),
-      price: Joi.number().positive().required().messages({
-        "number.base": "Test price must be a number.",
-        "number.positive": "Test price must be greater than 0.",
-      }),
-    })
-  ),
+  // medicalTests: Joi.array().items(
+  //   Joi.object({
+  //     name: Joi.string().min(3).required().messages({
+  //       "string.empty": "Test name is required.",
+  //       "string.min": "Test name must be at least 3 characters long.",
+  //     }),
+  //     price: Joi.number().positive().required().messages({
+  //       "number.base": "Test price must be a number.",
+  //       "number.positive": "Test price must be greater than 0.",
+  //     }),
+  //   })
+  // ),
   notifications: Joi.array().items(
     Joi.object({
       message: Joi.string().min(5).required().messages({

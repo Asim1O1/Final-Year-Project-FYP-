@@ -1,23 +1,30 @@
 import hospitalModel from "../../models/hospital.model.js";
 import { validateHospitalInput } from "../../utils/validationUtils.js";
 import createResponse from "../../utils/responseBuilder.js";
+import fs from "fs";
+import cloudinary from "../../imageUpload/cloudinaryConfig.js";
 
 /**
  * Handles adding a new hospital.
  */
 export const addHospital = async (req, res) => {
   try {
+    console.log("The req.body in addHospital is: ", req.body);
     await validateHospitalInput.validateAsync(req.body);
 
-    const { name, location, contactNumber, email, specialties, medicalTests } =
-      req.body;
+    const { name, location, contactNumber, email, specialties, medicalTests } = req.body;
     let hospitalImage = null;
 
     console.log("The req.body in addHospital is: ", req.body);
 
     if (req.file) {
-      const result = await cloudinary.v2.uploader.upload(req.file.path);
+      const folderPath = `MedConnect/Hospital/Images/${name}`; 
+      const result = await cloudinary.v2.uploader.upload(req.file.path, {
+        folder: folderPath,
+      });
       hospitalImage = result.secure_url;
+       // Delete the file from the server
+       fs.unlinkSync(req.file.path);
     }
 
     const existingHospital = await hospitalModel.findOne({
@@ -34,7 +41,6 @@ export const addHospital = async (req, res) => {
       );
     }
 
-    // Create a new hospital
     const newHospital = await hospitalModel.create({
       name,
       location,
