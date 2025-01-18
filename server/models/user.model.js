@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema(
       enum: ["male", "female", "other"],
       required: true,
     },
+    hospital: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Hospital",
+    },
   },
   { timestamps: true }
 );
