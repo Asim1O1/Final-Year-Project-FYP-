@@ -72,11 +72,44 @@ export const logoutUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       await authService.logoutUser();
-      return true; // No response payload required for logout
+      return true;
     } catch (error) {
       console.error("Logout Error:", error);
       return rejectWithValue(
         error?.response?.data?.message || "Failed to log out. Please try again."
+      );
+    }
+  }
+);
+
+// async thunk for verifying user authentication
+export const verifyUserAuth = createAsyncThunk(
+  "auth/verifyAuth",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await authService.verifyUserAuthService();
+
+      if (!response.isSuccess) {
+        throw createApiResponse({
+          isSuccess: false,
+          message:
+            response.message || "User authentication verification failed",
+          error: response.error || null,
+        });
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("Verification Error:", error);
+
+      return rejectWithValue(
+        createApiResponse({
+          isSuccess: false,
+          message:
+            error?.message ||
+            "Authentication verification failed. Please try again.",
+          error: error?.error || null,
+        })
       );
     }
   }
@@ -136,7 +169,11 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error = null;
       })
-      .addCase(logoutUser.rejected, handleRejected);
+
+      .addCase(logoutUser.rejected, handleRejected)
+      .addCase(verifyUserAuth.pending, handlePending)
+      .addCase(verifyUserAuth.fulfilled, handleFulfilled)
+      .addCase(verifyUserAuth.rejected, handleRejected);
   },
 });
 

@@ -73,7 +73,7 @@ const loginService = async (userCredentials) => {
   }
 };
 
-const verifyUserAuth = async () => {
+const verifyUserAuthService = async () => {
   try {
     const response = await axios.get(
       `${BASE_BACKEND_URL}/api/auth/verifyUserAuth`,
@@ -111,7 +111,7 @@ const verifyUserAuth = async () => {
 const authService = {
   registerService,
   loginService,
-  verifyUserAuth,
+  verifyUserAuthService,
 };
 
 export default authService;
