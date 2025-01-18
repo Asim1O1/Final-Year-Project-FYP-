@@ -6,6 +6,7 @@ import HospitalsPage from "./pages/HospitalsPage";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { Users } from "./pages/admin/Users";
 import { HospitalAdminDashboard } from "./pages/hospital_admin/HospitalAdminDashboard";
+import HospitalManagement from "./pages/admin/HospitalManagement";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/hospitals" element={<HospitalsPage/>}></Route>
           <Route path="/admin" element={<AdminDashboard/>}></Route>
           <Route path="/admin/users" element={<Users/>}></Route>
+          <Route path="/admin/hospitals" element={<HospitalManagement/>}></Route>
           <Route path="/hospital_admin/dashboard" element={<HospitalAdminDashboard/>}></Route>
         </Routes>
          

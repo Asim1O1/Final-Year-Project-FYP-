@@ -72,9 +72,46 @@ const loginService = async (userCredentials) => {
     });
   }
 };
+
+const verifyUserAuth = async () => {
+  try {
+    const response = await axios.get(
+      `${BASE_BACKEND_URL}/api/auth/verifyUserAuth`,
+      { withCredentials: true }
+    );
+
+    // Handle successful response
+    if (response?.data?.isSuccess) {
+      return createApiResponse({
+        isSuccess: true,
+        message: response?.data?.message || "User authentication verified",
+        data: response?.data?.data,
+      });
+    } else {
+      throw createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "User authentication failed",
+        error: response?.data || null,
+      });
+    }
+  } catch (error) {
+    console.error("Error in verifyUserAuth function:", error?.response);
+
+    const errorMessage =
+      error?.response?.data?.message ||
+      "An error occurred while verifying authentication.";
+
+    return createApiResponse({
+      isSuccess: false,
+      error: errorMessage,
+    });
+  }
+};
+
 const authService = {
   registerService,
   loginService,
+  verifyUserAuth,
 };
 
 export default authService;
