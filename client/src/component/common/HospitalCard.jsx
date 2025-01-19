@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Badge, Image, Text, Button, HStack, VStack } from '@chakra-ui/react';
 import { StarIcon } from '@chakra-ui/icons';
 
-export const HospitalCard = ({ hospital }) => {
+ const HospitalCard = ({ hospital }) => {
   return (
     <Box className="w-full max-w-md border rounded-lg overflow-hidden shadow-sm">
       <Box className="relative">
@@ -55,3 +55,6 @@ export const HospitalCard = ({ hospital }) => {
     </Box>
   );
 };
+
+
+export default HospitalCard;

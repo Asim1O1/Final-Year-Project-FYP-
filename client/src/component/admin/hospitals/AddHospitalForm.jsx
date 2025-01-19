@@ -27,7 +27,6 @@ import {
   IconButton,
   Textarea,
 } from "@chakra-ui/react";
-import { Search, Plus, Edit2, Trash2, AlertCircle, X } from "lucide-react";
 const AddHospitalForm = ({
   isOpen,
   onClose,

@@ -1,9 +1,10 @@
 import React from "react";
 import { Box, Heading, SimpleGrid } from "@chakra-ui/react";
 
-import { HospitalCard } from "../component/common/HospitalCard";
-import { TopSection } from "../component/common/TopSection";
-import Footer from "../component/layout/Footer";
+
+import { TopSection } from "../../component/common/TopSection";
+import Footer from "../../component/layout/Footer";
+import HospitalCard from "../../component/common/HospitalCard";
 
 const mockHospitals = [
   {

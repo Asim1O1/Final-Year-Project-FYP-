@@ -34,7 +34,6 @@ const registerService = async (userData) => {
 
     return createApiResponse({
       isSuccess: false,
-
       error: errorMessage,
     });
   }

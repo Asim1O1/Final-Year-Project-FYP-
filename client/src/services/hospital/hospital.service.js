@@ -2,8 +2,6 @@ import axios from 'axios';
 import { BASE_BACKEND_URL} from '../../../constants';
 import createApiResponse from '../../utils/createApiResponse';
 
-
-
 const addHospitalService = async(hospitalData)=>{
     try {
         const response = await axios.post(`${BASE_BACKEND_URL}/api/hospitals/addHospital`, hospitalData);
