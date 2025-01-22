@@ -9,7 +9,7 @@ export const validateRegisterInput = Joi.object({
     "system_admin",
     "hospital_admin",
     "doctor",
-    "general_user"
+    "user"
   ),
   phone: Joi.string()
     .pattern(/^[0-9]+$/)

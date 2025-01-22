@@ -24,7 +24,7 @@ export const handleUserRegistration = async (req, res) => {
       email,
       password,
       address,
-      role,
+   role,
       phone,
       gender,
     } = req.body;
@@ -57,7 +57,7 @@ export const handleUserRegistration = async (req, res) => {
       email,
       password: hashedPassword,
       address,
-      role: role || "general_user",
+      role: role || "user",
       phone,
       gender,
     });
