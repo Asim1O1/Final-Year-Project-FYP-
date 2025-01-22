@@ -22,265 +22,446 @@ import {
   TabPanel,
   VStack,
   HStack,
-  NumberInput,
-  NumberInputField,
+  Spinner,
   IconButton,
   Textarea,
+  InputGroup,
+  InputLeftAddon,
 } from "@chakra-ui/react";
-const AddHospitalForm = ({
-  isOpen,
-  onClose,
-  formData,
-  setFormData,
-  onSave,
-}) => {
-  const addSpecialty = () => {
-    setFormData((prev) => ({
-      ...prev,
-      specialties: [...prev.specialties, ""],
-    }));
+import { X } from "lucide-react";
+import { notification } from "antd";
+import { handleHospitalRegistration } from "../../../features/hospital/hospitalSlice";
+import { useDispatch, useSelector } from "react-redux";
+const AddHospitalForm = ({ isOpen, onClose }) => {
+  const dispatch = useDispatch();
+  const { isLoading, error } = useSelector((state) => state?.hospitalSlice);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    location: "",
+    contactNumber: "",
+    email: "",
+    hospitalImage: "",
+    specialties: [],
+    medicalTests: [],
+    campaigns: [],
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+  const handleImageChange = (e, setFormData) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData((prev) => ({
+        ...prev,
+        hospitalImage: file,
+      }));
+    }
+  };
+  const handleValidation = () => {
+    const errors = {};
+
+    // Validate Hospital Name
+    if (!formData.name || formData.name.trim() === "") {
+      errors.name = "Hospital name is required.";
+      
+    } else if (formData.name.length < 3) {
+      errors.name = "Hospital name must be at least 3 characters.";
+    }
+
+    // Validate Address
+    if (!formData.location || formData.location.trim() === "") {
+      errors.location = "Hospital address is required.";
+    }
+
+    // Validate Contact Number
+    if (!formData.contactNumber || formData.contactNumber.trim() === "") {
+      errors.contactNumber = "Contact number is required.";
+    } else if (!/^\d{10}$/.test(formData.contactNumber)) {
+      errors.contactNumber = "Contact number must be a valid 10-digit number.";
+    }
+
+    // Validate Email (if applicable)
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = "Please enter a valid email address.";
+    }
+
+    // Validate Hospital Image
+    if (!formData.hospitalImage) {
+      errors.hospitalImage = "Hospital image is required.";
+    }
+
+    return errors;
   };
 
-  const addMedicalTest = () => {
-    setFormData((prev) => ({
-      ...prev,
-      medicalTests: [...prev.medicalTests, { name: "", price: 0 }],
-    }));
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errors = handleValidation();
+    if (Object.keys(errors).length > 0) {
+      Object.values(errors).forEach((message) => {
+        notification.error({
+          message: "Validation Error",
+          description: message,
+          duration: 3,
+        });
+      });
+      return;
+    }
+    const hospitalData = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((item, index) => {
+          if (typeof item === "object") {
+            Object.entries(item).forEach(([subKey, subValue]) => {
+              hospitalData.append(`${key}[${index}][${subKey}]`, subValue);
+            });
+          } else {
+            hospitalData.append(`${key}[${index}]`, item);
+          }
+        });
+      } else {
+        hospitalData.append(key, value);
+      }
+
+    });
+
+    console.log("The hsopital data is", hospitalData);
+
+    const result = await dispatch(handleHospitalRegistration(hospitalData));
+    console.log("The result is", result);
+
+    if (handleHospitalRegistration.fulfilled.match(result)) {
+      notification.success({
+        message: "Hospital Registration Successful",
+        description:
+          result?.payload?.message ||
+          "Hospital has been registered successfully!",
+        duration: 3,
+      });
+      onClose();
+    } else if (handleHospitalRegistration.rejected.match(result)) {
+      notification.error({
+        message: "Hospital Registration Failed",
+        description:
+          result?.payload?.error || "Something went wrong. Please try again.",
+        duration: 3,
+      });
+    }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="4xl">
-      <ModalOverlay />
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>Add New Hospital</ModalHeader>
-        <ModalBody>
-          <Tabs>
-            <TabList>
-              <Tab>Basic Info</Tab>
-              <Tab>Specialties & Tests</Tab>
-              <Tab>Campaigns</Tab>
-            </TabList>
+    <>
+    {isLoading && (
+  <Box
+    position="fixed"
+    top="0"  // Position loader at the top
+    left="0"
+    right="0"
+    bottom="0"
+    zIndex="9999" 
+    bg="rgba(0, 0, 0, 0.5)" 
+    display="flex"
+    alignItems="center"
+    justifyContent="center"
+  >
+    <Spinner
+      thickness="4px"
+      speed="0.65s"
+      emptyColor="gray.200"
+      color="blue.500"
+      size="xl"
+    />
+  </Box>
+)}
+      <Modal isOpen={isOpen} onClose={onClose} size="4xl">
+        <ModalOverlay />
+        <ModalOverlay />
+        <ModalContent as="form" onSubmit={handleSubmit}>
+          <ModalHeader>Add New Hospital</ModalHeader>
+          <ModalBody>
+            <Tabs>
+              <TabList>
+                <Tab>Basic Info</Tab>
+                <Tab>Specialties & Tests</Tab>
+                <Tab>Campaigns</Tab>
+              </TabList>
 
-            <TabPanels>
-              <TabPanel>
-                <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                  <FormControl isRequired>
-                    <FormLabel>Hospital Name</FormLabel>
-                    <Input placeholder="Enter hospital name" />
-                  </FormControl>
-                  <FormControl isRequired>
-                    <FormLabel>Location</FormLabel>
-                    <Input placeholder="Enter location" />
-                  </FormControl>
-                  <FormControl isRequired>
-                    <FormLabel>Contact Number</FormLabel>
-                    <Input placeholder="Enter contact number" />
-                  </FormControl>
-                  <FormControl isRequired>
-                    <FormLabel>Email</FormLabel>
-                    <Input placeholder="Enter email" type="email" />
-                  </FormControl>
-                  <FormControl gridColumn="span 2">
-                    <FormLabel>Hospital Image URL</FormLabel>
-                    <Input placeholder="Enter image URL" />
-                  </FormControl>
-                </Grid>
-              </TabPanel>
+              <TabPanels>
+                <TabPanel>
+                  <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                    <FormControl isRequired>
+                      <FormLabel>Hospital Name</FormLabel>
+                      <Input
+                        placeholder="Enter hospital name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                      />
+                    </FormControl>
+                    <FormControl isRequired>
+                      <FormLabel>Location</FormLabel>
+                      <Input
+                        placeholder="Enter location"
+                        name="location"
+                        value={formData.location}
+                        onChange={handleChange}
+                      />
+                    </FormControl>
+                    <FormControl isRequired>
+                      <FormLabel>Contact Number</FormLabel>
+                      <Input
+                        placeholder="Enter contact number"
+                        name="contactNumber"
+                        value={formData.contactNumber}
+                        onChange={handleChange}
+                      />
+                    </FormControl>
+                    <FormControl isRequired>
+                      <FormLabel>Email</FormLabel>
+                      <Input
+                        placeholder="Enter email"
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                      />
+                    </FormControl>
+                    <FormControl gridColumn="span 2">
+                      <FormLabel>Hospital Image</FormLabel>
+                      <Input
+                        type="file"
+                        name="hospitalImage"
+                        accept="image/*"
+                        onChange={(e) => handleImageChange(e, setFormData)}
+                      />
+                    </FormControl>
+                  </Grid>
+                </TabPanel>
 
-              <TabPanel>
-                <VStack align="stretch" spacing={4}>
-                  <Box>
-                    <Heading size="sm" mb={2}>
-                      Specialties
-                    </Heading>
-                    {formData.specialties.map((specialty, index) => (
-                      <HStack key={index} mb={2}>
-                        <Input
-                          placeholder="Enter specialty"
-                          value={specialty}
-                          onChange={(e) => {
-                            const newSpecialties = [...formData.specialties];
-                            newSpecialties[index] = e.target.value;
-                            setFormData({
-                              ...formData,
-                              specialties: newSpecialties,
-                            });
-                          }}
-                        />
-                        <IconButton
-                          aria-label="Remove specialty"
-                          icon={<X size={16} />}
-                          onClick={() => {
-                            const newSpecialties = formData.specialties.filter(
-                              (_, i) => i !== index
-                            );
-                            setFormData({
-                              ...formData,
-                              specialties: newSpecialties,
-                            });
-                          }}
-                        />
-                      </HStack>
-                    ))}
-                    <Button size="sm" onClick={addSpecialty}>
-                      Add Specialty
-                    </Button>
-                  </Box>
-
-                  <Box>
-                    <Heading size="sm" mb={2}>
-                      Medical Tests
-                    </Heading>
-                    {formData.medicalTests.map((test, index) => (
-                      <HStack key={index} mb={2}>
-                        <Input
-                          placeholder="Test name"
-                          value={test.name}
-                          onChange={(e) => {
-                            const newTests = [...formData.medicalTests];
-                            newTests[index] = { ...test, name: e.target.value };
-                            setFormData({
-                              ...formData,
-                              medicalTests: newTests,
-                            });
-                          }}
-                        />
-                        <NumberInput min={0}>
-                          <NumberInputField
-                            placeholder="Price"
-                            value={test.price}
+                <TabPanel>
+                  <VStack align="stretch" spacing={4}>
+                    <Box>
+                      <Heading size="sm" mb={2}>
+                        Specialties
+                      </Heading>
+                      {formData.specialties.map((specialty, index) => (
+                        <HStack key={index} mb={2}>
+                          <Input
+                            placeholder="Enter specialty"
+                            value={specialty}
                             onChange={(e) => {
-                              const newTests = [...formData.medicalTests];
-                              newTests[index] = {
-                                ...test,
-                                price: Number(e.target.value),
-                              };
+                              const newSpecialties = [...formData.specialties];
+                              newSpecialties[index] = e.target.value;
                               setFormData({
                                 ...formData,
-                                medicalTests: newTests,
+                                specialties: newSpecialties,
                               });
                             }}
                           />
-                        </NumberInput>
-                        <IconButton
-                          aria-label="Remove test"
-                          icon={<X size={16} />}
-                          onClick={() => {
-                            const newTests = formData.medicalTests.filter(
-                              (_, i) => i !== index
-                            );
-                            setFormData({
-                              ...formData,
-                              medicalTests: newTests,
-                            });
-                          }}
-                        />
-                      </HStack>
-                    ))}
-                    <Button size="sm" onClick={addMedicalTest}>
-                      Add Medical Test
-                    </Button>
-                  </Box>
-                </VStack>
-              </TabPanel>
+                          <IconButton
+                            aria-label="Remove specialty"
+                            icon={<X size={16} />}
+                            onClick={() => {
+                              const newSpecialties =
+                                formData.specialties.filter(
+                                  (_, i) => i !== index
+                                );
+                              setFormData({
+                                ...formData,
+                                specialties: newSpecialties,
+                              });
+                            }}
+                          />
+                        </HStack>
+                      ))}
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            specialties: [...formData.specialties, ""],
+                          })
+                        }
+                      >
+                        Add Specialty
+                      </Button>
+                    </Box>
 
-              <TabPanel>
-                <VStack align="stretch" spacing={4}>
-                  {formData.campaigns.map((campaign, index) => (
-                    <Card key={index}>
-                      <CardBody>
-                        <VStack spacing={4}>
-                          <FormControl>
-                            <FormLabel>Campaign Title</FormLabel>
+                    <Box>
+                      <Heading size="sm" mb={2}>
+                        Medical Tests
+                      </Heading>
+                      {formData.medicalTests.map((test, index) => (
+                        <HStack key={`medical-test-${index}`} mb={2}>
+                          <Input
+                            placeholder="Enter medical test name"
+                            value={test.name || ""}
+                            onChange={(e) => {
+                              const newMedicalTests = [
+                                ...formData.medicalTests,
+                              ];
+                              newMedicalTests[index] = {
+                                ...test,
+                                name: e.target.value,
+                              };
+                              setFormData({
+                                ...formData,
+                                medicalTests: newMedicalTests,
+                              });
+                            }}
+                          />
+                          <InputGroup>
+                            <InputLeftAddon children="Rs" />
                             <Input
-                              placeholder="Enter campaign title"
-                              value={campaign.title}
+                              placeholder="Enter price"
+                              type="number"
+                              value={test.price || ""}
                               onChange={(e) => {
-                                const newCampaigns = [...formData.campaigns];
-                                newCampaigns[index] = {
-                                  ...campaign,
-                                  title: e.target.value,
+                                const newMedicalTests = [
+                                  ...formData.medicalTests,
+                                ];
+                                newMedicalTests[index] = {
+                                  ...test,
+                                  price: e.target.value,
                                 };
                                 setFormData({
                                   ...formData,
-                                  campaigns: newCampaigns,
+                                  medicalTests: newMedicalTests,
                                 });
                               }}
                             />
-                          </FormControl>
-                          <FormControl>
-                            <FormLabel>Description</FormLabel>
-                            <Textarea
-                              placeholder="Enter campaign description"
-                              value={campaign.description}
-                              onChange={(e) => {
-                                const newCampaigns = [...formData.campaigns];
-                                newCampaigns[index] = {
-                                  ...campaign,
-                                  description: e.target.value,
-                                };
-                                setFormData({
-                                  ...formData,
-                                  campaigns: newCampaigns,
-                                });
-                              }}
-                            />
-                          </FormControl>
-                          <FormControl>
-                            <FormLabel>Date</FormLabel>
-                            <Input
-                              type="date"
-                              value={campaign.date}
-                              onChange={(e) => {
-                                const newCampaigns = [...formData.campaigns];
-                                newCampaigns[index] = {
-                                  ...campaign,
-                                  date: e.target.value,
-                                };
-                                setFormData({
-                                  ...formData,
-                                  campaigns: newCampaigns,
-                                });
-                              }}
-                            />
-                          </FormControl>
-                        </VStack>
-                      </CardBody>
-                    </Card>
-                  ))}
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        campaigns: [
-                          ...formData.campaigns,
-                          {
-                            title: "",
-                            description: "",
-                            date: "",
-                            volunteers: [],
-                          },
-                        ],
-                      });
-                    }}
-                  >
-                    Add Campaign
-                  </Button>
-                </VStack>
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="ghost" mr={3} onClick={onClose}>
-            Cancel
-          </Button>
-          <Button colorScheme="blue">Save Hospital</Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+                          </InputGroup>
+                          <IconButton
+                            aria-label={`Remove medical test ${index}`}
+                            icon={<X size={16} />}
+                            onClick={() => {
+                              const newMedicalTests =
+                                formData.medicalTests.filter(
+                                  (_, i) => i !== index
+                                );
+                              setFormData({
+                                ...formData,
+                                medicalTests: newMedicalTests,
+                              });
+                            }}
+                          />
+                        </HStack>
+                      ))}
+
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            medicalTests: [
+                              ...formData.medicalTests,
+                              { name: "", price: "" },
+                            ],
+                          })
+                        }
+                      >
+                        Add Medical Test
+                      </Button>
+                    </Box>
+                  </VStack>
+                </TabPanel>
+                <TabPanel>
+                  <VStack align="stretch" spacing={4}>
+                    {formData.campaigns.map((campaign, index) => (
+                      <Card key={index}>
+                        <CardBody>
+                          <VStack spacing={4}>
+                            <FormControl>
+                              <FormLabel>Campaign Title</FormLabel>
+                              <Input
+                                placeholder="Enter campaign title"
+                                value={campaign.title}
+                                onChange={(e) => {
+                                  const newCampaigns = [...formData.campaigns];
+                                  newCampaigns[index] = {
+                                    ...campaign,
+                                    title: e.target.value,
+                                  };
+                                  setFormData({
+                                    ...formData,
+                                    campaigns: newCampaigns,
+                                  });
+                                }}
+                              />
+                            </FormControl>
+                            <FormControl>
+                              <FormLabel>Description</FormLabel>
+                              <Textarea
+                                placeholder="Enter campaign description"
+                                value={campaign.description}
+                                onChange={(e) => {
+                                  const newCampaigns = [...formData.campaigns];
+                                  newCampaigns[index] = {
+                                    ...campaign,
+                                    description: e.target.value,
+                                  };
+                                  setFormData({
+                                    ...formData,
+                                    campaigns: newCampaigns,
+                                  });
+                                }}
+                              />
+                            </FormControl>
+                            <FormControl>
+                              <FormLabel>Date</FormLabel>
+                              <Input
+                                type="date"
+                                value={campaign.date}
+                                onChange={(e) => {
+                                  const newCampaigns = [...formData.campaigns];
+                                  newCampaigns[index] = {
+                                    ...campaign,
+                                    date: e.target.value,
+                                  };
+                                  setFormData({
+                                    ...formData,
+                                    campaigns: newCampaigns,
+                                  });
+                                }}
+                              />
+                            </FormControl>
+                          </VStack>
+                          u
+                        </CardBody>
+                      </Card>
+                    ))}
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          campaigns: [
+                            ...formData.campaigns,
+                            { title: "", description: "", date: "" },
+                          ],
+                        })
+                      }
+                    >
+                      Add Campaign
+                    </Button>
+                  </VStack>
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" colorScheme="blue">
+              Save Hospital
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
   );
 };
 

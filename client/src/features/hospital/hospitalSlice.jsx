@@ -35,7 +35,7 @@ export const handleHospitalRegistration = createAsyncThunk(
   }
 );
 
-export const hospitalSlice = createSlice({
+ const hospitalSlice = createSlice({
   name: "hospital",
   initialState: {
     hospital: null,
@@ -75,5 +75,7 @@ export const hospitalSlice = createSlice({
       .addCase(handleHospitalRegistration.rejected, handleRejected);
   },
 });
+
+export default hospitalSlice.reducer;
 
 

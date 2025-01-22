@@ -28,35 +28,9 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<HomePage />}></Route>
           <Route path="/hospitals" element={<HospitalsPage />}></Route>
-            {/* Wrap the Admin routes with CheckAuth */}
-            <Route
-          path="/admin"
-          element={
-            <CheckAuth role="system_admin">
-              <AdminDashboard />
-            </CheckAuth>
-          }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <CheckAuth role="system_admin">
-              <Users />
-            </CheckAuth>
-          }
-        />
-        <Route
-          path="/admin/hospitals"
-          element={
-            <CheckAuth role="system_admin">
-              <HospitalManagement />
-            </CheckAuth>
-          }
-        />
-          <Route
-            path="/hospital_admin/dashboard"
-            element={<HospitalAdminDashboard />}
-          ></Route>
+          <Route path = "/admin" element={<AdminDashboard/>}></Route>
+          <Route path = "/admin/users" element={<Users/>}></Route>
+          <Route path = "/admin/hospitals" element={<HospitalManagement/>}></Route>
 
         {/* 404 Route: Catch-all for undefined routes */}
         <Route path="*" element={<NotFoundPage />} />

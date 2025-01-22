@@ -9,6 +9,7 @@ import {
   Stack,
   Text,
   Select,
+  
 } from "@chakra-ui/react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link as RouterLink } from "react-router-dom";
@@ -51,7 +52,7 @@ const RegisterPage = () => {
       notification.success({
         message: "Registration Successful",
         description: result?.payload?.message || "Your account has been created successfully!",
-        duration: 3, // Duration in seconds
+        duration: 3, 
       });
       navigate("/login")
     } else if (registerUser.rejected.match(result)) {
