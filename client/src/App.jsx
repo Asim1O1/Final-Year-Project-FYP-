@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import RegisterPage from "./pages/auth/RegisterPage";
 import LoginPage from "./pages/auth/LoginPage";
 import HomePage from "./pages/public/HomePage";
@@ -10,8 +10,10 @@ import HospitalManagement from "./pages/admin/HospitalManagement";
 import { useDispatch, useSelector } from "react-redux";
 import { verifyUserAuth } from "./features/auth/authSlice";
 import { useEffect } from "react";
-import CheckAuth from "./utils/ProtectRoute";
+import CheckAuth from "./utils/CheckAuth.jsx";
+
 import NotFoundPage from "./pages/public/404Page";
+import { AdminLayout } from "./layouts/AdminLayout";
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -22,20 +24,59 @@ function App() {
   }, [dispatch]);
   return (
     <>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<HomePage />}></Route>
-          <Route path="/hospitals" element={<HospitalsPage />}></Route>
-          <Route path = "/admin" element={<AdminDashboard/>}></Route>
-          <Route path = "/admin/users" element={<Users/>}></Route>
-          <Route path = "/admin/hospitals" element={<HospitalManagement/>}></Route>
+  <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/hospitals" element={<HospitalsPage />} />
+
+        {/* Protected Routes for Register and Login */}
+        <Route
+          path="/register"
+          element={
+            isAuthenticated ? (
+              user?.role === "admin" ? (
+                <Navigate to="/admin" />
+              ) : (
+                <Navigate to="/" />
+              )
+            ) : (
+              <RegisterPage />
+            )
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? (
+              user?.role === "admin" ? (
+                <Navigate to="/admin" />
+              ) : (
+                <Navigate to="/" />
+              )
+            ) : (
+              <LoginPage />
+            )
+          }
+        />
+
+        {/* Admin Protected Routes */}
+        <Route
+          path="/admin"
+          element={
+            <CheckAuth role="system_admin">
+              <AdminLayout />
+            </CheckAuth>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<Users />} />
+          <Route path="hospitals" element={<HospitalManagement />} />
+        </Route>
 
         {/* 404 Route: Catch-all for undefined routes */}
         <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </BrowserRouter>
+      </Routes>
+    </BrowserRouter>
     </>
   );
 }
