@@ -11,21 +11,22 @@ import { useDispatch, useSelector } from "react-redux";
 import { verifyUserAuth } from "./features/auth/authSlice";
 import { useEffect } from "react";
 import CheckAuth from "./utils/CheckAuth.jsx";
-
 import NotFoundPage from "./pages/public/404Page";
 import { AdminLayout } from "./layouts/AdminLayout";
+import UnauthorizedPage from "./pages/auth/UnauthorizedPage.jsx";
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
-  console.log("The is authenticates state at  inital ", isAuthenticated, user);
   const dispatch = useDispatch();
+
   useEffect(() => {
     dispatch(verifyUserAuth());
   }, [dispatch]);
+
   return (
-    <>
-  <BrowserRouter>
+    <BrowserRouter>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/hospitals" element={<HospitalsPage />} />
 
@@ -34,7 +35,7 @@ function App() {
           path="/register"
           element={
             isAuthenticated ? (
-              user?.role === "admin" ? (
+              user?.data?.role === "system_admin" ? (
                 <Navigate to="/admin" />
               ) : (
                 <Navigate to="/" />
@@ -48,7 +49,7 @@ function App() {
           path="/login"
           element={
             isAuthenticated ? (
-              user?.role === "admin" ? (
+              user?.data?.role === "system_admin" ? (
                 <Navigate to="/admin" />
               ) : (
                 <Navigate to="/" />
@@ -59,9 +60,12 @@ function App() {
           }
         />
 
+        {/* Unauthorized Route */}
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
         {/* Admin Protected Routes */}
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             <CheckAuth role="system_admin">
               <AdminLayout />
@@ -73,11 +77,20 @@ function App() {
           <Route path="hospitals" element={<HospitalManagement />} />
         </Route>
 
+        {/* Hospital Admin Protected Routes */}
+        <Route
+          path="/hospital-admin/*"
+          element={
+            <CheckAuth role="hospital_admin">
+              <HospitalAdminDashboard />
+            </CheckAuth>
+          }
+        />
+
         {/* 404 Route: Catch-all for undefined routes */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
-    </>
   );
 }
 

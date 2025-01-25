@@ -1,32 +1,25 @@
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 
-
-
 function CheckAuth({ role, children }) {
-  console.log("The role of the user is", role)
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
-  const location = useLocation();
 
-  if (!isAuthenticated) {
-    if (
-      location.pathname === "/" || // Home page
-      location.pathname.startsWith("/hospitals") // Hospital page
-    ) {
-      return children;
-    }
+  console.log("CheckAuth called with role:", role); // Debugging log
+  console.log("isAuthenticated:", isAuthenticated, "user:", user); // Debugging log
 
-    return <Navigate to="/login" state={{ from: location }} />;
+  // If not authenticated, redirect to login
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/unauthorized" />;
   }
 
-  if (user?.role !== role) {
-    switch (user?.role) {
+  // If authenticated but role does not match
+  if (user?.data?.role !== role) {
+    console.log(`User role mismatch: Expected ${role}, got ${user?.data?.role}`);
+    switch (user?.data?.role) {
       case "system_admin":
         return <Navigate to="/admin" />;
       case "hospital_admin":
         return <Navigate to="/hospital" />;
-      // case 'doctor':
-      //   return <Navigate to="/doctor" />;
       case "user":
         return <Navigate to="/" />;
       default:
@@ -34,6 +27,7 @@ function CheckAuth({ role, children }) {
     }
   }
 
+  // If authenticated and role matches
   return children;
 }
 

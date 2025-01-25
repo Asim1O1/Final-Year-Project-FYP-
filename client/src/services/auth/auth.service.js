@@ -9,28 +9,33 @@ const registerService = async (userData) => {
       `${BASE_BACKEND_URL}/api/auth/register`,
       userData
     );
+
     console.log("The response in the registerService was: ", response);
 
+    // Handle failed responses with isSuccess === false
     if (response?.data?.isSuccess === false) {
-      throw createApiResponse({
+      return createApiResponse({
         isSuccess: false,
         message: response?.data?.message || "Registration failed",
         error: response?.data?.error || null,
       });
     }
 
+    // Successful response
     return createApiResponse({
       isSuccess: true,
       message: response?.data?.message || "Registration successful",
-      data: response?.data,
+      data: response?.data?.data, // Adjusted to return `data` for consistency
     });
   } catch (error) {
-    console.error("Error in registerNewUser function:", error?.response);
+    console.error("Error in registerService function:", error?.response);
 
+    // Handle Axios response errors or fallback to a default error
     const errorMessage =
-      error?.response?.data?.error?.[0] ||
-      error?.response?.data?.message ||
-      "An error occurred during registration.";
+      Array.isArray(error?.response?.data?.error) &&
+      error?.response?.data?.error.length > 0
+        ? error.response.data.error[0] // Extract the first error if it's an array
+        : error?.response?.data?.message || "An error occurred during registration.";
 
     return createApiResponse({
       isSuccess: false,
@@ -46,24 +51,31 @@ const loginService = async (userCredentials) => {
       userCredentials
     );
 
+    console.log("The response in the login service is:", response);
+
+    // Handle failed responses with isSuccess === false
     if (response?.data?.isSuccess === false) {
-      throw createApiResponse({
+      return createApiResponse({
         isSuccess: false,
         message: response?.data?.message || "Login failed",
-        error: response?.data || null,
+        error: response?.data?.error || null,
       });
     }
 
+    // Successful response
     return createApiResponse({
       isSuccess: true,
-      message: response?.data?.message || "Login successful",
-      data: response?.data,
+      data: response?.data?.data,
     });
   } catch (error) {
     console.error("Error in loginService function:", error?.response);
 
+    // Handle Axios response errors or fallback to a default error
     const errorMessage =
-      error?.response?.data?.message || "An error occurred during login.";
+      Array.isArray(error?.response?.data?.error) &&
+      error?.response?.data?.error.length > 0
+        ? error.response.data.error[0] 
+        : error?.response?.data?.message || "An error occurred during login."; 
 
     return createApiResponse({
       isSuccess: false,
@@ -71,6 +83,7 @@ const loginService = async (userCredentials) => {
     });
   }
 };
+
 
 const verifyUserAuthService = async () => {
   try {

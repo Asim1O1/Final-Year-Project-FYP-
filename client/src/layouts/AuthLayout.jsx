@@ -1,4 +1,6 @@
-import { Box, Container, Flex } from '@chakra-ui/react'
+import React from 'react';
+import { Box, Container, Flex } from '@chakra-ui/react';
+import { Outlet } from 'react-router-dom';
 
 const AuthLayout = ({ children }) => {
   return (
@@ -11,11 +13,11 @@ const AuthLayout = ({ children }) => {
           h={{ base: "auto", md: "600px" }}
           overflow="hidden"
         >
-          {children}
+          {children || <Outlet />}
         </Flex>
       </Container>
     </Box>
-  )
-}
+  );
+};
 
-export default AuthLayout
+export default AuthLayout;

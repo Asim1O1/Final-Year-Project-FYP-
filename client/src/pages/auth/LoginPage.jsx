@@ -33,14 +33,15 @@ const LoginPage = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+  
     const result = await dispatch(loginUser(formData));
     console.log("The result is", result);
-
+  
     if (loginUser.fulfilled.match(result)) {
-      navigate("/");
+      // No need to handle navigation here, as it's managed in App.jsx
+      console.log("Login successful, let App.jsx handle navigation.");
     } else if (loginUser.rejected.match(result)) {
       notification.error({
         message: "Login Failed",
@@ -50,6 +51,7 @@ const LoginPage = () => {
       });
     }
   };
+  
 
   return (
     <AuthLayout>

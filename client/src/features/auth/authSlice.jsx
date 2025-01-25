@@ -10,29 +10,35 @@ export const registerUser = createAsyncThunk(
       const response = await authService.registerService(userData);
       console.log("The response in the registerUser was: ", response);
 
-      if (!response.isSuccess) {
-        throw createApiResponse({
+      // Handle failed responses where `isSuccess` is false
+      if (!response?.isSuccess) {
+        return rejectWithValue({
           isSuccess: false,
-          message: response.message || "Registration failed",
-          error: response.error || null,
+          message: response?.message || "Registration failed.",
+          error: response?.error || "An unexpected server error occurred.",
         });
       }
 
-      return response;
+      // Return the success response
+      return {
+        isSuccess: true,
+        message: response?.message || "Registration successful.",
+        data: response?.data,
+      };
     } catch (error) {
       console.error("Registration Error:", error);
 
-      // Return handled error response
-      return rejectWithValue(
-        createApiResponse({
-          isSuccess: false,
-          message: error?.message || "Failed to register. Please try again.",
-          error: error?.error || null,
-        })
-      );
+      // Handle unexpected errors with a fallback message
+      return rejectWithValue({
+        isSuccess: false,
+        message:
+          error?.response?.data?.message || "Failed to register. Please try again.",
+        error: error?.response?.data?.error || "An unknown server error occurred.",
+      });
     }
   }
 );
+
 
 // Async thunk for user login
 export const loginUser = createAsyncThunk(
@@ -40,28 +46,32 @@ export const loginUser = createAsyncThunk(
   async (userCredentials, { rejectWithValue }) => {
     try {
       const response = await authService.loginService(userCredentials);
+      console.log("The response in the loginUser was: ", response);
 
-      if (!response.isSuccess) {
-        throw createApiResponse({
+      // Handle failed responses where `isSuccess` is false
+      if (!response?.isSuccess) {
+        return rejectWithValue({
           isSuccess: false,
-          message: response.message || "Login failed",
-          error: response.error || null,
+          message: response?.error || "Login failed.",
+          error: response?.error || "An unexpected server error occurred.",
         });
       }
 
-      return response;
+      // Return the success data
+      return {
+        isSuccess: true,
+        message: response?.message || "Login successful",
+        data: response?.data,
+      };
     } catch (error) {
       console.error("Login Error:", error);
 
-      // Return handled error response
-      return rejectWithValue(
-        createApiResponse({
-          isSuccess: false,
-          message:
-            error?.message || "Login failed. Please check your credentials.",
-          error: error?.error || null,
-        })
-      );
+      // Handle unexpected errors with a fallback
+      return rejectWithValue({
+        isSuccess: false,
+        message: error?.response?.data?.message || "Login failed. Please try again.",
+        error: error?.response?.data?.error || "An unexpected server error occured.",
+      });
     }
   }
 );
