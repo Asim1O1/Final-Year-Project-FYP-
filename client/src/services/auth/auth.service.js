@@ -35,7 +35,8 @@ const registerService = async (userData) => {
       Array.isArray(error?.response?.data?.error) &&
       error?.response?.data?.error.length > 0
         ? error.response.data.error[0] // Extract the first error if it's an array
-        : error?.response?.data?.message || "An error occurred during registration.";
+        : error?.response?.data?.message ||
+          "An error occurred during registration.";
 
     return createApiResponse({
       isSuccess: false,
@@ -74,8 +75,8 @@ const loginService = async (userCredentials) => {
     const errorMessage =
       Array.isArray(error?.response?.data?.error) &&
       error?.response?.data?.error.length > 0
-        ? error.response.data.error[0] 
-        : error?.response?.data?.message || "An error occurred during login."; 
+        ? error.response.data.error[0]
+        : error?.response?.data?.message || "An error occurred during login.";
 
     return createApiResponse({
       isSuccess: false,
@@ -83,7 +84,6 @@ const loginService = async (userCredentials) => {
     });
   }
 };
-
 
 const verifyUserAuthService = async () => {
   try {
@@ -120,10 +120,35 @@ const verifyUserAuthService = async () => {
   }
 };
 
+const refreshTokenService = async () => {
+  try {
+    const response = await axios.post(
+      `${BASE_BACKEND_URL}/api/auth/refreshAccessToken`,
+      {},
+      { withCredentials: true }
+    );
+
+    console.log("The response in the refreshTokenService is:", response);
+  } catch (error) {
+    console.error("Error in refreshTokenService function:", error?.response);
+
+    // Handle Axios response errors or fallback to a default error
+    const errorMessage =
+      error?.response?.data?.message ||
+      "An error occurred while refreshing the access token.";
+
+    return createApiResponse({
+      isSuccess: false,
+      error: errorMessage,
+    });
+  }
+};
+
 const authService = {
   registerService,
   loginService,
   verifyUserAuthService,
+  refreshTokenService,
 };
 
 export default authService;

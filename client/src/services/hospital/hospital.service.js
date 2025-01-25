@@ -1,45 +1,46 @@
-import axios from 'axios';
-import { BASE_BACKEND_URL} from '../../../constants';
-import createApiResponse from '../../utils/createApiResponse';
+import axios from "axios";
 
-const addHospitalService = async(hospitalData)=>{
-    try {
-        const response = await axios.post(`${BASE_BACKEND_URL}/api/hospitals/addHospital`, hospitalData);
-        console.log("The response in the addHospitalService was: ", response);
+import createApiResponse from "../../utils/createApiResponse";
+import axiosInstance from "../../utils/axiosInstance";
 
-        if(response?.data?.isSuccess === false){
-            throw createApiResponse({
-                isSuccess: false,
-                message: response?.data?.message || "Hospital registration failed",
-                error: response?.data?.error || null,
-            });
-        }
+const addHospitalService = async (hospitalData) => {
+  try {
+    const response = await axiosInstance.post(
+      `/api/hospitals/addHospital`,
+      hospitalData
+    );
+    console.log("The response in the addHospitalService was: ", response);
 
-        return createApiResponse({
-            isSuccess: true,
-            message: response?.data?.message || "Hospital registration successful",
-            data: response?.data,
-        });
-
-        
-    } catch (error) {
-        console.error("Error in addHospitalService function:", error?.response);
-        const errorMessage =
-        error?.response?.data?.error?.[0] ||
-        error?.response?.data?.message ||
-        "An error occurred during registration.";
-
-        return createApiResponse({
-            isSuccess: false,
-      
-            error: errorMessage,
-          });
+    if (response?.data?.isSuccess === false) {
+      throw createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "Hospital registration failed",
+        error: response?.data?.error || null,
+      });
     }
-    
-}
+
+    return createApiResponse({
+      isSuccess: true,
+      message: response?.data?.message || "Hospital registration successful",
+      data: response?.data,
+    });
+  } catch (error) {
+    console.error("Error in addHospitalService function:", error?.response);
+    const errorMessage =
+      error?.response?.data?.error?.[0] ||
+      error?.response?.data?.message ||
+      "An error occurred during registration.";
+
+    return createApiResponse({
+      isSuccess: false,
+
+      error: errorMessage,
+    });
+  }
+};
 
 const hospitalService = {
-    addHospitalService
-}
+  addHospitalService,
+};
 
 export default hospitalService;
