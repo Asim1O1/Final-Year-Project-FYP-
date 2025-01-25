@@ -32,13 +32,14 @@ export const registerUser = createAsyncThunk(
       return rejectWithValue({
         isSuccess: false,
         message:
-          error?.response?.data?.message || "Failed to register. Please try again.",
-        error: error?.response?.data?.error || "An unknown server error occurred.",
+          error?.response?.data?.message ||
+          "Failed to register. Please try again.",
+        error:
+          error?.response?.data?.error || "An unknown server error occurred.",
       });
     }
   }
 );
-
 
 // Async thunk for user login
 export const loginUser = createAsyncThunk(
@@ -69,8 +70,10 @@ export const loginUser = createAsyncThunk(
       // Handle unexpected errors with a fallback
       return rejectWithValue({
         isSuccess: false,
-        message: error?.response?.data?.message || "Login failed. Please try again.",
-        error: error?.response?.data?.error || "An unexpected server error occured.",
+        message:
+          error?.response?.data?.message || "Login failed. Please try again.",
+        error:
+          error?.response?.data?.error || "An unexpected server error occured.",
       });
     }
   }

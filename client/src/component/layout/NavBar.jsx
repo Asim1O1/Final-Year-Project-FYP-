@@ -1,15 +1,52 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Home, Hospital, DollarSign, Contact, LogIn, User } from "lucide-react";
 import MedConnectLogo from "../../assets/MedConnect_Logo3-removebg.png";
+
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+  const [prevScrollPos, setPrevScrollPos] = useState(window.pageYOffset);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollPos = window.scrollY;
+      const isScrollingUp = prevScrollPos > currentScrollPos;
+
+      // Show navbar on slight upward scroll or when at the top of the page
+      if (isScrollingUp || currentScrollPos <= 0) {
+        setIsNavbarVisible(true);
+      } else {
+        setIsNavbarVisible(false);
+      }
+
+      setPrevScrollPos(currentScrollPos);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [prevScrollPos]);
+
+  const NavLinks = [
+    { href: "/", label: "Home", icon: Home },
+    { href: "/hospitals", label: "Hospitals", icon: Hospital },
+    { href: "/pricing", label: "Pricing", icon: DollarSign },
+    { href: "/contact", label: "Contact", icon: Contact },
+  ];
+
   return (
-    <nav className="relative">
-      <div className="container mx-auto px-4 lg:px-36 py-2">
+    <nav
+      className={`sticky top-0 z-50 bg-transparent transition-transform duration-300 ${
+        isNavbarVisible ? "translate-y-0" : "-translate-y-full"
+      }`}
+    >
+      <div className="container mx-auto px-4 lg:px-12 py-4">
         <div className="flex items-center justify-between">
           {/* Logo Section */}
           <div className="flex items-center">
@@ -21,55 +58,47 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center space-x-16 ">
-            <a href="/" className="text-gray-600 hover:text-gray-900 ">
-              Home
-            </a>
-            <a href="/hospitals" className="text-gray-600 hover:text-gray-900">
-              Hospitals
-            </a>
-            <a href="#" className="text-gray-600 hover:text-gray-900">
-              Pricing
-            </a>
-            <a href="#" className="text-gray-600 hover:text-gray-900">
-              Contact
-            </a>
+          <div className="hidden md:flex items-center space-x-8">
+            {NavLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="flex items-center text-lg font-medium text-gray-600 hover:text-blue-500 transition group relative"
+              >
+                <link.icon
+                  className="mr-2 text-gray-400 group-hover:text-blue-500 transition"
+                  size={20}
+                />
+                {link.label}
+              </a>
+            ))}
           </div>
 
           {/* Desktop Buttons Section */}
           <div className="hidden md:flex items-center space-x-4">
-            <a href="/register" className="text-blue-500 hover:text-blue-600">
+            <a
+              href="/register"
+              className="flex items-center text-blue-500 hover:text-blue-600 text-lg font-medium transition"
+            >
+              <User className="mr-1" size={20} />
               SignUp
             </a>
             <a
               href="/login"
-              className="bg-[#00A9FF] text-white px-6 py-2 rounded-md hover:bg-blue-600 flex items-center"
+              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-2 rounded-full hover:shadow-xl transition flex items-center text-lg"
             >
               Login
-              <svg
-                className="w-4 h-4 ml-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
+              <LogIn className="ml-2" size={20} />
             </a>
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Toggle */}
           <button
-            className="md:hidden p-2 rounded-md hover:bg-gray-100"
+            className="md:hidden p-2 rounded-md hover:bg-gray-100 transition"
             onClick={toggleMenu}
           >
             <svg
-              className="w-6 h-6"
+              className="w-6 h-6 text-gray-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -89,49 +118,34 @@ const Navbar = () => {
         <div
           className={`${
             isMenuOpen ? "flex" : "hidden"
-          } md:hidden absolute left-0 right-0 top-full bg-white shadow-lg flex-col w-full py-4 px-4 mt-2`}
+          } md:hidden absolute left-0 right-0 top-full bg-transparent backdrop-blur-md shadow-lg flex-col w-full py-4 px-4 mt-2 space-y-2`}
         >
-          <div className="flex flex-col space-y-4">
-            <a href="#" className="text-gray-600 hover:text-gray-900 py-2">
-              Home
+          {NavLinks.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className="flex items-center text-lg font-medium px-4 py-2 rounded-md text-gray-600 hover:bg-blue-50 transition"
+            >
+              <link.icon className="mr-3 text-gray-400 transition" size={20} />
+              {link.label}
             </a>
-            <a href="#" className="text-gray-600 hover:text-gray-900 py-2">
-              Product
+          ))}
+
+          <div className="border-t border-gray-200 pt-4 space-y-2">
+            <a
+              href="/register"
+              className="flex items-center text-blue-500 hover:bg-blue-50 px-4 py-2 rounded-md text-lg font-medium transition"
+            >
+              <User className="mr-3" size={20} />
+              SignUp
             </a>
-            <a href="#" className="text-gray-600 hover:text-gray-900 py-2">
-              Pricing
+            <a
+              href="/login"
+              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-2 rounded-full hover:shadow-lg transition flex items-center justify-center text-lg"
+            >
+              Login
+              <LogIn className="ml-2" size={20} />
             </a>
-            <a href="#" className="text-gray-600 hover:text-gray-900 py-2">
-              Contact
-            </a>
-            <div className="border-t border-gray-200 pt-4">
-              <a
-                href="/register"
-                className="text-blue-500 hover:text-blue-600 block py-2"
-              >
-                SignUp
-              </a>
-              <a
-                href="/login"
-                className="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 flex items-center justify-center mt-2"
-              >
-                Login
-                <svg
-                  className="w-4 h-4 ml-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </a>
-            </div>
           </div>
         </div>
       </div>
