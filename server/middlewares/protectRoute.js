@@ -6,7 +6,11 @@ import createResponse from "../utils/responseBuilder.js";
 const protectRoute = async (req, res, next) => {
   try {
     const token =
-      req?.cookies?.accessToken || req.headers.authorization?.split(" ")[1];
+      req.cookies?.accessToken ||
+      (req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer ")
+        ? req.headers.authorization.split(" ")[1]
+        : null);
 
     console.log("The token is: ", token);
 
@@ -15,13 +19,24 @@ const protectRoute = async (req, res, next) => {
         createResponse({
           isSuccess: false,
           statusCode: 401,
-          message: "Authentication required. Please log in to access this resource.",
+          message:
+            "Authentication required. Please log in to access this resource.",
           error: null,
         })
       );
     }
 
     const decoded = jwt.verify(token, appConfig.jwt_secret);
+    if (!decoded?.sub) {
+      return res.status(401).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 401,
+          message: "Invalid token, access denied.",
+          error: null,
+        })
+      );
+    }
     console.log("The decoded token is: ", decoded);
 
     const user = await userModel.findById(decoded.sub).select("-password");

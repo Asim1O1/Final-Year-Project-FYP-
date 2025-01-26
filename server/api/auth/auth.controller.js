@@ -24,7 +24,7 @@ export const handleUserRegistration = async (req, res) => {
       email,
       password,
       address,
-   role,
+      role,
       phone,
       gender,
     } = req.body;
@@ -109,11 +109,23 @@ export const handleUserRegistration = async (req, res) => {
 export const handleUserLogin = async (req, res) => {
   try {
     await validateLoginInput.validateAsync(req.body);
+    console.log("ENTERED THE LOGIN FUNCTION IN BACKEND");
 
     const { email, password } = req.body;
+    if (!req.body || typeof req.body !== "object") {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "Invalid request body.",
+          error: null,
+        })
+      );
+    }
     const user = await userModel.findOne({ email });
 
     if (!user) {
+      console.log("User not found");
       return res.status(401).json(
         createResponse({
           isSuccess: false,
@@ -127,6 +139,7 @@ export const handleUserLogin = async (req, res) => {
 
     const isPasswordValid = await bcryptjs.compare(password, user.password);
     if (!isPasswordValid) {
+      console.log("Invalid password");
       return res.status(401).json(
         createResponse({
           isSuccess: false,
@@ -143,20 +156,30 @@ export const handleUserLogin = async (req, res) => {
     const userObject = user.toObject();
     delete userObject.password;
 
+    // Debug: Check before setting cookies
+    console.log("Setting cookies for accessToken and refreshToken");
+    console.log("Access Token:", accessToken);
+    console.log("Refresh Token:", refreshToken);
+
     // Set cookies for tokens
+    // Set cookies
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      sameSite: "strict",
       secure: process.env.NODE_ENV === "production",
-      maxAge: 30 * 60 * 1000, // 30 minutes
+      sameSite: "strict",
+      maxAge: 30 * 60 * 1000,
     });
+    console.log("cookiee set succesfyll");
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      sameSite: "strict",
       secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000,
     });
+
+    // Debug: Verify cookies are set
+    console.log("Cookies set successfully");
 
     return res.status(200).json(
       createResponse({
@@ -164,6 +187,8 @@ export const handleUserLogin = async (req, res) => {
         statusCode: 200,
         message: "Login successful. Welcome back!",
         data: userObject,
+        accessToken,
+        refreshToken,
         error: null,
       })
     );
@@ -180,6 +205,7 @@ export const handleUserLogin = async (req, res) => {
         })
       );
     }
+
     console.error("Login Error:", error.message);
     return res.status(500).json(
       createResponse({

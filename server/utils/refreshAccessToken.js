@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 
 const handleRefreshAccessToken = async (req, res, next) => {
   const refreshToken = req?.cookies?.refreshToken;
+  console.log("The refresh token is", refreshToken);
 
   if (!refreshToken) {
     return res.status(401).json(
