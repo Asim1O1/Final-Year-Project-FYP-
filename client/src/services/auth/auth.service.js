@@ -49,7 +49,10 @@ const loginService = async (userCredentials) => {
   try {
     const response = await axios.post(
       `${BASE_BACKEND_URL}/api/auth/login`,
-      userCredentials
+      userCredentials,
+      {
+        withCredentials: true,
+      }
     );
 
     console.log("The response in the login service is:", response);
@@ -123,7 +126,7 @@ const verifyUserAuthService = async () => {
 const refreshTokenService = async () => {
   try {
     const response = await axios.post(
-      `${BASE_BACKEND_URL}/api/auth/refreshAccessToken`,
+      `${BASE_BACKEND_URL}/api/auth/refreshAcessToken`,
       {},
       { withCredentials: true }
     );

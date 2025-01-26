@@ -84,8 +84,8 @@ export const logoutUser = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
-      await authService.logoutUser();
-      return true;
+      const response = await authService.logoutUser();
+      return response;
     } catch (error) {
       console.error("Logout Error:", error);
       return rejectWithValue(
@@ -103,7 +103,7 @@ export const verifyUserAuth = createAsyncThunk(
       const response = await authService.verifyUserAuthService();
 
       if (!response.isSuccess) {
-        throw createApiResponse({
+        return createApiResponse({
           isSuccess: false,
           message:
             response.message || "User authentication verification failed",

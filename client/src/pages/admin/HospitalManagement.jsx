@@ -1,4 +1,3 @@
-
 // import { AdminDashboard } from './AdminDashboard';
 // import { AdminLayout } from '../../layouts/AdminLayout';
 
@@ -21,8 +20,8 @@
 //         { message: "New equipment arrived", date: new Date() }
 //       ],
 //       campaigns: [
-//         { 
-//           title: "Free Health Check", 
+//         {
+//           title: "Free Health Check",
 //           description: "Annual free health checkup camp",
 //           date: new Date(),
 //           volunteers: []
@@ -62,8 +61,8 @@
 //       {/* Header Section */}
 //       <Flex justify="space-between" align="center" mb={6}>
 //         <Heading size="lg">Hospital Management</Heading>
-//         <Button 
-//           colorScheme="blue" 
+//         <Button
+//           colorScheme="blue"
 //           leftIcon={<Plus size={20} />}
 //           onClick={onOpen}
 //         >
@@ -144,9 +143,9 @@
 //       </Card>
 
 //       {/* Add Hospital Modal */}
-    //   <Modal isOpen={isOpen} onClose={onClose} size="4xl">
-  
-    //   </Modal>
+//   <Modal isOpen={isOpen} onClose={onClose} size="4xl">
+
+//   </Modal>
 //     </Container>
 //     </AdminLayout>
 //   );
@@ -154,14 +153,23 @@
 
 // export default HospitalManagement;
 
-
-import React, { useState } from 'react';
-import { Box, Button, Container, Flex, Heading, IconButton, InputGroup, InputLeftElement, useDisclosure } from '@chakra-ui/react';
-import { Plus, Search } from 'lucide-react';
-import { AdminLayout } from '../../layouts/AdminLayout';
-import AddHospitalForm from '../../component/admin/hospitals/AddHospitalForm';
-import HospitalList from '../../component/admin/hospitals/HospitalLists';
-import { Input } from 'antd';
+import React, { useState } from "react";
+import {
+  Box,
+  Button,
+  Container,
+  Flex,
+  Heading,
+  IconButton,
+  InputGroup,
+  InputLeftElement,
+  useDisclosure,
+} from "@chakra-ui/react";
+import { Plus, Search } from "lucide-react";
+import { AdminLayout } from "../../layouts/AdminLayout";
+import AddHospitalForm from "../../component/admin/hospitals/AddHospitalForm";
+import HospitalList from "../../component/admin/hospitals/HospitalLists";
+import { Input } from "antd";
 
 const HospitalManagement = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -176,31 +184,29 @@ const HospitalManagement = () => {
       hospitalImage: "hospital1.jpg",
       medicalTests: [
         { name: "Blood Test", price: 100 },
-        { name: "X-Ray", price: 200 }
+        { name: "X-Ray", price: 200 },
       ],
-      notifications: [
-        { message: "New equipment arrived", date: new Date() }
-      ],
+      notifications: [{ message: "New equipment arrived", date: new Date() }],
       campaigns: [
-        { 
-          title: "Free Health Check", 
+        {
+          title: "Free Health Check",
           description: "Annual free health checkup camp",
           date: new Date(),
-          volunteers: []
-        }
-      ]
-    }
+          volunteers: [],
+        },
+      ],
+    },
   ]);
 
   const [formData, setFormData] = useState({
-    name: '',
-    location: '',
-    contactNumber: '',
-    email: '',
-    specialties: [''],
-    hospitalImage: '',
-    medicalTests: [{ name: '', price: 0 }],
-    campaigns: [{ title: '', description: '', date: '', volunteers: [] }]
+    name: "",
+    location: "",
+    contactNumber: "",
+    email: "",
+    specialties: [""],
+    hospitalImage: "",
+    medicalTests: [{ name: "", price: 0 }],
+    campaigns: [{ title: "", description: "", date: "", volunteers: [] }],
   });
 
   const handleSaveHospital = () => {
@@ -209,41 +215,47 @@ const HospitalManagement = () => {
   };
 
   return (
-    <AdminLayout>
-      <Container maxW="container.xl" py={6}>
-        <Flex justify="space-between" align="center" mb={6}>
-          <Heading size="lg">Hospital Management</Heading>
-          <Button colorScheme="blue" leftIcon={<Plus size={20} />} onClick={onOpen}>
-            Add New Hospital
-          </Button>
+    <Container maxW="container.xl" py={6}>
+      <Flex justify="space-between" align="center" mb={6}>
+        <Heading size="lg">Hospital Management</Heading>
+        <Button
+          colorScheme="blue"
+          leftIcon={<Plus size={20} />}
+          onClick={onOpen}
+        >
+          Add New Hospital
+        </Button>
+      </Flex>
+
+      {/* Search Section */}
+      <Box mb={6}>
+        <Flex gap={4}>
+          <InputGroup flex={1}>
+            <InputLeftElement>
+              <Search size={20} />
+            </InputLeftElement>
+            <Input placeholder="Search hospitals..." />
+          </InputGroup>
+          <Button variant="outline">Filter</Button>
         </Flex>
+      </Box>
 
-        {/* Search Section */}
-        <Box mb={6}>
-          <Flex gap={4}>
-            <InputGroup flex={1}>
-              <InputLeftElement>
-                <Search size={20} />
-              </InputLeftElement>
-              <Input placeholder="Search hospitals..." />
-            </InputGroup>
-            <Button variant="outline">Filter</Button>
-          </Flex>
-        </Box>
+      {/* Hospital List */}
+      <HospitalList
+        hospitals={hospitals}
+        onEdit={() => {}}
+        onDelete={() => {}}
+      />
 
-        {/* Hospital List */}
-        <HospitalList hospitals={hospitals} onEdit={() => {}} onDelete={() => {}} />
-
-        {/* Add Hospital Modal */}
-        <AddHospitalForm
-          isOpen={isOpen}
-          onClose={onClose}
-          formData={formData}
-          setFormData={setFormData}
-          onSave={handleSaveHospital}
-        />
-      </Container>
-    </AdminLayout>
+      {/* Add Hospital Modal */}
+      <AddHospitalForm
+        isOpen={isOpen}
+        onClose={onClose}
+        formData={formData}
+        setFormData={setFormData}
+        onSave={handleSaveHospital}
+      />
+    </Container>
   );
 };
 

@@ -4,7 +4,7 @@ import { AdminLayout } from '../../layouts/AdminLayout';
 
 export const Users = () => {
   return (
-    <AdminLayout>
+    
       <Box>
         <Heading mb={6} size="lg">User Management</Heading>
         
@@ -37,6 +37,6 @@ export const Users = () => {
           </Table>
         </Box>
       </Box>
-    </AdminLayout>
+   
   );
 };
