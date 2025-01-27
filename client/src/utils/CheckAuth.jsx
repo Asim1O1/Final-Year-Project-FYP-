@@ -9,22 +9,32 @@ function CheckAuth({ role, children }) {
 
   // If not authenticated, redirect to login
   if (!isAuthenticated || !user) {
-    return <Navigate to="/unauthorized" />;
+    return <Navigate to="/login" />;
   }
+
+  // // If authenticated but role does not match
+  // if (user?.data?.role !== role) {
+  //   console.log(`User role mismatch: Expected ${role}, got ${user?.data?.role}`);
+  //   switch (user?.data?.role) {
+  //     case "system_admin":
+  //       return <Navigate to="/admin" />;
+  //     case "hospital_admin":
+  //       return <Navigate to="/hospital" />;
+  //     case "user":
+  //       return <Navigate to="/" />;
+  //     default:
+  //       return <Navigate to="/login" />;
+  //   }
+  // }
 
   // If authenticated but role does not match
   if (user?.data?.role !== role) {
-    console.log(`User role mismatch: Expected ${role}, got ${user?.data?.role}`);
-    switch (user?.data?.role) {
-      case "system_admin":
-        return <Navigate to="/admin" />;
-      case "hospital_admin":
-        return <Navigate to="/hospital" />;
-      case "user":
-        return <Navigate to="/" />;
-      default:
-        return <Navigate to="/login" />;
-    }
+    console.log(
+      `User role mismatch: Expected ${role}, got ${user?.data?.role}. Redirecting to /unauthorized...`
+    );
+
+    // Redirect to unauthorized page
+    return <Navigate to="/unauthorized" />;
   }
 
   // If authenticated and role matches

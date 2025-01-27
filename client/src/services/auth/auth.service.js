@@ -103,7 +103,7 @@ const verifyUserAuthService = async () => {
         data: response?.data?.data,
       });
     } else {
-      throw createApiResponse({
+      return createApiResponse({
         isSuccess: false,
         message: response?.data?.message || "User authentication failed",
         error: response?.data || null,
@@ -126,12 +126,27 @@ const verifyUserAuthService = async () => {
 const refreshTokenService = async () => {
   try {
     const response = await axios.post(
-      `${BASE_BACKEND_URL}/api/auth/refreshAcessToken`,
+      `${BASE_BACKEND_URL}/api/auth/refreshAccessToken`,
       {},
       { withCredentials: true }
     );
 
     console.log("The response in the refreshTokenService is:", response);
+    // Handle successful response
+    if (response?.data?.isSuccess) {
+      return createApiResponse({
+        isSuccess: true,
+        message:
+          response?.data?.message || "Access token refreshed successfully",
+        data: response?.data?.data,
+      });
+    } else {
+      return createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "Failed to refresh access token",
+        error: response?.data?.error || null,
+      });
+    }
   } catch (error) {
     console.error("Error in refreshTokenService function:", error?.response);
 
@@ -147,11 +162,46 @@ const refreshTokenService = async () => {
   }
 };
 
+const logoutService = async () => {
+  try {
+    const response = await axios.post(
+      `${BASE_BACKEND_URL}/api/auth/logout`,
+      {},
+      { withCredentials: true }
+    );
+    console.log("The response in the logoutService is:", response);
+    // Handle successful response
+    if (response?.data?.isSuccess) {
+      return createApiResponse({
+        isSuccess: true,
+        message: response?.data?.message || "Logged out successfully",
+        data: response?.data?.data,
+      });
+    } else {
+      return createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "Failed to log out",
+        error: response?.data?.error || null,
+      });
+    } // Successful response
+  } catch (error) {
+    console.error("Error in logoutService function:", error?.response);
+    const errorMessage =
+      error?.response?.data?.message || "An error occurred while logging out.";
+
+    return createApiResponse({
+      isSuccess: false,
+      error: errorMessage,
+    });
+  }
+};
+
 const authService = {
   registerService,
   loginService,
   verifyUserAuthService,
   refreshTokenService,
+  logoutService,
 };
 
 export default authService;

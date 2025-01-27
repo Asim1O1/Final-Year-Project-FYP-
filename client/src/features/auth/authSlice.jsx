@@ -80,21 +80,41 @@ export const loginUser = createAsyncThunk(
 );
 
 // Async thunk for user logout
+
 export const logoutUser = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await authService.logoutUser();
+      const response = await authService.logoutService();
+      console.log("The response in the logoutUser was: ", response);
+
+      // Handle failed responses where `isSuccess` is false
+      if (!response?.isSuccess) {
+        return rejectWithValue({
+          isSuccess: false,
+          message: response?.message || "Logout failed.",
+          error: response?.error || "An unexpected server error occurred.",
+        });
+      }
+
+      // Return the success response
       return response;
     } catch (error) {
       console.error("Logout Error:", error);
-      return rejectWithValue(
-        error?.response?.data?.message || "Failed to log out. Please try again."
-      );
+
+      // Handle unexpected errors with a fallback
+      return rejectWithValue({
+        isSuccess: false,
+        message:
+          error?.response?.data?.message ||
+          "Failed to log out. Please try again.",
+        error:
+          error?.response?.data?.error ||
+          "An unexpected server error occurred.",
+      });
     }
   }
 );
-
 // async thunk for verifying user authentication
 export const verifyUserAuth = createAsyncThunk(
   "auth/verifyAuth",
@@ -102,12 +122,13 @@ export const verifyUserAuth = createAsyncThunk(
     try {
       const response = await authService.verifyUserAuthService();
 
-      if (!response.isSuccess) {
-        return createApiResponse({
+      // Handle failed responses where `isSuccess` is false
+      if (!response?.isSuccess) {
+        return rejectWithValue({
           isSuccess: false,
           message:
-            response.message || "User authentication verification failed",
-          error: response.error || null,
+            response?.message || "User authentication verification failed.",
+          error: response?.error || "An unexpected server error occurred.",
         });
       }
 
@@ -154,13 +175,15 @@ const authSlice = createSlice({
     const handleFulfilled = (state, action) => {
       state.isLoading = false;
       state.user = action.payload;
-      state.isAuthenticated = true;
+      state.isAuthenticated = !!action.payload;
       state.error = null;
     };
 
     const handleRejected = (state, action) => {
       state.isLoading = false;
       state.error = action.payload;
+      state.user = null;
+      state.isAuthenticated = false;
     };
 
     builder
@@ -182,8 +205,8 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error = null;
       })
-
       .addCase(logoutUser.rejected, handleRejected)
+
       .addCase(verifyUserAuth.pending, handlePending)
       .addCase(verifyUserAuth.fulfilled, handleFulfilled)
       .addCase(verifyUserAuth.rejected, handleRejected);

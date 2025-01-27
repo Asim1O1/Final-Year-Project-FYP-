@@ -1,14 +1,34 @@
 import React, { useState, useEffect } from "react";
-import { Home, Hospital, DollarSign, Contact, LogIn, User } from "lucide-react";
+import {
+  Home,
+  Hospital,
+  DollarSign,
+  Contact,
+  LogIn,
+  User,
+  LogOut,
+} from "lucide-react";
 import MedConnectLogo from "../../assets/MedConnect_Logo3-removebg.png";
+import { useSelector, useDispatch } from "react-redux";
+import { logoutUser } from "../../features/auth/authSlice";
+import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
-  const [prevScrollPos, setPrevScrollPos] = useState(window.pageYOffset);
+  const [prevScrollPos, setPrevScrollPos] = useState(window.scrollY);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const { isAuthenticated } = useSelector((state) => state?.auth);
+  const dispatch = useDispatch();
+
+  const handleLogout = () => {
+    dispatch(logoutUser());
+    navigate("/login");
   };
 
   useEffect(() => {
@@ -76,20 +96,45 @@ const Navbar = () => {
 
           {/* Desktop Buttons Section */}
           <div className="hidden md:flex items-center space-x-4">
-            <a
-              href="/register"
-              className="flex items-center text-blue-500 hover:text-blue-600 text-lg font-medium transition"
-            >
-              <User className="mr-1" size={20} />
-              SignUp
-            </a>
-            <a
-              href="/login"
-              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-2 rounded-full hover:shadow-xl transition flex items-center text-lg"
-            >
-              Login
-              <LogIn className="ml-2" size={20} />
-            </a>
+            {isAuthenticated ? (
+              <>
+                {/* Profile Icon */}
+                <a
+                  href="/profile"
+                  className="flex items-center text-blue-500 hover:text-blue-600 text-lg font-medium transition"
+                >
+                  <User className="mr-1" size={20} />
+                  Profile
+                </a>
+                {/* Logout Button */}
+                <button
+                  onClick={handleLogout}
+                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-8 py-2 rounded-full hover:shadow-xl transition flex items-center text-lg"
+                >
+                  Logout
+                  <LogOut className="ml-2" size={20} />
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Signup Button */}
+                <a
+                  href="/register"
+                  className="flex items-center text-blue-500 hover:text-blue-600 text-lg font-medium transition"
+                >
+                  <User className="mr-1" size={20} />
+                  SignUp
+                </a>
+                {/* Login Button */}
+                <a
+                  href="/login"
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-2 rounded-full hover:shadow-xl transition flex items-center text-lg"
+                >
+                  Login
+                  <LogIn className="ml-2" size={20} />
+                </a>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -132,20 +177,45 @@ const Navbar = () => {
           ))}
 
           <div className="border-t border-gray-200 pt-4 space-y-2">
-            <a
-              href="/register"
-              className="flex items-center text-blue-500 hover:bg-blue-50 px-4 py-2 rounded-md text-lg font-medium transition"
-            >
-              <User className="mr-3" size={20} />
-              SignUp
-            </a>
-            <a
-              href="/login"
-              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-2 rounded-full hover:shadow-lg transition flex items-center justify-center text-lg"
-            >
-              Login
-              <LogIn className="ml-2" size={20} />
-            </a>
+            {isAuthenticated ? (
+              <>
+                {/* Profile Link */}
+                <a
+                  href="/profile"
+                  className="flex items-center text-blue-500 hover:bg-blue-50 px-4 py-2 rounded-md text-lg font-medium transition"
+                >
+                  <User className="mr-3" size={20} />
+                  Profile
+                </a>
+                {/* Logout Button */}
+                <button
+                  onClick={handleLogout}
+                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2 rounded-full hover:shadow-lg transition flex items-center justify-center text-lg w-full"
+                >
+                  Logout
+                  <LogOut className="ml-2" size={20} />
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Signup Link */}
+                <a
+                  href="/register"
+                  className="flex items-center text-blue-500 hover:bg-blue-50 px-4 py-2 rounded-md text-lg font-medium transition"
+                >
+                  <User className="mr-3" size={20} />
+                  SignUp
+                </a>
+                {/* Login Button */}
+                <a
+                  href="/login"
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-2 rounded-full hover:shadow-lg transition flex items-center justify-center text-lg"
+                >
+                  Login
+                  <LogIn className="ml-2" size={20} />
+                </a>
+              </>
+            )}
           </div>
         </div>
       </div>
