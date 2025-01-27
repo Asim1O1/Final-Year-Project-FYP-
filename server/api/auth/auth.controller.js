@@ -257,3 +257,43 @@ export const verifyUserAuthentication = async (req, res) => {
     );
   }
 };
+
+/**
+ * Handles user logout.
+ */
+export const handleUserLogout = async (req, res) => {
+  try {
+    // Clear the accessToken and refreshToken cookies
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    return res.status(200).json(
+      createResponse({
+        isSuccess: true,
+        statusCode: 200,
+        message: "Logout successful. You have been signed out.",
+        data: null,
+        error: null,
+      })
+    );
+  } catch (error) {
+    console.error("Logout Error:", error.message);
+    return res.status(500).json(
+      createResponse({
+        isSuccess: false,
+        statusCode: 500,
+        message: "An error occurred while processing your logout request.",
+        error: error.message,
+      })
+    );
+  }
+};
