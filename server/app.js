@@ -2,8 +2,9 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
-import authRoute from "./api/auth/auth.route.js"
-import hospitalRoute from "./api/hospital/hospital.route.js"
+import authRoute from "./api/auth/auth.route.js";
+import hospitalRoute from "./api/hospital/hospital.route.js";
+import globalErrorHandler from "./middlewares/globalErrorHandler.js";
 
 const app = express();
 
@@ -18,12 +19,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-  // ROUTES
-  app.use("/api/auth", authRoute)
-  app.use("/api/hospitals", hospitalRoute);
+// ROUTES
+app.use("/api/auth", authRoute);
+app.use("/api", hospitalRoute);
 
+// Health check route
 app.get("/", (req, res) => {
   res.status(200).send("MedConnect platform up and running!");
 });
+
+// 404 handler for undefined routes
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
+});
+
+// Global error handler
+app.use(globalErrorHandler);
 
 export default app;

@@ -13,7 +13,7 @@ import createResponse from "../../utils/responseBuilder.js";
 /**
  * Handles user registration.
  */
-export const handleUserRegistration = async (req, res) => {
+export const handleUserRegistration = async (req, res, next) => {
   try {
     // Validate input
     await validateRegisterInput.validateAsync(req.body);
@@ -78,35 +78,17 @@ export const handleUserRegistration = async (req, res) => {
   } catch (error) {
     // Handle Joi validation errors
     if (error.isJoi) {
-      console.error("Validation Error: ", error.details);
-      return res.status(400).json(
-        createResponse({
-          isSuccess: false,
-          statusCode: 400,
-          message: "Validation error",
-          error: error.details.map((err) => err.message),
-        })
-      );
+      error.statusCode = 400;
+      error.details = error.details.map((err) => err.message);
     }
-
-    // Handle other errors
-    console.error("Registration Error:", error.message);
-    return res.status(500).json(
-      createResponse({
-        isSuccess: false,
-        statusCode: 500,
-        message:
-          "An error occurred while processing your registration request.",
-        error: error.message,
-      })
-    );
+    next(error);
   }
 };
 
 /**
  * Handles user login.
  */
-export const handleUserLogin = async (req, res) => {
+export const handleUserLogin = async (req, res, next) => {
   try {
     await validateLoginInput.validateAsync(req.body);
     console.log("ENTERED THE LOGIN FUNCTION IN BACKEND");
@@ -135,6 +117,7 @@ export const handleUserLogin = async (req, res) => {
           error: null,
         })
       );
+     
     }
 
     const isPasswordValid = await bcryptjs.compare(password, user.password);
@@ -193,35 +176,19 @@ export const handleUserLogin = async (req, res) => {
       })
     );
   } catch (error) {
-    // Handle Joi validation errors
-    if (error.isJoi) {
-      console.error("Validation Error: ", error.details);
-      return res.status(400).json(
-        createResponse({
-          isSuccess: false,
-          statusCode: 400,
-          message: "Validation error",
-          error: error.details.map((err) => err.message), // Send array of error messages
-        })
-      );
-    }
-
-    console.error("Login Error:", error.message);
-    return res.status(500).json(
-      createResponse({
-        isSuccess: false,
-        statusCode: 500,
-        message: "An error occurred while processing your login request.",
-        error: error.message,
-      })
-    );
+   // Handle Joi validation errors
+   if (error.isJoi) {
+    error.statusCode = 400;
+    error.details = error.details.map((err) => err.message);
+  }
+  next(error)
   }
 };
 
 /**
  * Checks if a user is authenticated.
  */
-export const verifyUserAuthentication = async (req, res) => {
+export const verifyUserAuthentication = async (req, res, next) => {
   try {
     const user = req.user;
     if (!user) {
@@ -247,14 +214,7 @@ export const verifyUserAuthentication = async (req, res) => {
     );
   } catch (error) {
     console.error("Authentication Check Error:", error.message);
-    return res.status(500).json(
-      createResponse({
-        isSuccess: false,
-        statusCode: 500,
-        message: "An error occurred while verifying authentication.",
-        error: error.message,
-      })
-    );
+    next(error);
   }
 };
 
@@ -287,13 +247,6 @@ export const handleUserLogout = async (req, res) => {
     );
   } catch (error) {
     console.error("Logout Error:", error.message);
-    return res.status(500).json(
-      createResponse({
-        isSuccess: false,
-        statusCode: 500,
-        message: "An error occurred while processing your logout request.",
-        error: error.message,
-      })
-    );
+   next(error)
   }
 };

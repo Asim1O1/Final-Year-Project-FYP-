@@ -3,40 +3,41 @@ import { validateHospitalInput } from "../../utils/validationUtils.js";
 import createResponse from "../../utils/responseBuilder.js";
 import fs from "fs";
 import cloudinary from "../../imageUpload/cloudinaryConfig.js";
+import { paginate } from "../../utils/paginationUtil.js";
 
 /**
  * Handles adding a new hospital.
  */
-export const addHospital = async (req, res) => {
+export const addHospital = async (req, res, next) => {
   try {
     console.log("The req.body in addHospital is: ", req.body);
     await validateHospitalInput.validateAsync(req.body);
 
-    const { name, location, contactNumber, email, specialties, medicalTests } = req.body;
+    const { name, location, contactNumber, email, specialties, medicalTests } =
+      req.body;
     let hospitalImage = null;
 
-    console.log("The req.body in addHospital is: ", req.body);
-
     if (req.file) {
-      const folderPath = `MedConnect/Hospital/Images/${name}`; 
+      const folderPath = `MedConnect/Hospital/Images/${name}`;
       const result = await cloudinary.v2.uploader.upload(req.file.path, {
         folder: folderPath,
       });
       hospitalImage = result.secure_url;
-       // Delete the file from the server
-       fs.unlinkSync(req.file.path);
+      // Delete the file from the server
+      fs.unlinkSync(req.file.path);
     }
 
     const existingHospital = await hospitalModel.findOne({
       $or: [{ name }, { email }],
     });
     if (existingHospital) {
-      return res.status(400).json(
+      return res.status(401).json(
         createResponse({
           isSuccess: false,
-          statusCode: 400,
-          message: "A hospital with the same name or email already exists.",
+          statusCode: 401,
+          message: "Hospital with the same name or email already exists.",
           error: null,
+          data: null,
         })
       );
     }
@@ -64,25 +65,47 @@ export const addHospital = async (req, res) => {
     );
   } catch (error) {
     if (error.isJoi) {
-      console.error("Validation Error: ", error.details);
-      return res.status(400).json(
-        createResponse({
-          isSuccess: false,
-          statusCode: 400,
-          message: "Validation error",
-          error: error.details.map((err) => err.message),
-        })
-      );
+      error.statusCode = 400;
+      error.message = "Validation error";
+      error.details = error.details.map((err) => err.message);
     }
+    next(error); // Pass the error to the globalErrorHandler
+  }
+};
 
-    console.error("Add Hospital Error: ", error.message);
-    return res.status(500).json(
+export const fetchHospitals = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10, sort = "createdAt" } = req.query;
+
+    // Convert sort query parameter to a sort object
+    const sortOrder = sort.startsWith("-") ? -1 : 1;
+    const sortField = sort.replace("-", "");
+    const sortOptions = { [sortField]: sortOrder };
+
+    // Use the paginate function to fetch hospitals
+    const result = await paginate(
+      hospitalModel,
+      {},
+      { page, limit, sort: sortOptions }
+    );
+
+    // Send success response
+    return res.status(200).json(
       createResponse({
-        isSuccess: false,
-        statusCode: 500,
-        message: "An error occurred while adding the hospital.",
-        error: error.message,
+        isSuccess: true,
+        statusCode: 200,
+        message: "Hospitals fetched successfully.",
+        data: {
+          hospitals: result.data,
+          pagination: {
+            totalCount: result.totalCount,
+            currentPage: result.currentPage,
+            totalPages: result.totalPages,
+          },
+        },
       })
     );
+  } catch (error) {
+    next(error); // Pass the error to the globalErrorHandler
   }
 };
