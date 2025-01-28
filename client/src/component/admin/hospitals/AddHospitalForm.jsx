@@ -66,7 +66,6 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
     // Validate Hospital Name
     if (!formData.name || formData.name.trim() === "") {
       errors.name = "Hospital name is required.";
-      
     } else if (formData.name.length < 3) {
       errors.name = "Hospital name must be at least 3 characters.";
     }
@@ -124,7 +123,6 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
       } else {
         hospitalData.append(key, value);
       }
-
     });
 
     console.log("The hsopital data is", hospitalData);
@@ -153,28 +151,28 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
 
   return (
     <>
-    {isLoading && (
-  <Box
-    position="fixed"
-    top="0"  // Position loader at the top
-    left="0"
-    right="0"
-    bottom="0"
-    zIndex="9999" 
-    bg="rgba(0, 0, 0, 0.5)" 
-    display="flex"
-    alignItems="center"
-    justifyContent="center"
-  >
-    <Spinner
-      thickness="4px"
-      speed="0.65s"
-      emptyColor="gray.200"
-      color="blue.500"
-      size="xl"
-    />
-  </Box>
-)}
+      {isLoading && (
+        <Box
+          position="fixed"
+          top="0" // Position loader at the top
+          left="0"
+          right="0"
+          bottom="0"
+          zIndex="9999"
+          bg="rgba(0, 0, 0, 0.5)"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Spinner
+            thickness="4px"
+            speed="0.65s"
+            emptyColor="gray.200"
+            color="blue.500"
+            size="xl"
+          />
+        </Box>
+      )}
       <Modal isOpen={isOpen} onClose={onClose} size="4xl">
         <ModalOverlay />
         <ModalOverlay />
