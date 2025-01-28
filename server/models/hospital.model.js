@@ -50,6 +50,7 @@ const hospitalSchema = new mongoose.Schema(
         volunteers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
       },
     ],
+    hospital_admin: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );

@@ -3,6 +3,7 @@ import appConfig from "./appConfig.js";
 
 const initializeDbConnection = async () => {
   // Add event listeners only once (to avoid duplicate logs if `connectToDb` is called multiple times)
+
   mongoose.connection.once("connected", () => {
     console.log("Successfully connected to MongoDB");
   });

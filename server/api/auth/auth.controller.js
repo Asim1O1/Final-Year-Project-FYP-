@@ -117,7 +117,6 @@ export const handleUserLogin = async (req, res, next) => {
           error: null,
         })
       );
-     
     }
 
     const isPasswordValid = await bcryptjs.compare(password, user.password);
@@ -176,12 +175,12 @@ export const handleUserLogin = async (req, res, next) => {
       })
     );
   } catch (error) {
-   // Handle Joi validation errors
-   if (error.isJoi) {
-    error.statusCode = 400;
-    error.details = error.details.map((err) => err.message);
-  }
-  next(error)
+    // Handle Joi validation errors
+    if (error.isJoi) {
+      error.statusCode = 400;
+      error.details = error.details.map((err) => err.message);
+    }
+    next(error);
   }
 };
 
@@ -247,6 +246,6 @@ export const handleUserLogout = async (req, res) => {
     );
   } catch (error) {
     console.error("Logout Error:", error.message);
-   next(error)
+    next(error);
   }
 };
