@@ -1,15 +1,25 @@
-import React from 'react';
-import { Box, VStack, Icon, Text, Flex } from '@chakra-ui/react';
-import { RiDashboardLine, RiUserLine, RiHospitalLine, RiStethoscopeLine, RiSettings4Line } from 'react-icons/ri';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Box, VStack, Icon, Text, Flex } from "@chakra-ui/react";
+import {
+  RiDashboardLine,
+  RiUserLine,
+  RiHospitalLine,
+  RiStethoscopeLine,
+  RiSettings4Line,
+} from "react-icons/ri";
+import { Link } from "react-router-dom";
 
 export const Sidebar = () => {
   const menuItems = [
-    { icon: RiDashboardLine, label: 'Dashboard', path: '/admin' },
-    { icon: RiUserLine, label: 'Users', path: '/admin/users' },
-    { icon: RiHospitalLine, label: 'Hospitals', path: '/admin/hospitals' },
-    { icon: RiStethoscopeLine, label: 'Doctors', path: '/admin/doctors' },
-    { icon: RiSettings4Line, label: 'Logout', action: () => console.log('Logout logic here') },
+    { icon: RiDashboardLine, label: "Dashboard", path: "/admin" },
+    { icon: RiUserLine, label: "Users", path: "/admin/users" },
+    { icon: RiHospitalLine, label: "Hospitals", path: "/admin/hospitals" },
+    { icon: RiStethoscopeLine, label: "Doctors", path: "/admin/doctors" },
+    {
+      icon: RiSettings4Line,
+      label: "Logout",
+      action: () => console.log("Logout logic here"),
+    },
   ];
 
   return (
@@ -19,18 +29,18 @@ export const Sidebar = () => {
           Admin Portal
         </Text>
       </Flex>
-      
+
       <VStack spacing={2} align="stretch">
         {menuItems.map((item) => (
           <Flex
-            as={item.path ? Link : 'div'}
+            as={item.path ? Link : "div"}
             key={item.label}
             to={item.path}
             onClick={item.action}
             p={3}
             cursor="pointer"
             borderRadius="md"
-            _hover={{ bg: 'blue.50' }}
+            _hover={{ bg: "blue.50" }}
             color="gray.700"
             alignItems="center"
           >

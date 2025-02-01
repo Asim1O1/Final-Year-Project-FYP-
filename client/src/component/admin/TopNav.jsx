@@ -1,6 +1,6 @@
-import React from 'react';
-import { Flex, InputGroup, Input, InputRightElement, IconButton, Avatar, Box } from '@chakra-ui/react';
-import { SearchIcon, BellIcon } from '@chakra-ui/icons';
+import React from "react";
+import { Flex, IconButton, Avatar } from "@chakra-ui/react";
+import { BellIcon } from "@chakra-ui/icons";
 
 export const TopNav = () => {
   return (
@@ -12,19 +12,8 @@ export const TopNav = () => {
       alignItems="center"
       justifyContent="space-between"
     >
-      <InputGroup maxW="400px">
-        <Input placeholder="Search..." />
-        <InputRightElement>
-          <SearchIcon color="gray.500" />
-        </InputRightElement>
-      </InputGroup>
-      
       <Flex alignItems="center" gap={4}>
-        <IconButton
-          icon={<BellIcon />}
-          variant="ghost"
-          position="relative"
-        />
+        <IconButton icon={<BellIcon />} variant="ghost" position="relative" />
         <Avatar size="sm" />
       </Flex>
     </Flex>

@@ -32,9 +32,12 @@ import { X } from "lucide-react";
 import { notification } from "antd";
 import { handleHospitalRegistration } from "../../../features/hospital/hospitalSlice";
 import { useDispatch, useSelector } from "react-redux";
+import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
 const AddHospitalForm = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
-  const { isLoading, error } = useSelector((state) => state?.hospitalSlice);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const { isLoading } = useSelector((state) => state?.hospitalSlice);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -97,53 +100,77 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const errors = handleValidation();
-    if (Object.keys(errors).length > 0) {
-      Object.values(errors).forEach((message) => {
-        notification.error({
-          message: "Validation Error",
-          description: message,
+
+    try {
+      const errors = handleValidation();
+      if (Object.keys(errors).length > 0) {
+        Object.values(errors).forEach((message) => {
+          notification.error({
+            message: "Validation Error",
+            description: message,
+            duration: 3,
+          });
+        });
+        return;
+      }
+
+      const hospitalData = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          value.forEach((item, index) => {
+            if (typeof item === "object") {
+              Object.entries(item).forEach(([subKey, subValue]) => {
+                hospitalData.append(`${key}[${index}][${subKey}]`, subValue);
+              });
+            } else {
+              hospitalData.append(`${key}[${index}]`, item);
+            }
+          });
+        } else {
+          hospitalData.append(key, value);
+        }
+      });
+
+      console.log("The hospital data is", hospitalData);
+
+      const result = await  dispatch(handleHospitalRegistration(hospitalData));
+      console.log("The resultt while adding hospital i is", result);
+
+      if (handleHospitalRegistration.fulfilled.match(result)  ) {
+        notification.success({
+          message: "Hospital Registration Successful",
+          description:
+            result?.payload?.message ||
+            "Hospital has been registered successfully!",
           duration: 3,
         });
-      });
-      return;
-    }
-    const hospitalData = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        value.forEach((item, index) => {
-          if (typeof item === "object") {
-            Object.entries(item).forEach(([subKey, subValue]) => {
-              hospitalData.append(`${key}[${index}][${subKey}]`, subValue);
-            });
-          } else {
-            hospitalData.append(`${key}[${index}]`, item);
-          }
+        setFormData({
+          name: "",
+          location: "",
+          contactNumber: "",
+          email: "",
+          hospitalImage: "",
+          specialties: [],
+          medicalTests: [],
+          campaigns: [],
         });
-      } else {
-        hospitalData.append(key, value);
+
+        await dispatch(fetchAllHospitals({ page: currentPage, limit: 10 })).unwrap();
+        onClose();
+      } else if (handleHospitalRegistration.rejected.match(result)) {
+        notification.error({
+          message: "Hospital Registration Failed",
+          description:
+            result?.payload?.error || "Something went wrong. Please try again.",
+          duration: 3,
+        });
       }
-    });
-
-    console.log("The hsopital data is", hospitalData);
-
-    const result = await dispatch(handleHospitalRegistration(hospitalData));
-    console.log("The result is", result);
-
-    if (handleHospitalRegistration.fulfilled.match(result)) {
-      notification.success({
-        message: "Hospital Registration Successful",
-        description:
-          result?.payload?.message ||
-          "Hospital has been registered successfully!",
-        duration: 3,
-      });
-      onClose();
-    } else if (handleHospitalRegistration.rejected.match(result)) {
+    } catch (error) {
+      console.error("Error during hospital registration:", error);
       notification.error({
         message: "Hospital Registration Failed",
         description:
-          result?.payload?.error || "Something went wrong. Please try again.",
+          error.message || "Something went wrong. Please try again later.",
         duration: 3,
       });
     }

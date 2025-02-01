@@ -2,13 +2,12 @@ import axios from "axios";
 
 import createApiResponse from "../../utils/createApiResponse";
 import axiosInstance from "../../utils/axiosInstance";
+import { BASE_BACKEND_URL } from "../../../constants";
 
 const addHospitalService = async (hospitalData) => {
   try {
-    const response = await axiosInstance.post(
-      `/api/hospitals/addHospital`,
-      hospitalData
-    );
+    const response = await axiosInstance.post(`/api/hospitals/`, hospitalData);
+    console.log("The hospital data received is", hospitalData);
     console.log("The response in the addHospitalService was: ", response);
 
     if (response?.data?.isSuccess === false) {
@@ -39,8 +38,152 @@ const addHospitalService = async (hospitalData) => {
   }
 };
 
+// Update Hospital
+const updateHospitalService = async (hospitalId, hospitalData) => {
+  try {
+    console.log("ENTERED UPDATE HOSPITAL SERVICE");
+    console.log("hospitalId: ", hospitalId);
+    console.log("hospitalData: ", hospitalData);
+    const response = await axiosInstance.put(
+      `/api/hospitals/${hospitalId}`,
+      hospitalData
+    );
+    if (response?.data?.isSuccess === false) {
+      throw createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "Hospital update failed",
+        error: response?.data?.error || null,
+      });
+    }
+    return createApiResponse({
+      isSuccess: true,
+      message: response?.data?.message || "Hospital updated successfully",
+      data: response?.data,
+    });
+  } catch (error) {
+    const errorMessage =
+      error?.response?.data?.error?.[0] ||
+      error?.response?.data?.message ||
+      "An error occurred during the update.";
+    return createApiResponse({
+      isSuccess: false,
+      error: errorMessage,
+    });
+  }
+};
+
+// Delete Hospital
+const deleteHospitalService = async (hospitalId) => {
+  try {
+    const response = await axiosInstance.delete(`/api/hospitals/${hospitalId}`);
+    if (response?.data?.isSuccess === false) {
+      throw createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "Hospital deletion failed",
+        error: response?.data?.error || null,
+      });
+    }
+    return createApiResponse({
+      isSuccess: true,
+      message: response?.data?.message || "Hospital deleted successfully",
+    });
+  } catch (error) {
+    const errorMessage =
+      error?.response?.data?.error?.[0] ||
+      error?.response?.data?.message ||
+      "An error occurred during deletion.";
+    return createApiResponse({
+      isSuccess: false,
+      error: errorMessage,
+    });
+  }
+};
+
+const fetchHospitalsService = async (page, limit) => {
+  try {
+    const response = await axios.get(`${BASE_BACKEND_URL}/api/hospitals`, {
+      params: { page, limit },
+    });
+
+    // Check if the response is a failure case
+    if (!response.data?.isSuccess) {
+      throw createApiResponse({
+        isSuccess: false,
+        message: response.data?.message || "Failed to fetch hospitals",
+        error: response.data?.error || null,
+      });
+    }
+    console.log("The response while fetching hospitals", response);
+
+    return createApiResponse({
+      isSuccess: true,
+      message: response.data?.message || "Hospitals fetched successfully",
+      data: response.data?.data, // Return only the relevant data
+    });
+  } catch (error) {
+    console.error("Error in fetchHospitalsService function:", error);
+    const errorMessage =
+      error?.response?.data?.error ||
+      error?.response?.data?.message ||
+      "An error occurred while fetching hospitals.";
+
+    return createApiResponse({
+      isSuccess: false,
+      message: errorMessage,
+    });
+  }
+};
+
+const fetchSingleHospitalService = async (req, res) => {
+  try {
+    // Extract the hospital ID from the request parameters
+    const { id } = req.params;
+
+    // Send a request to your backend API to fetch the hospital by ID
+    const response = await axios.get(`${BASE_BACKEND_URL}/api/hospitals/${id}`);
+
+    // Check if the response was successful
+    if (!response.data?.isSuccess) {
+      return res.status(400).json(
+        createApiResponse({
+          isSuccess: false,
+          message: response.data?.message || "Failed to fetch hospital details",
+          error: response.data?.error || null,
+        })
+      );
+    }
+
+    // Return the hospital data in the response if successful
+    return res.status(200).json(
+      createApiResponse({
+        isSuccess: true,
+        message:
+          response.data?.message || "Hospital details fetched successfully",
+        data: response.data?.data, // Hospital data
+      })
+    );
+  } catch (error) {
+    console.error("Error in fetchSingleHospitalService function:", error);
+    const errorMessage =
+      error?.response?.data?.error ||
+      error?.response?.data?.message ||
+      "An error occurred while fetching hospital details.";
+
+    return res.status(500).json(
+      createApiResponse({
+        isSuccess: false,
+        message: errorMessage,
+      })
+    );
+  }
+};
+
 const hospitalService = {
   addHospitalService,
+  updateHospitalService,
+  deleteHospitalService,
+  fetchHospitalsService,
+  fetchSingleHospitalService,
 };
 
 export default hospitalService;
