@@ -27,6 +27,8 @@ const protectRoute = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, appConfig.jwt_secret);
+    console.log("Decoded token:", decoded);
+
     if (!decoded?.sub) {
       return res.status(401).json(
         createResponse({
@@ -39,7 +41,8 @@ const protectRoute = async (req, res, next) => {
     }
     console.log("The decoded token is: ", decoded);
 
-    const user = await userModel.findById(decoded.sub).select("-password");
+    const user = await userModel.findById(decoded.sub?.sub || decoded.sub).select("-password");
+
     console.log("The user is: ", user);
 
     if (!user) {

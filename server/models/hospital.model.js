@@ -33,7 +33,7 @@ const hospitalSchema = new mongoose.Schema(
     medicalTests: [
       {
         name: { type: String, required: true },
-        price: { type: Number, required: true },
+        price: { type: String, required: true },
       },
     ],
     notifications: [

@@ -23,7 +23,7 @@ export const addHospital = async (req, res, next) => {
         folder: folderPath,
       });
       hospitalImage = result.secure_url;
-      // Delete the file from the server
+
       fs.unlinkSync(req.file.path);
     }
 
@@ -64,6 +64,7 @@ export const addHospital = async (req, res, next) => {
       })
     );
   } catch (error) {
+    console.log(error);
     if (error.isJoi) {
       error.statusCode = 400;
       error.message = "Validation error";
@@ -151,6 +152,7 @@ export const fetchHospitalById = async (req, res, next) => {
 export const updateHospital = async (req, res, next) => {
   try {
     const { id } = req.params;
+    console.log("The req bodys is", req.body);
 
     // Validate the input fields before updating
     await validateHospitalInput.validateAsync(req.body);

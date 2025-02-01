@@ -20,7 +20,7 @@ const handleRefreshAccessToken = async (req, res, next) => {
 
   try {
     // Verify the refresh token
-    const decoded = jwt.verify(refreshToken, appConfig.jwt_refresh_secret);
+    const decoded = jwt.verify(refreshToken, appConfig.refresh_secret);
 
     // Generate a new access token
     const newAccessToken = generateAccessToken({ sub: decoded.sub });

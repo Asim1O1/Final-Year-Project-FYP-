@@ -5,12 +5,7 @@ export const validateRegisterInput = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().min(8).required(),
   address: Joi.string().required(),
-  role: Joi.string().valid(
-    "system_admin",
-    "hospital_admin",
-    "doctor",
-    "user"
-  ),
+  role: Joi.string().valid("system_admin", "hospital_admin", "doctor", "user"),
   phone: Joi.string()
     .pattern(/^[0-9]+$/)
     .min(10)
@@ -57,6 +52,7 @@ export const validateHospitalInput = Joi.object({
     "string.empty": "Email is required.",
     "string.email": "Please provide a valid email address.",
   }),
+  hospitalImage: Joi.string().uri().optional(),
   specialties: Joi.array()
     .items(Joi.string().min(3).required())
     .min(1)
@@ -66,18 +62,18 @@ export const validateHospitalInput = Joi.object({
       "string.empty": "Specialty cannot be empty.",
       "string.min": "Specialty must be at least 3 characters long.",
     }),
-  // medicalTests: Joi.array().items(
-  //   Joi.object({
-  //     name: Joi.string().min(3).required().messages({
-  //       "string.empty": "Test name is required.",
-  //       "string.min": "Test name must be at least 3 characters long.",
-  //     }),
-  //     price: Joi.number().positive().required().messages({
-  //       "number.base": "Test price must be a number.",
-  //       "number.positive": "Test price must be greater than 0.",
-  //     }),
-  //   })
-  // ),
+  medicalTests: Joi.array().items(
+    Joi.object({
+      name: Joi.string().min(3).required().messages({
+        "string.empty": "Test name is required.",
+        "string.min": "Test name must be at least 3 characters long.",
+      }),
+      price: Joi.string().min(1).required().messages({
+        "string.empty": "Price is required.",
+        "string.min": "Price must be at least 1 character long.",
+      }),
+    })
+  ),
   notifications: Joi.array().items(
     Joi.object({
       message: Joi.string().min(5).required().messages({

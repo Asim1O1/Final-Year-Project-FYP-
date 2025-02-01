@@ -10,6 +10,7 @@ import {
 } from "../../utils/generateAuthToken.js";
 import createResponse from "../../utils/responseBuilder.js";
 
+
 /**
  * Handles user registration.
  */
@@ -138,13 +139,12 @@ export const handleUserLogin = async (req, res, next) => {
     const userObject = user.toObject();
     delete userObject.password;
 
-    // Debug: Check before setting cookies
     console.log("Setting cookies for accessToken and refreshToken");
     console.log("Access Token:", accessToken);
     console.log("Refresh Token:", refreshToken);
 
     // Set cookies for tokens
-    // Set cookies
+
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -160,7 +160,7 @@ export const handleUserLogin = async (req, res, next) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    // Debug: Verify cookies are set
+   
     console.log("Cookies set successfully");
 
     return res.status(200).json(
