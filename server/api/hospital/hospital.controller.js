@@ -76,21 +76,41 @@ export const addHospital = async (req, res, next) => {
 
 export const fetchHospitals = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, sort = "createdAt" } = req.query;
+    const { page, limit, sort = "createdAt" } = req.query;
 
     // Convert sort query parameter to a sort object
     const sortOrder = sort.startsWith("-") ? -1 : 1;
     const sortField = sort.replace("-", "");
     const sortOptions = { [sortField]: sortOrder };
 
-    // Use the paginate function to fetch hospitals
+    // If page and limit are not provided, fetch all hospitals
+    if (!page && !limit) {
+      const hospitals = await hospitalModel.find().sort(sortOptions);
+      return res.status(200).json(
+        createResponse({
+          isSuccess: true,
+          statusCode: 200,
+          message: "Hospitals fetched successfully.",
+          data: {
+            hospitals,
+            pagination: null,
+          },
+        })
+      );
+    }
+
+    // If pagination params are provided, use the paginate function
     const result = await paginate(
       hospitalModel,
       {},
-      { page, limit, sort: sortOptions }
+      {
+        page: page || 1,
+        limit: limit || 10,
+        sort: sortOptions,
+      }
     );
 
-    // Send success response
+    // Send success response with pagination
     return res.status(200).json(
       createResponse({
         isSuccess: true,
@@ -110,7 +130,6 @@ export const fetchHospitals = async (req, res, next) => {
     next(error); // Pass the error to the globalErrorHandler
   }
 };
-
 /**
  * Handles fetching a specific hospital by ID.
  */

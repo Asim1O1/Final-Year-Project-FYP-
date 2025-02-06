@@ -26,6 +26,7 @@ const protectRoute = async (req, res, next) => {
       );
     }
 
+    // Verify and decode token
     const decoded = jwt.verify(token, appConfig.jwt_secret);
     console.log("Decoded token:", decoded);
 
@@ -41,7 +42,8 @@ const protectRoute = async (req, res, next) => {
     }
     console.log("The decoded token is: ", decoded);
 
-    const user = await userModel.findById(decoded.sub?.sub || decoded.sub).select("-password");
+    // Fetch user without password field
+    const user = await userModel.findById(decoded.sub).select("-password");
 
     console.log("The user is: ", user);
 

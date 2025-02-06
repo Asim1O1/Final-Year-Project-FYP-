@@ -6,11 +6,10 @@ import { paginate } from "../../utils/paginationUtil.js";
 
 export const createHospitalAdmin = async (req, res, next) => {
   try {
-    const { fullName, userName, email, password, gender, phone, hospitalId } =
-      req.body;
+    const { fullName, email, password, gender, phone, hospitalId } = req.body;
 
     const existingUser = await userModel.findOne({
-      $or: [{ email }, { userName }],
+      $or: [{ email }],
     });
     if (existingUser) {
       return res.status(400).json(
@@ -41,7 +40,6 @@ export const createHospitalAdmin = async (req, res, next) => {
     // Create the hospital admin user
     const hospitalAdmin = await userModel.create({
       fullName,
-      userName,
       email,
       password: hashedPassword,
       gender,
@@ -183,36 +181,68 @@ export const getAllHospitalAdmins = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, sort = "createdAt" } = req.query;
 
-    // Convert sort query parameter to a sort object
+    // Parse sort parameters
     const sortOrder = sort.startsWith("-") ? -1 : 1;
     const sortField = sort.replace("-", "");
     const sortOptions = { [sortField]: sortOrder };
 
-    // Ensure page and limit are numbers
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
 
+    if (!pageNum && !limitNum) {
+      // If pagination params are missing, return all hospital admins
+      const hospitalAdmins = await userModel
+        .find({ role: "hospital_admin" })
+        .populate("hospital", "name"); // Populate hospital name
+
+      return res.status(200).json(
+        createResponse({
+          isSuccess: true,
+          statusCode: 200,
+          message: "All hospital admins fetched successfully",
+          data: {
+            hospitalAdmins,
+            pagination: null,
+          },
+          error: null,
+        })
+      );
+    }
+
+    // Implement pagination logic here
     const result = await paginate(
       userModel,
       { role: "hospital_admin" },
-      { page: pageNum, limit: limitNum, sort: sortOptions }
+      {
+        page: pageNum,
+        limit: limitNum,
+        sort: sortOptions,
+      }
     );
 
-    return res.status(200).json(
-      createResponse({
-        isSuccess: true,
-        statusCode: 200,
-        message: "Hospital admins retrieved successfully",
-        data: {
-          hospitalAdmins: result.docs,
-          pagination: {
-            totalCount: result.totalCount,
-            currentPage: result.currentPage,
-            totalPages: result.totalPages,
-          },
-        },
-      })
-    );
+    // Fetch hospital name for each hospital admin
+    const hospitalAdmins = await userModel
+      .find({ role: "hospital_admin" })
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
+      .sort(sortOptions)
+      .populate("hospital", "name"); // Populate hospital name
+
+    console.log("The result in the backend is", result);
+
+    return res.status(200).json({
+      isSuccess: true,
+      statusCode: 200,
+      message: "Hospital admins retrieved successfully",
+      data: hospitalAdmins.map((admin) => ({
+        ...admin.toObject(),
+      })),
+      pagination: {
+        totalCount: result.totalCount,
+        currentPage: result.currentPage,
+        totalPages: result.totalPages,
+      },
+    });
   } catch (error) {
     console.error("Get All Hospital Admins Error:", error.message);
     next(error);

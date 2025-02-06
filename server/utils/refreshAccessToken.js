@@ -12,7 +12,8 @@ const handleRefreshAccessToken = async (req, res, next) => {
       createResponse({
         isSuccess: false,
         statusCode: 401,
-        message: "Authentication required. Please log in to access this resource.",
+        message:
+          "Authentication required. Please log in to access this resource.",
         error: null,
       })
     );
@@ -23,16 +24,16 @@ const handleRefreshAccessToken = async (req, res, next) => {
     const decoded = jwt.verify(refreshToken, appConfig.refresh_secret);
 
     // Generate a new access token
-    const newAccessToken = generateAccessToken({ sub: decoded.sub });
+    const newAccessToken = generateAccessToken(decoded.sub);
 
     console.log("Generated new access token:", newAccessToken);
 
     // Set the new access token as a cookie
     res.cookie("accessToken", newAccessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", 
-      sameSite: "Strict", 
-      maxAge: 15 * 60 * 1000, 
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 15 * 60 * 1000,
     });
 
     // Send the response
