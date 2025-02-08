@@ -12,21 +12,6 @@ function CheckAuth({ role, children }) {
     return <Navigate to="/login" />;
   }
 
-  // // If authenticated but role does not match
-  // if (user?.data?.role !== role) {
-  //   console.log(`User role mismatch: Expected ${role}, got ${user?.data?.role}`);
-  //   switch (user?.data?.role) {
-  //     case "system_admin":
-  //       return <Navigate to="/admin" />;
-  //     case "hospital_admin":
-  //       return <Navigate to="/hospital" />;
-  //     case "user":
-  //       return <Navigate to="/" />;
-  //     default:
-  //       return <Navigate to="/login" />;
-  //   }
-  // }
-
   // If authenticated but role does not match
   if (user?.data?.role !== role) {
     console.log(

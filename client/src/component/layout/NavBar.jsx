@@ -36,7 +36,6 @@ const Navbar = () => {
       const currentScrollPos = window.scrollY;
       const isScrollingUp = prevScrollPos > currentScrollPos;
 
-      // Show navbar on slight upward scroll or when at the top of the page
       if (isScrollingUp || currentScrollPos <= 0) {
         setIsNavbarVisible(true);
       } else {

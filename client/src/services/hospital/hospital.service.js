@@ -98,11 +98,10 @@ const deleteHospitalService = async (hospitalId) => {
     });
   }
 };
-
-const fetchHospitalsService = async (page, limit) => {
+const fetchHospitalsService = async (params = {}) => {
   try {
     const response = await axios.get(`${BASE_BACKEND_URL}/api/hospitals`, {
-      params: { page, limit },
+      params: params,
     });
 
     // Check if the response is a failure case
@@ -118,7 +117,7 @@ const fetchHospitalsService = async (page, limit) => {
     return createApiResponse({
       isSuccess: true,
       message: response.data?.message || "Hospitals fetched successfully",
-      data: response.data?.data, // Return only the relevant data
+      data: response.data?.data,
     });
   } catch (error) {
     console.error("Error in fetchHospitalsService function:", error);

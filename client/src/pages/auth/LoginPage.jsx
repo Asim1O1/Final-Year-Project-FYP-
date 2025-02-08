@@ -5,10 +5,11 @@ import {
   Flex,
   Heading,
   Link,
+  Spinner,
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { Link as RouterLink } from "react-router-dom";
 
 import AuthLayout from "../../layouts/AuthLayout";
 import ImageSection from "../../component/auth/ImageSection";
@@ -16,10 +17,9 @@ import InputForm from "../../component/auth/InputForm";
 import PasswordToggle from "../../component/auth/PasswordToggle";
 import { notification } from "antd";
 import { loginUser } from "../../features/auth/authSlice";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 const LoginPage = () => {
-  const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const [formData, setFormData] = useState({
@@ -27,7 +27,7 @@ const LoginPage = () => {
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { isLoading } = useSelector((state) => state?.auth);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -35,12 +35,11 @@ const LoginPage = () => {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     const result = await dispatch(loginUser(formData));
     console.log("The result is", result);
-  
+
     if (loginUser.fulfilled.match(result)) {
-      // No need to handle navigation here, as it's managed in App.jsx
       console.log("Login successful, let App.jsx handle navigation.");
     } else if (loginUser.rejected.match(result)) {
       notification.error({
@@ -51,7 +50,6 @@ const LoginPage = () => {
       });
     }
   };
-  
 
   return (
     <AuthLayout>
@@ -111,15 +109,14 @@ const LoginPage = () => {
                 bg="#00A9FF"
                 color="white"
                 size="lg"
-                isLoading={loading}
-                loadingText="Logging in..."
+                isDisabled={isLoading}
                 mt={2}
                 _hover={{
                   bg: "#007BB5",
                   transform: "scale(1.05)",
                 }}
               >
-                Login
+                {isLoading ? <Spinner size="sm" color="white" /> : "Login"}
               </Button>
 
               <Flex justify="center">

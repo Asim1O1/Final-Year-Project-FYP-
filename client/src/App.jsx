@@ -7,12 +7,13 @@ import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { Users } from "./pages/admin/Users";
 import { HospitalAdminDashboard } from "./pages/hospital_admin/HospitalAdminDashboard";
 import HospitalManagement from "./pages/admin/HospitalManagement";
+import HospitalAdminManagement from "./pages/admin/HospitalAdminManagement.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import { verifyUserAuth } from "./features/auth/authSlice";
 import { useEffect } from "react";
 import CheckAuth from "./utils/CheckAuth.jsx";
 import NotFoundPage from "./pages/public/404Page";
-import { AdminLayout } from "./layouts/AdminLayout";
+import { AdminLayout } from "./layouts/AdminLayout";  
 import UnauthorizedPage from "./pages/auth/UnauthorizedPage.jsx";
 
 function App() {
@@ -75,6 +76,7 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<Users />} />
           <Route path="hospitals" element={<HospitalManagement />} />
+          <Route path="hospital admin" element={<HospitalAdminManagement />} />
         </Route>
 
         {/* Hospital Admin Protected Routes */}

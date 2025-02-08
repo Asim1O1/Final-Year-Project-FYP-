@@ -1,14 +1,21 @@
-import React from 'react';
-import { Box, Badge, Image, Text, Button, HStack, VStack } from '@chakra-ui/react';
-import { StarIcon } from '@chakra-ui/icons';
+import {
+  Box,
+  Badge,
+  Image,
+  Text,
+  Button,
+  HStack,
+  VStack,
+} from "@chakra-ui/react";
+import { StarIcon } from "@chakra-ui/icons";
 
- const HospitalCard = ({ hospital }) => {
+const HospitalCard = ({ hospital }) => {
   return (
     <Box className="w-full max-w-md border rounded-lg overflow-hidden shadow-sm">
       <Box className="relative">
         <Image
-          src={hospital.image}
-          alt={hospital.name}
+          src={hospital?.hospitalImage}
+          alt={hospital?.name}
           className="w-full h-48 object-cover"
         />
         <Button
@@ -19,15 +26,18 @@ import { StarIcon } from '@chakra-ui/icons';
           <StarIcon />
         </Button>
       </Box>
-      
+
       <VStack align="stretch" p={4} spacing={3}>
-        <Text fontSize="xl" fontWeight="bold">{hospital.name}</Text>
+        <Text fontSize="xl" fontWeight="bold">
+          {hospital?.name}
+        </Text>
         <Text color="gray.600">
           <span className="mr-2">📍</span>
-          {hospital.address}
+          {hospital?.location}
         </Text>
-        
+
         <HStack spacing={2} wrap="wrap">
+          {/* Loop through specialties */}
           {hospital.specialties.map((specialty) => (
             <Badge
               key={specialty}
@@ -40,14 +50,6 @@ import { StarIcon } from '@chakra-ui/icons';
           ))}
         </HStack>
 
-        <HStack className="mt-2">
-          <StarIcon color="yellow.400" />
-          <Text>{hospital.rating} ({hospital.reviews} reviews)</Text>
-          <Text className="ml-auto">
-            {hospital.doctorCount} Doctors
-          </Text>
-        </HStack>
-
         <Button colorScheme="blue" width="100%">
           View Details
         </Button>
@@ -55,6 +57,5 @@ import { StarIcon } from '@chakra-ui/icons';
     </Box>
   );
 };
-
 
 export default HospitalCard;

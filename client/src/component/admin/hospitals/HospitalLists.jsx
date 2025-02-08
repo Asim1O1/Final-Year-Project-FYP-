@@ -79,7 +79,7 @@ const HospitalList = () => {
 
   const confirmDelete = async () => {
     const result = await dispatch(handleHospitalDeletion(deletingHospital)); // Dispatch delete action
-    console.log("The result while deleting hospital is", result)
+    console.log("The result while deleting hospital is", result);
     if (handleHospitalDeletion.fulfilled.match(result)) {
       notification.success({
         message: "Hospital Deleted",

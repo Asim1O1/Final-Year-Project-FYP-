@@ -1,86 +1,50 @@
-import React from "react";
-import { Box, Heading, SimpleGrid } from "@chakra-ui/react";
-
-
+import React, { useEffect, useState } from "react";
+import { Box, SimpleGrid, Text } from "@chakra-ui/react";
 import { TopSection } from "../../component/common/TopSection";
 import Footer from "../../component/layout/Footer";
 import HospitalCard from "../../component/common/HospitalCard";
-
-const mockHospitals = [
-  {
-    id: 1,
-    name: "Central Medical Center",
-    address: "123 Healthcare Ave, Medical District",
-    image: "/hospital1.jpg",
-    rating: 4.8,
-    reviews: "2.5k",
-    doctorCount: "125",
-    specialties: ["Cardiology", "Neurology", "Pediatrics"],
-  },
-  {
-    id: 2,
-    name: "Metropolitan Hospital",
-    address: "456 Health Street, Medical Park",
-    image: "/hospital2.jpg",
-    rating: 4.6,
-    reviews: "1.8k",
-    doctorCount: "98",
-    specialties: ["Orthopedics", "Oncology", "Surgery"],
-  },
-  {
-    id: 2,
-    name: "Metropolitan Hospital",
-    address: "456 Health Street, Medical Park",
-    image: "/hospital2.jpg",
-    rating: 4.6,
-    reviews: "1.8k",
-    doctorCount: "98",
-    specialties: ["Orthopedics", "Oncology", "Surgery"],
-  },
-  {
-    id: 2,
-    name: "Metropolitan Hospital",
-    address: "456 Health Street, Medical Park",
-    image: "/hospital2.jpg",
-    rating: 4.6,
-    reviews: "1.8k",
-    doctorCount: "98",
-    specialties: ["Orthopedics", "Oncology", "Surgery"],
-  },
-  {
-    id: 3,
-    name: "City General Hospital",
-    address: "789 Care Lane, Wellness Square",
-    image: "/hospital3.jpg",
-    rating: 4.9,
-    reviews: "3.2k",
-    doctorCount: "150",
-    specialties: ["Emergency", "Maternity", "ICU"],
-  },
-  {
-    id: 3,
-    name: "City General Hospital",
-    address: "789 Care Lane, Wellness Square",
-    image: "/hospital3.jpg",
-    rating: 4.9,
-    reviews: "3.2k",
-    doctorCount: "150",
-    specialties: ["Emergency", "Maternity", "ICU"],
-  },
-];
+import { useDispatch, useSelector } from "react-redux";
+import { fetchAllHospitals } from "../../features/hospital/hospitalSlice";
+import Pagination from "../../utils/Pagination";
 
 export const HospitalsPage = () => {
+  const dispatch = useDispatch();
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = useSelector(
+    (state) => state?.hospitalSlice?.hospitals?.Pagination?.totalPages
+  );
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  useEffect(() => {
+    dispatch(fetchAllHospitals({ page: currentPage, limit: 10 }));
+  }, [dispatch, currentPage]);
+
+  const { hospitals } = useSelector((state) => state?.hospitalSlice?.hospitals);
+
   return (
     <Box className="min-h-screen bg-gray-50">
       <TopSection />
-
       <Box className="max-w-7xl mx-auto px-4 py-8">
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
-          {mockHospitals.map((hospital) => (
-            <HospitalCard key={hospital.id} hospital={hospital} />
-          ))}
-        </SimpleGrid>
+        {hospitals?.length > 0 ? (
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
+            {hospitals.map((hospital) => (
+              <HospitalCard key={hospital._id} hospital={hospital} />
+            ))}
+          </SimpleGrid>
+        ) : (
+          <Text fontSize="xl" color="gray.500" textAlign="center" mt={10}>
+            No hospitals available at the moment.
+          </Text>
+        )}
       </Box>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages || 1}
+        onPageChange={handlePageChange}
+      />
       <Footer />
     </Box>
   );

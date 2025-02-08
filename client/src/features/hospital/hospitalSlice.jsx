@@ -96,14 +96,14 @@ export const handleHospitalDeletion = createAsyncThunk(
 
 export const fetchAllHospitals = createAsyncThunk(
   "hospital/fetchAllHospitals",
-  async ({ page = 1, limit = 10 }, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await hospitalService.fetchHospitalsService(page, limit);
+      const response = await hospitalService.fetchHospitalsService(params);
 
       if (!response.isSuccess) {
         throw response;
       }
-      console.log("The hospitals in the async thubk ", response);
+      console.log("The hospitals in the async thunk ", response);
 
       return response.data;
     } catch (error) {
@@ -111,7 +111,6 @@ export const fetchAllHospitals = createAsyncThunk(
     }
   }
 );
-
 export const fetchSingleHospital = createAsyncThunk(
   "hospital/fetchSingleHospital",
   async (hospitalId, { rejectWithValue }) => {
@@ -132,8 +131,8 @@ export const fetchSingleHospital = createAsyncThunk(
 const hospitalSlice = createSlice({
   name: "hospitalSlice",
   initialState: {
-    hospital: null, // For a single hospital record
-    hospitals: [], // For a list of hospitals
+    hospital: null,
+    hospitals: [],
     isAuthenticated: false,
     isLoading: false,
     error: null,
