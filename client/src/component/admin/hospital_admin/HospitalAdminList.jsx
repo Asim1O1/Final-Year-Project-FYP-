@@ -201,7 +201,7 @@ const HospitalAdminList = ({ onEdit, onDelete, searchQuery }) => {
                       >
                         <InfoItem icon={Mail} text={admin.email} />
                         <InfoItem icon={Phone} text={admin.phone} />
-                        <InfoItem icon={Building2} text={admin.hospital.name} />
+                        <InfoItem icon={Building2} text={admin?.hospital?.name} />
                         <InfoItem icon={User} text={admin.gender} />
                       </Grid>
 

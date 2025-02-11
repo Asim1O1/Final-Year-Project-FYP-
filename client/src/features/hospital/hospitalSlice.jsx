@@ -72,7 +72,9 @@ export const handleHospitalDeletion = createAsyncThunk(
   "hospital/deleteHospital",
   async (hospitalId, { rejectWithValue }) => {
     try {
+      console.log("Reached the try block of  ");
       const response = await hospitalService.deleteHospitalService(hospitalId);
+      console.log("The response while deleting hospital is", response);
       if (!response.isSuccess) {
         throw createApiResponse({
           isSuccess: false,
@@ -82,6 +84,7 @@ export const handleHospitalDeletion = createAsyncThunk(
       }
       return { hospitalId, message: response.message };
     } catch (error) {
+      console.error("Hospital Deletion Error:", error);
       return rejectWithValue(
         createApiResponse({
           isSuccess: false,
@@ -183,9 +186,16 @@ const hospitalSlice = createSlice({
       .addCase(handleHospitalDeletion.pending, handlePending)
       .addCase(handleHospitalDeletion.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.hospitals = state.hospitals.filter(
-          (hospital) => hospital.id !== action.payload.hospitalId
-        );
+        console.log("hospitals", state.hospitals);
+
+        if (Array.isArray(state.hospitals)) {
+          state.hospitals = state.hospitals.filter(
+            (hospital) => hospital.id !== action.payload.hospitalId
+          );
+        } else {
+          console.error("State hospitals is not an array or is null");
+        }
+
         state.error = null;
       })
 
@@ -204,7 +214,7 @@ const hospitalSlice = createSlice({
       .addCase(fetchSingleHospital.pending, handlePending)
       .addCase(fetchSingleHospital.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.hospital = action.payload; // Store the fetched hospital
+        state.hospital = action.payload;
         state.error = null;
       })
       .addCase(fetchSingleHospital.rejected, handleRejected);

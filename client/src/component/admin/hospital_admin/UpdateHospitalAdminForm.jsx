@@ -34,7 +34,12 @@ import {
 } from "../../../features/hospital_admin/hospitalAdminSlice";
 import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
 
-const UpdateHospitalAdminForm = ({ isOpen, onClose, adminData, searchQuery }) => {
+const UpdateHospitalAdminForm = ({
+  isOpen,
+  onClose,
+  adminData,
+  searchQuery,
+}) => {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
   const bgColor = useColorModeValue("white", "gray.800");
@@ -140,7 +145,7 @@ const UpdateHospitalAdminForm = ({ isOpen, onClose, adminData, searchQuery }) =>
 
       notification.success({
         message: "Success",
-        description:result?.message ||  "Hospital admin updated successfully",
+        description: result?.message || "Hospital admin updated successfully",
         duration: 3,
       });
       await dispatch(
