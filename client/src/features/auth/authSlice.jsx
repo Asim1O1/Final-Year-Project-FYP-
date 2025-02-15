@@ -167,21 +167,15 @@ const authSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // Reusable handlers for pending and rejected states
     const handlePending = (state) => {
       state.isLoading = true;
       state.error = null;
     };
 
-    const handleFulfilled = (state, action) => {
-      state.isLoading = false;
-      state.user = action.payload;
-      state.isAuthenticated = !!action.payload;
-      state.error = null;
-    };
-
     const handleRejected = (state, action) => {
       state.isLoading = false;
-      state.error = action.payload;
+      state.error = action.payload || "An error occurred."; // Fallback error message
       state.user = null;
       state.isAuthenticated = false;
     };
@@ -189,12 +183,22 @@ const authSlice = createSlice({
     builder
       // Registration
       .addCase(registerUser.pending, handlePending)
-      .addCase(registerUser.fulfilled, handleFulfilled)
+      .addCase(registerUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload; // Store the registered user data
+        state.isAuthenticated = false; // Do not authenticate the user after registration
+        state.error = null;
+      })
       .addCase(registerUser.rejected, handleRejected)
 
       // Login
       .addCase(loginUser.pending, handlePending)
-      .addCase(loginUser.fulfilled, handleFulfilled)
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload; // Store the logged-in user data
+        state.isAuthenticated = true; // Authenticate the user after login
+        state.error = null;
+      })
       .addCase(loginUser.rejected, handleRejected)
 
       // Logout
@@ -202,13 +206,19 @@ const authSlice = createSlice({
       .addCase(logoutUser.fulfilled, (state) => {
         state.isLoading = false;
         state.user = null;
-        state.isAuthenticated = false;
+        state.isAuthenticated = false; // Unauthenticate the user after logout
         state.error = null;
       })
       .addCase(logoutUser.rejected, handleRejected)
 
+      // Verify User Authentication
       .addCase(verifyUserAuth.pending, handlePending)
-      .addCase(verifyUserAuth.fulfilled, handleFulfilled)
+      .addCase(verifyUserAuth.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload; // Store the verified user data
+        state.isAuthenticated = !!action.payload; // Authenticate if payload exists
+        state.error = null;
+      })
       .addCase(verifyUserAuth.rejected, handleRejected);
   },
 });

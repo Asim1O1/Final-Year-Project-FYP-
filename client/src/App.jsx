@@ -13,8 +13,11 @@ import { verifyUserAuth } from "./features/auth/authSlice";
 import { useEffect } from "react";
 import CheckAuth from "./utils/CheckAuth.jsx";
 import NotFoundPage from "./pages/public/404Page";
-import { AdminLayout } from "./layouts/AdminLayout";  
+import { AdminLayout } from "./layouts/AdminLayout";
 import UnauthorizedPage from "./pages/auth/UnauthorizedPage.jsx";
+import ForgotPassword from "./component/auth/ForgotPassword.jsx";
+import OTPVerification from "./component/auth/OtpVerification.jsx";
+import UpdatePassword from "./component/auth/UpdatePassword.jsx";
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -88,6 +91,9 @@ function App() {
             </CheckAuth>
           }
         />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/verify-otp" element={<OTPVerification />} />
+        <Route path="/update-password" element={<UpdatePassword />} />
 
         {/* 404 Route: Catch-all for undefined routes */}
         <Route path="*" element={<NotFoundPage />} />

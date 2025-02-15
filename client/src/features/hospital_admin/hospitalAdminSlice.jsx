@@ -142,7 +142,6 @@ export const handleGetAllHospitalAdmins = createAsyncThunk(
   }
 );
 
-// Redux Slice
 const hospitalAdminSlice = createSlice({
   name: "hospitalAdminSlice",
   initialState: {
@@ -150,7 +149,8 @@ const hospitalAdminSlice = createSlice({
     hospitalAdmins: [],
     isLoading: false,
     error: null,
-    pagination:null
+    successMessage: null,
+    pagination: null,
   },
 
   reducers: {
@@ -160,95 +160,75 @@ const hospitalAdminSlice = createSlice({
       state.isLoading = false;
       state.error = null;
       state.successMessage = null;
+      state.pagination = null;
     },
   },
 
   extraReducers: (builder) => {
+    // Reusable handlers
+    const handlePending = (state) => {
+      state.isLoading = true;
+      state.error = null;
+      state.successMessage = null; // Clear success message on pending
+    };
+
+    const handleFulfilled = (state, action) => {
+      state.isLoading = false;
+      state.error = null;
+    };
+
+    const handleRejected = (state, action) => {
+      state.isLoading = false;
+      state.error = action.payload?.message || "An error occurred.";
+      state.successMessage = null; // Clear success message on error
+    };
+
     builder
       // Create
-      .addCase(handleHospitalAdminCreation.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
+      .addCase(handleHospitalAdminCreation.pending, handlePending)
       .addCase(handleHospitalAdminCreation.fulfilled, (state, action) => {
-        state.isLoading = false;
+        handleFulfilled(state, action);
         state.hospitalAdmin = action.payload;
         state.successMessage = "Hospital admin created successfully!";
       })
-      .addCase(handleHospitalAdminCreation.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error =
-          action.payload?.message || "Failed to create hospital admin.";
-      })
+      .addCase(handleHospitalAdminCreation.rejected, handleRejected)
 
       // Update
-      .addCase(handleHospitalAdminUpdate.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
+      .addCase(handleHospitalAdminUpdate.pending, handlePending)
       .addCase(handleHospitalAdminUpdate.fulfilled, (state, action) => {
-        state.isLoading = false;
+        handleFulfilled(state, action);
         state.hospitalAdmin = action.payload;
         state.successMessage = "Hospital admin updated successfully!";
       })
-      .addCase(handleHospitalAdminUpdate.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error =
-          action.payload?.message || "Failed to update hospital admin.";
-      })
+      .addCase(handleHospitalAdminUpdate.rejected, handleRejected)
 
       // Delete
-      .addCase(handleHospitalAdminDeletion.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
+      .addCase(handleHospitalAdminDeletion.pending, handlePending)
       .addCase(handleHospitalAdminDeletion.fulfilled, (state, action) => {
-        state.isLoading = false;
+        handleFulfilled(state, action);
         state.hospitalAdmins = state.hospitalAdmins.filter(
           (admin) => admin.id !== action.payload
         );
         state.successMessage = "Hospital admin deleted successfully!";
       })
-      .addCase(handleHospitalAdminDeletion.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error =
-          action.payload?.message || "Failed to delete hospital admin.";
-      })
+      .addCase(handleHospitalAdminDeletion.rejected, handleRejected)
 
       // Get by ID
-      .addCase(handleGetHospitalAdminById.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
+      .addCase(handleGetHospitalAdminById.pending, handlePending)
       .addCase(handleGetHospitalAdminById.fulfilled, (state, action) => {
-        state.isLoading = false;
+        handleFulfilled(state, action);
         state.hospitalAdmin = action.payload;
       })
-      .addCase(handleGetHospitalAdminById.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error =
-          action.payload?.message || "Failed to retrieve hospital admin.";
-      })
+      .addCase(handleGetHospitalAdminById.rejected, handleRejected)
 
       // Get All
-      .addCase(handleGetAllHospitalAdmins.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
+      .addCase(handleGetAllHospitalAdmins.pending, handlePending)
       .addCase(handleGetAllHospitalAdmins.fulfilled, (state, action) => {
-        state.isLoading = false;
-        console.log(
-          "The action payload in get all hospitals is",
-          action.payload
-        );
-        state.hospitalAdmins = action.payload?.data;
-        state.pagination = action.payload?.pagination;
+        handleFulfilled(state, action);
+        state.hospitalAdmins = action.payload?.data || [];
+        state.pagination = action.payload?.pagination || null;
       })
-      .addCase(handleGetAllHospitalAdmins.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error =
-          action.payload?.message || "Failed to fetch hospital admins.";
-      });
+      .addCase(handleGetAllHospitalAdmins.rejected, handleRejected);
   },
 });
 
