@@ -42,7 +42,7 @@ const handleRefreshAccessToken = async (req, res, next) => {
         isSuccess: true,
         statusCode: 200,
         message: "Access token refreshed successfully.",
-        data: { accessToken: newAccessToken }, // Include token in response if needed
+        data: { accessToken: newAccessToken }, 
         error: null,
       })
     );

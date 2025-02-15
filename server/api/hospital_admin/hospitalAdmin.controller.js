@@ -6,7 +6,8 @@ import { paginate } from "../../utils/paginationUtil.js";
 
 export const createHospitalAdmin = async (req, res, next) => {
   try {
-    const { fullName, email, password, gender, phone, hospitalId } = req.body;
+    const { fullName, email, password, gender, phone, hospitalId, address } = req.body;
+    console.log("The request body is", req.body);
 
     const existingUser = await userModel.findOne({
       $or: [{ email }],
@@ -44,6 +45,7 @@ export const createHospitalAdmin = async (req, res, next) => {
       password: hashedPassword,
       gender,
       phone,
+      address,
       role: "hospital_admin",
       hospital: hospitalId,
     });
@@ -71,8 +73,10 @@ export const createHospitalAdmin = async (req, res, next) => {
 
 export const updateHospitalAdmin = async (req, res, next) => {
   try {
+    console.log("The id", req.params.id);
     const { id } = req.params;
     const updateData = req.body;
+    console.log("The updateData", updateData);
 
     if (updateData.password) {
       updateData.password = await bcrypt.hash(updateData.password, 10);
@@ -111,6 +115,8 @@ export const updateHospitalAdmin = async (req, res, next) => {
 
 export const deleteHospitalAdmin = async (req, res, next) => {
   try {
+
+    console.log("Entered the delete hospital admin cotroller in the backend")
     const { id } = req.params;
 
     const deletedAdmin = await userModel.findByIdAndDelete(id);

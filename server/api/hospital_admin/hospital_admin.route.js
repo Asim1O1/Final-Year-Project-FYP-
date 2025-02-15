@@ -1,6 +1,7 @@
 import express from "express";
 import {
   createHospitalAdmin,
+  deleteHospitalAdmin,
   getAllHospitalAdmins,
   getHospitalAdminById,
   updateHospitalAdmin,
@@ -13,6 +14,7 @@ router.get("/", protectRoute, getAllHospitalAdmins);
 router.get("/:id", protectRoute, getHospitalAdminById);
 router.post("/", protectRoute, createHospitalAdmin);
 router.put("/:id", protectRoute, updateHospitalAdmin);
+router.delete("/:id", protectRoute, deleteHospitalAdmin);
 
 
 export default router;

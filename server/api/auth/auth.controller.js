@@ -6,10 +6,12 @@ import {
 } from "../../utils/validationUtils.js";
 import {
   generateAccessToken,
+  generatePasswordResetToken,
   generateRefreshToken,
 } from "../../utils/generateAuthToken.js";
 import createResponse from "../../utils/responseBuilder.js";
-
+import { sendEmail } from "../../utils/sendEmail.js";
+import crypto from "crypto";
 
 /**
  * Handles user registration.
@@ -160,7 +162,6 @@ export const handleUserLogin = async (req, res, next) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-   
     console.log("Cookies set successfully");
 
     return res.status(200).json(
@@ -246,6 +247,200 @@ export const handleUserLogout = async (req, res) => {
     );
   } catch (error) {
     console.error("Logout Error:", error.message);
+    next(error);
+  }
+};
+
+export const handleForgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "User not found.",
+          error: null,
+        })
+      );
+    }
+
+    // Generate OTP and expiration time
+    const { resetToken, hashedToken, expiresAt } = generatePasswordResetToken();
+
+    // Update user with OTP and expiration
+    user.resetPasswordOTP = hashedToken;
+    user.resetPasswordOTPExpiry = expiresAt;
+
+    await user.save();
+
+    const subject = "Password Reset OTP";
+    const text = `Your password reset OTP is: ${resetToken}. It will expire in 10 minutes.`;
+
+    await sendEmail(user.email, subject, text);
+
+    return res.status(200).json(
+      createResponse({
+        isSuccess: true,
+        statusCode: 200,
+        message: "Reset password OTP sent successfully.",
+        error: null,
+      })
+    );
+  } catch (error) {
+    console.error("Forgot Password Error:", error.message);
+    next(error);
+  }
+};
+
+
+
+export const handleOtpVerification = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+    console.log("The body is", req.body);
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "User not found.",
+          error: null,
+        })
+      );
+    }
+
+    // Hash the OTP from the request body using SHA-256
+    const hashedOtp = crypto
+      .createHash("sha256")
+      .update(otp)
+      .digest("hex");
+
+    // Compare the hashed OTP with the stored hashed OTP in the database
+    if (hashedOtp !== user.resetPasswordOTP) {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "Invalid OTP.",
+          error: null,
+        })
+      );
+    }
+
+    // Check if account is locked
+    if (
+      user.resetPasswordLockUntil &&
+      new Date() < user.resetPasswordLockUntil
+    ) {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "Too many failed attempts. Try again later.",
+          error: null,
+        })
+      );
+    }
+
+    // Check if OTP is expired
+    if (new Date() > user.resetPasswordOTPExpiry) {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "OTP expired. Please request a new one.",
+          error: null,
+        })
+      );
+    }
+
+    // OTP is correct! Reset attempts & unlock account
+    user.resetPasswordAttempts = 0;
+    user.resetPasswordLockUntil = null;
+
+    await user.save();
+
+    return res.status(200).json(
+      createResponse({
+        isSuccess: true,
+        statusCode: 200,
+        message: "OTP verified successfully.",
+        error: null,
+      })
+    );
+  } catch (error) {
+    console.error("OTP Verification Error:", error.message);
+    next(error);
+  }
+};
+
+export const handlePasswordReset = async (req, res, next) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    console.log("Thr req body is", req.body)  
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "User not found.",
+          error: null,
+        })
+      );
+    }
+
+    const hashedOtp = crypto
+    .createHash("sha256")
+    .update(otp)
+    .digest("hex");
+
+
+    // Check if OTP matches and is not expired
+    if (
+      user.resetPasswordOTP !== hashedOtp ||
+      new Date() > user.resetPasswordOTPExpiry
+    ) {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "Invalid or expired OTP.",
+          error: null,
+        })
+      );
+    }
+
+    // Hash new password
+    const salt = await bcryptjs.genSalt(10);
+    const hashedPassword = await bcryptjs.hash(newPassword, salt);
+
+    user.password = hashedPassword;
+    user.resetPasswordOTP = null;
+    user.resetPasswordOTPExpiry = null;
+    user.resetPasswordAttempts = 0;
+    user.resetPasswordLockUntil = null;
+
+    await user.save();
+
+    return res.status(200).json(
+      createResponse({
+        isSuccess: true,
+        statusCode: 200,
+        message: "Password reset successfully.",
+        error: null,
+      })
+    );
+  } catch (error) {
+    console.error("Reset Password Error:", error.message);
     next(error);
   }
 };

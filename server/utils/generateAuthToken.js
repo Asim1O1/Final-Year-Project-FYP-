@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import appConfig from "../config/appConfig.js";
-
+import crypto from "crypto";
 export const generateAccessToken = (userId) => {
   try {
     const jwtSecret = appConfig.jwt_secret;
@@ -20,4 +20,23 @@ export const generateRefreshToken = (userId) => {
   } catch (error) {
     throw new Error(`Error generating refresh token: ${error.message}`);
   }
+};
+
+export const generatePasswordResetToken = () => {
+  // Generate a 6-digit numeric OTP
+  const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  // Set expiry time (10 minutes from now)
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+
+  return {
+    resetToken,
+    hashedToken,
+    expiresAt,
+  };
 };
