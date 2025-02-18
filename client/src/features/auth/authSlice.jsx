@@ -79,6 +79,103 @@ export const loginUser = createAsyncThunk(
   }
 );
 
+export const forgotPassword = createAsyncThunk(
+  "auth/forgotPassword",
+  async (email, { rejectWithValue }) => {
+    try {
+      const response = await authService.forgotPasswordService(email);
+
+      if (!response?.isSuccess) {
+        return rejectWithValue({
+          isSuccess: false,
+          message: response?.message || "Failed to send reset email.",
+          error: response?.error || "An unexpected server error occurred.",
+        });
+      }
+
+      return {
+        isSuccess: true,
+        message: response?.message || "Password reset email sent successfully.",
+      };
+    } catch (error) {
+      console.error("Forgot Password Error:", error);
+      return rejectWithValue({
+        isSuccess: false,
+        message:
+          error?.response?.data?.message ||
+          "An error occurred while sending reset email.",
+        error: error?.response?.data?.error || "Unknown server error.",
+      });
+    }
+  }
+);
+
+export const verifyOtp = createAsyncThunk(
+  "auth/verifyOtp",
+  async ({ email, otp }, { rejectWithValue }) => {
+    try {
+      const response = await authService.verifyOtpService(email, otp);
+
+      if (!response?.isSuccess) {
+        return rejectWithValue({
+          isSuccess: false,
+          message: response?.message || "Failed to verify OTP.",
+          error: response?.error || "An unexpected server error occurred.",
+        });
+      }
+
+      return {
+        isSuccess: true,
+        message: response?.message || "OTP verified successfully.",
+      };
+    } catch (error) {
+      console.error("Verify OTP Error:", error);
+      return rejectWithValue({
+        isSuccess: false,
+        message:
+          error?.response?.data?.message ||
+          "An error occurred while verifying OTP.",
+        error: error?.response?.data?.error || "Unknown server error.",
+      });
+    }
+  }
+);
+
+export const resetPassword = createAsyncThunk(
+  "auth/resetPassword",
+  async ({ email, otp, newPassword }, { rejectWithValue }) => {
+    try {
+      const response = await authService.resetPasswordService(
+        email,
+        otp,
+        newPassword
+      );
+
+      if (!response?.isSuccess) {
+        return rejectWithValue({
+          isSuccess: false,
+          message: response?.message || "Failed to reset password.",
+          error: response?.error || "An unexpected server error occurred.",
+        });
+      }
+
+      return {
+        isSuccess: true,
+        message: response?.message || "Password reset successfully.",
+      };
+    } catch (error) {
+      console.error("Reset Password Error:", error);
+      return rejectWithValue({
+        isSuccess: false,
+        message:
+          error?.response?.data?.message ||
+          "An error occurred while resetting password.",
+        error: error?.response?.data?.error || "Unknown server error.",
+      });
+    }
+  }
+);
+
 // Async thunk for user logout
 
 export const logoutUser = createAsyncThunk(
@@ -115,6 +212,7 @@ export const logoutUser = createAsyncThunk(
     }
   }
 );
+
 // async thunk for verifying user authentication
 export const verifyUserAuth = createAsyncThunk(
   "auth/verifyAuth",
@@ -211,12 +309,35 @@ const authSlice = createSlice({
       })
       .addCase(logoutUser.rejected, handleRejected)
 
+      // Forgot Password
+      .addCase(forgotPassword.pending, handlePending)
+      .addCase(forgotPassword.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(forgotPassword.rejected, handleRejected)
+
+      // Verify OTP
+      .addCase(verifyOtp.pending, handlePending)
+      .addCase(verifyOtp.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(verifyOtp.rejected, handleRejected)
+
+      .addCase(resetPassword.pending, handlePending)
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(resetPassword.rejected, handleRejected)
+
       // Verify User Authentication
       .addCase(verifyUserAuth.pending, handlePending)
       .addCase(verifyUserAuth.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload; // Store the verified user data
-        state.isAuthenticated = !!action.payload; // Authenticate if payload exists
+        state.user = action.payload; 
+        state.isAuthenticated = !!action.payload; 
         state.error = null;
       })
       .addCase(verifyUserAuth.rejected, handleRejected);

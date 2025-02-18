@@ -12,7 +12,6 @@ const registerService = async (userData) => {
 
     console.log("The response in the registerService was: ", response);
 
-    // Handle failed responses with isSuccess === false
     if (response?.data?.isSuccess === false) {
       return createApiResponse({
         isSuccess: false,
@@ -25,7 +24,7 @@ const registerService = async (userData) => {
     return createApiResponse({
       isSuccess: true,
       message: response?.data?.message || "Registration successful",
-      data: response?.data?.data, // Adjusted to return `data` for consistency
+      data: response?.data?.data,
     });
   } catch (error) {
     console.error("Error in registerService function:", error?.response);
@@ -74,7 +73,6 @@ const loginService = async (userCredentials) => {
   } catch (error) {
     console.error("Error in loginService function:", error?.response);
 
-    // Handle Axios response errors or fallback to a default error
     const errorMessage =
       Array.isArray(error?.response?.data?.error) &&
       error?.response?.data?.error.length > 0
@@ -84,6 +82,113 @@ const loginService = async (userCredentials) => {
     return createApiResponse({
       isSuccess: false,
       error: errorMessage,
+    });
+  }
+};
+
+const forgotPasswordService = async (email) => {
+  try {
+    const response = await axios.post(
+      `${BASE_BACKEND_URL}/api/auth/forgotPassword`,
+      { email }
+    );
+    console.log(
+      "The response in the forgotPassword service is:",
+      response?.data
+    );
+
+    if (response?.data?.isSuccess === false) {
+      return createApiResponse({
+        isSuccess: false,
+        message:
+          response?.data?.message || "Failed to send password reset email",
+        error: response?.data?.error || null,
+      });
+    }
+
+    return createApiResponse({
+      isSuccess: true,
+      data: response?.data?.data || null,
+      message:
+        response?.data?.message || "Password reset email sent successfully",
+    });
+  } catch (error) {
+    console.error(
+      "Error in forgotPasswordService function:",
+      error?.response?.data
+    );
+
+    return createApiResponse({
+      isSuccess: false,
+      error:
+        error?.response?.data?.message ||
+        "An error occurred during password reset.",
+    });
+  }
+};
+
+const verifyOtpService = async (email, otp) => {
+  try {
+    const response = await axios.post(
+      `${BASE_BACKEND_URL}/api/auth/verifyOtp`,
+      { email, otp }
+    );
+
+    if (response?.data?.isSuccess === false) {
+      return createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "Failed to verify OTP.",
+        error: response?.data?.error || null,
+      });
+    }
+
+    return createApiResponse({
+      isSuccess: true,
+      message: response?.data?.message || "Successfully verified the OTP.",
+      error: null,
+    });
+  } catch (error) {
+    console.error("Error in verifyOtpService function:", error?.response?.data);
+
+    return createApiResponse({
+      isSuccess: false,
+      error:
+        error?.response?.data?.message ||
+        "An error occurred while verifying OTP.",
+    });
+  }
+};
+
+const resetPasswordService = async (email, otp, newPassword) => {
+  try {
+    const response = await axios.post(
+      `${BASE_BACKEND_URL}/api/auth/resetPassword`,
+      { email, otp, newPassword }
+    );
+
+    if (response?.data?.isSuccess === false) {
+      return createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "Failed to reset password.",
+        error: response?.data?.error || null,
+      });
+    }
+
+    return createApiResponse({
+      isSuccess: true,
+      message: response?.data?.message || "Password reset successfully.",
+    });
+  } catch (error) {
+    console.error(
+      "Error in resetPasswordService function:",
+      error?.response?.data
+    );
+
+    return createApiResponse({
+      isSuccess: false,
+      error:
+        error?.response?.data?.message ||
+        "An error occurred while resetting the password.",
     });
   }
 };
@@ -199,6 +304,9 @@ const logoutService = async () => {
 const authService = {
   registerService,
   loginService,
+  forgotPasswordService,
+  verifyOtpService,
+  resetPasswordService,
   verifyUserAuthService,
   refreshTokenService,
   logoutService,

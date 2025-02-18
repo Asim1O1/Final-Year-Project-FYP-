@@ -8,6 +8,7 @@ import {
   Spinner,
   Stack,
   Text,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import { Link as RouterLink } from "react-router-dom";
 
@@ -50,100 +51,135 @@ const LoginPage = () => {
       });
     }
   };
-
+  const stackSpacing = useBreakpointValue({ base: 4, md: 6 });
+  const buttonSize = useBreakpointValue({ base: "md", md: "lg" });
   return (
     <AuthLayout>
-      <Box w={{ base: "100%", md: "55%" }} p={6}>
-        <Stack spacing={6}>
-          <Heading size="lg" color="gray.700">
-            Login to your account
-          </Heading>
+      <Flex direction={{ base: "column", md: "row" }} h="100%" overflow="auto">
+        <Box
+          w={{ base: "100%", md: "50%" }}
+          p={{ base: 4, sm: 6, md: 8, lg: 10 }}
+          display="flex"
+          alignItems="center"
+        >
+          <Stack
+            spacing={stackSpacing}
+            w="100%"
+            maxW={{ base: "100%", md: "400px" }}
+            mx="auto"
+          >
+            <Heading
+              size="lg"
+              color="gray.700"
+              fontSize={{ base: "xl", md: "2xl" }}
+              mb={{ base: 2, md: 4 }}
+            >
+              Login to your account
+            </Heading>
 
-          <form onSubmit={handleSubmit}>
-            <Stack spacing={4}>
-              <InputForm
-                label="Email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                isRequired
-                type="email"
-              />
+            <form onSubmit={handleSubmit}>
+              <Stack spacing={stackSpacing}>
+                <InputForm
+                  label="Email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  isRequired
+                  type="email"
+                  placeholder="Enter your email"
+                />
 
-              <InputForm
-                label="Password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                isRequired
-                type={showPassword ? "text" : "password"}
-                rightElement={
-                  <PasswordToggle
-                    showPassword={showPassword}
-                    togglePasswordVisibility={() =>
-                      setShowPassword(!showPassword)
-                    }
-                  />
-                }
-              />
+                <InputForm
+                  label="Password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  isRequired
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  rightElement={
+                    <PasswordToggle
+                      showPassword={showPassword}
+                      togglePasswordVisibility={() =>
+                        setShowPassword(!showPassword)
+                      }
+                    />
+                  }
+                />
 
-              <Flex justify="space-between" align="center">
-                <Link
-                  as={RouterLink}
-                  to="/forgot-password"
-                  color="#00A9FF"
-                  textDecoration="none"
-                  _hover={{
-                    color: "#007BB5",
-                  }}
-                  _focus={{
-                    textDecoration: "none",
-                  }}
-                >
-                  Forgot password?
-                </Link>
-              </Flex>
-
-              <Button
-                type="submit"
-                bg="#00A9FF"
-                color="white"
-                size="lg"
-                isDisabled={isLoading}
-                mt={2}
-                _hover={{
-                  bg: "#007BB5",
-                  transform: "scale(1.05)",
-                }}
-              >
-                {isLoading ? <Spinner size="sm" color="white" /> : "Login"}
-              </Button>
-
-              <Flex justify="center">
-                <Text>
-                  Don't have an account?{" "}
+                <Flex justify="flex-end" align="center" mt={1}>
                   <Link
                     as={RouterLink}
-                    to="/register"
+                    to="/forgot-password"
                     color="#00A9FF"
-                    textDecoration="none"
+                    fontSize="sm"
+                    fontWeight="medium"
                     _hover={{
                       color: "#007BB5",
-                      transform: "scale(1.05)",
-                    }}
-                    _focus={{
-                      textDecoration: "none",
+                      textDecoration: "underline",
                     }}
                   >
-                    Register
+                    Forgot password?
                   </Link>
-                </Text>
-              </Flex>
-            </Stack>
-          </form>
-        </Stack>
-      </Box>
-      <ImageSection imageUrl="/MedConnect avatar.png" />
+                </Flex>
+
+                <Button
+                  type="submit"
+                  bg="#00A9FF"
+                  color="white"
+                  size={buttonSize}
+                  isDisabled={isLoading}
+                  mt={2}
+                  py={6}
+                  position="relative"
+                  transition="all 0.2s"
+                  _hover={{
+                    bg: "#007BB5",
+                    transform: "translateY(-1px)",
+                    boxShadow: "md",
+                  }}
+                  _active={{
+                    transform: "translateY(0)",
+                    boxShadow: "sm",
+                  }}
+                >
+                  {isLoading ? <Spinner size="sm" color="white" /> : "Login"}
+                </Button>
+
+                <Flex justify="center" mt={{ base: 4, md: 6 }}>
+                  <Text fontSize="sm">
+                    Don't have an account?{" "}
+                    <Link
+                      as={RouterLink}
+                      to="/register"
+                      color="#00A9FF"
+                      fontWeight="medium"
+                      _hover={{
+                        color: "#007BB5",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      Register
+                    </Link>
+                  </Text>
+                </Flex>
+              </Stack>
+            </form>
+          </Stack>
+        </Box>
+        <Box
+          display={{ base: "none", md: "flex" }}
+          w="50%"
+          h="100%"
+          position="relative"
+          alignItems="center"
+          justifyContent="center"
+          bg="gray.50"
+          overflow="hidden"
+        >
+          <ImageSection imageUrl="/MedConnect avatar.png" />
+        </Box>
+      </Flex>
     </AuthLayout>
   );
 };

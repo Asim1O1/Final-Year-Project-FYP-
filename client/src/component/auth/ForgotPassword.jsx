@@ -1,90 +1,167 @@
 import React, { useState } from "react";
-import { Link, Link as RouterLink, useNavigate } from "react-router-dom";
-
+import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import AuthLayout from "../../layouts/AuthLayout";
 import InputForm from "./InputForm";
 import ImageSection from "./ImageSection";
-import { Box, Button, Flex, Heading, Stack, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Flex,
+  Heading,
+  Stack,
+  Text,
+  useBreakpointValue,
+} from "@chakra-ui/react";
+import { forgotPassword } from "../../features/auth/authSlice";
+import { notification } from "antd";
 
-// ForgotPassword Component
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const handleSubmit = (e) => {
+  const handleInputChange = (setter) => (e) => {
+    setter(e.target.value);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    // Add your email verification logic here
-    setTimeout(() => {
+
+    try {
+      const result = await dispatch(forgotPassword(email));
+      console.log("Forgot Password Response:", result);
+
+      if (result?.payload?.isSuccess) {
+        notification.success({
+          message: "OTP Sent Successfully",
+          duration: 3,
+          description: "Please check your email inbox for the OTP.",
+        });
+        navigate("/verify-otp");
+      } else {
+        notification.error({
+          message: result?.payload?.message || "Failed to Send OTP",
+          duration: 3,
+          description:
+            result?.payload?.error || "An error occurred. Please try again.",
+        });
+      }
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      notification.error({
+        message: "Something Went Wrong",
+        duration: 3,
+        description: "An unexpected error occurred. Please try again later.",
+      });
+    } finally {
       setIsLoading(false);
-      navigate("/verify-otp");
-    }, 2000);
+    }
   };
+
+  const stackSpacing = useBreakpointValue({ base: 4, md: 6 });
+  const buttonSize = useBreakpointValue({ base: "md", md: "lg" });
 
   return (
     <AuthLayout>
-      <Flex
-        direction={{ base: "column", md: "row" }}
-        align="center"
-        justify="center"
-        w="100%"
-        px={{ base: 4, md: 8 }}
-        py={{ base: 8, md: 12 }}
-        gap={{ base: 6, md: 12 }}
-      >
-        <Box w={{ base: "100%", md: "55%" }} p={6}>
-          <Stack spacing={6}>
-            <Heading size="lg" color="gray.700">
-              Forgot Password
-            </Heading>
-            <Text color="gray.600">
-              Enter your email address and we'll send you an OTP to reset your
-              password.
-            </Text>
+      <Flex direction={{ base: "column", md: "row" }} h="100%" overflow="auto">
+        <Box
+          w={{ base: "100%", md: "50%" }}
+          p={{ base: 4, sm: 6, md: 8, lg: 10 }}
+          display="flex"
+          alignItems="center"
+        >
+          <Stack
+            spacing={stackSpacing}
+            w="100%"
+            maxW={{ base: "100%", md: "400px" }}
+            mx="auto"
+          >
+            <Stack spacing={3}>
+              <Heading
+                color="gray.700"
+                fontSize={{ base: "xl", md: "2xl" }}
+                fontWeight="bold"
+              >
+                Forgot Password?
+              </Heading>
+              <Text color="gray.600" fontSize={{ base: "sm", md: "md" }}>
+                Enter your email address and we'll send you an OTP to reset your
+                password.
+              </Text>
+            </Stack>
 
             <form onSubmit={handleSubmit}>
-              <Stack spacing={4}>
+              <Stack spacing={stackSpacing}>
                 <InputForm
-                  label="Email"
+                  label="Email Address"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={handleInputChange(setEmail)}
                   isRequired
+                  placeholder="Enter your email address"
                 />
+
                 <Button
                   type="submit"
                   bg="#00A9FF"
                   color="white"
-                  size="lg"
+                  size={buttonSize}
                   isLoading={isLoading}
                   loadingText="Sending OTP..."
+                  py={6}
+                  position="relative"
+                  transition="all 0.2s"
                   _hover={{
                     bg: "#007BB5",
-                    transform: "scale(1.05)",
+                    transform: "translateY(-1px)",
+                    boxShadow: "md",
+                  }}
+                  _active={{
+                    transform: "translateY(0)",
+                    boxShadow: "sm",
                   }}
                 >
                   Send OTP
                 </Button>
 
-                <Flex justify="center">
-                  <Link
-                    as={RouterLink}
-                    to="/login"
-                    color="#00A9FF"
-                    textDecoration="none"
-                    _hover={{
-                      color: "#007BB5",
-                    }}
-                  >
-                    Back to Login
-                  </Link>
+                <Flex justify="center" mt={{ base: 2, md: 4 }}>
+                  <RouterLink to="/login">
+                    <Text
+                      color="#00A9FF"
+                      fontSize="sm"
+                      fontWeight="medium"
+                      display="flex"
+                      alignItems="center"
+                      gap={1}
+                      _hover={{
+                        color: "#007BB5",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      <span>←</span> Back to Login
+                    </Text>
+                  </RouterLink>
                 </Flex>
               </Stack>
             </form>
           </Stack>
         </Box>
-        <ImageSection imageUrl="/MedConnect avatar.png" />
+
+        <Box
+          display={{ base: "none", md: "flex" }}
+          w="50%"
+          h="100%"
+          position="relative"
+          alignItems="center"
+          justifyContent="center"
+          bg="gray.50"
+          overflow="hidden"
+        >
+          <ImageSection imageUrl="/MedConnect avatar.png" />
+        </Box>
       </Flex>
     </AuthLayout>
   );

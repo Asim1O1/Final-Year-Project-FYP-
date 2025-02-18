@@ -9,7 +9,6 @@ import {
   Stack,
   Text,
   Select,
-  
 } from "@chakra-ui/react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link as RouterLink } from "react-router-dom";
@@ -46,15 +45,17 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await dispatch(registerUser(formData));
-    console.log("The result is", result)
+    console.log("The result is", result);
 
     if (registerUser.fulfilled.match(result)) {
       notification.success({
         message: "Registration Successful",
-        description: result?.payload?.message || "Your account has been created successfully!",
-        duration: 3, 
+        description:
+          result?.payload?.message ||
+          "Your account has been created successfully!",
+        duration: 3,
       });
-      navigate("/login")
+      navigate("/login");
     } else if (registerUser.rejected.match(result)) {
       notification.error({
         message: "Registration Failed",
@@ -208,10 +209,18 @@ const RegisterPage = () => {
             </form>
           </Stack>
         </Box>
-        <ImageSection
-          imageUrl="/MedConnect avatar.png"
-          boxSize={{ base: "80%", md: "40%" }}
-        />
+        <Box
+          display={{ base: "none", md: "flex" }}
+          w="50%"
+          h="100%"
+          position="relative"
+          alignItems="center"
+          justifyContent="center"
+          bg="gray.50"
+          overflow="hidden"
+        >
+          <ImageSection imageUrl="/MedConnect avatar.png" />
+        </Box>
       </Flex>
     </AuthLayout>
   );
