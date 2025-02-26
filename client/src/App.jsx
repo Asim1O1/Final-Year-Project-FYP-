@@ -18,6 +18,9 @@ import UnauthorizedPage from "./pages/auth/UnauthorizedPage.jsx";
 import ForgotPassword from "./component/auth/ForgotPassword.jsx";
 import OTPVerification from "./component/auth/OtpVerification.jsx";
 import UpdatePassword from "./component/auth/UpdatePassword.jsx";
+import AddDoctorForm from "./component/hospital_admin/doctor/AddDoctor.jsx";
+import { HospitalAdminLayout } from "./layouts/HospitalAdminLayout.jsx";
+import DoctorManagement from "./pages/hospital_admin/DoctorManagement.jsx";
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -49,12 +52,18 @@ function App() {
             )
           }
         />
+
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/verify-otp" element={<OTPVerification />} />
+        <Route path="/update-password" element={<UpdatePassword />} />
         <Route
           path="/login"
           element={
             isAuthenticated ? (
               user?.data?.role === "system_admin" ? (
                 <Navigate to="/admin" />
+              ) : user?.data?.role === "hospital_admin" ? (
+                <Navigate to="/hospital-admin" />
               ) : (
                 <Navigate to="/" />
               )
@@ -63,9 +72,6 @@ function App() {
             )
           }
         />
-
-        {/* Unauthorized Route */}
-        <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
         {/* Admin Protected Routes */}
         <Route
@@ -87,13 +93,16 @@ function App() {
           path="/hospital-admin/*"
           element={
             <CheckAuth role="hospital_admin">
-              <HospitalAdminDashboard />
+              <HospitalAdminLayout />
             </CheckAuth>
           }
-        />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/verify-otp" element={<OTPVerification />} />
-        <Route path="/update-password" element={<UpdatePassword />} />
+        >
+          <Route index element={<HospitalAdminDashboard />} />
+          <Route path="doctors" element={<DoctorManagement />} />
+        </Route>
+
+        {/* Unauthorized Route */}
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
         {/* 404 Route: Catch-all for undefined routes */}
         <Route path="*" element={<NotFoundPage />} />

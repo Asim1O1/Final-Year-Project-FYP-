@@ -106,7 +106,7 @@ export const fetchAllHospitals = createAsyncThunk(
       if (!response.isSuccess) {
         throw response;
       }
-      console.log("The hospitals in the async thunk ", response);
+    
 
       return response.data;
     } catch (error) {

@@ -112,7 +112,6 @@ const fetchHospitalsService = async (params = {}) => {
         error: response.data?.error || null,
       });
     }
-    console.log("The response while fetching hospitals", response);
 
     return createApiResponse({
       isSuccess: true,

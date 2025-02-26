@@ -7,6 +7,9 @@ function CheckAuth({ role, children }) {
   console.log("CheckAuth called with role:", role); // Debugging log
   console.log("isAuthenticated:", isAuthenticated, "user:", user); // Debugging log
 
+  console.log("User data in CheckAuth:", user);
+  console.log("Expected role:", role, "Actual role:", user?.data?.role);
+
   // If not authenticated, redirect to login
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" />;

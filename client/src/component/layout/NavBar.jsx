@@ -55,8 +55,7 @@ const Navbar = () => {
   const NavLinks = [
     { href: "/", label: "Home", icon: Home },
     { href: "/hospitals", label: "Hospitals", icon: Hospital },
-    { href: "/pricing", label: "Pricing", icon: DollarSign },
-    { href: "/contact", label: "Contact", icon: Contact },
+    { href: "/medicalTests", label: "Medical Tests", icon: DollarSign },
   ];
 
   return (
