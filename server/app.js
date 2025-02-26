@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 
 import authRoute from "./api/auth/auth.route.js";
 import hospitalRoute from "./api/hospital/hospital.route.js";
+import doctorRoute from "./api/doctor/doctor.route.js"
 import hospitalAdminRoute from "./api/hospital_admin/hospital_admin.route.js"
 import globalErrorHandler from "./middlewares/globalErrorHandler.js";
 
@@ -23,6 +24,7 @@ app.use(cookieParser());
 // ROUTES
 app.use("/api/auth", authRoute);
 app.use("/api", hospitalRoute);
+app.use("/api/doctor", doctorRoute)
 app.use("/api/hospitalAdmin", hospitalAdminRoute);
 
 // Health check route

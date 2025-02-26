@@ -19,12 +19,17 @@ export const addHospital = async (req, res, next) => {
 
     if (req.file) {
       const folderPath = `MedConnect/Hospital/Images/${name}`;
-      const result = await cloudinary.v2.uploader.upload(req.file.path, {
-        folder: folderPath,
-      });
-      hospitalImage = result.secure_url;
-
-      fs.unlinkSync(req.file.path);
+      try {
+        const result = await cloudinary.v2.uploader.upload(req.file.path, {
+          folder: folderPath,
+        });
+        hospitalImage = result.secure_url;
+      } catch (cloudinaryError) {
+        console.error("Cloudinary upload error:", cloudinaryError);
+        throw new Error("Failed to upload image to Cloudinary.");
+      } finally {
+        fs.unlinkSync(req.file.path); // Delete the file from local storage
+      }
     }
 
     const existingHospital = await hospitalModel.findOne({

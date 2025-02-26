@@ -79,11 +79,17 @@ export const handleUserRegistration = async (req, res, next) => {
       })
     );
   } catch (error) {
-    // Handle Joi validation errors
     if (error.isJoi) {
-      error.statusCode = 400;
-      error.details = error.details.map((err) => err.message);
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "Validation failed.",
+          error: error.details.map((err) => err.message),
+        })
+      );
     }
+
     next(error);
   }
 };
@@ -177,10 +183,18 @@ export const handleUserLogin = async (req, res, next) => {
     );
   } catch (error) {
     // Handle Joi validation errors
+    // Handle validation errors properly
     if (error.isJoi) {
-      error.statusCode = 400;
-      error.details = error.details.map((err) => err.message);
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "Validation failed.",
+          error: error.details.map((err) => err.message),
+        })
+      );
     }
+
     next(error);
   }
 };
@@ -273,13 +287,21 @@ export const handleForgotPassword = async (req, res, next) => {
     // Update user with OTP and expiration
     user.resetPasswordOTP = hashedToken;
     user.resetPasswordOTPExpiry = expiresAt;
-
     await user.save();
 
-    const subject = "Password Reset OTP";
-    const text = `Your password reset OTP is: ${resetToken}. It will expire in 10 minutes.`;
+    // Construct the email
+    const subject = "🔒 Password Reset Request";
+    const html = `
+      <p>Dear ${user.name},</p>
+      <p>We received a request to reset your password. Please use the OTP below to proceed:</p>
+      <h2 style="color: #2E86C1;">${resetToken}</h2>
+      <p><strong>Note:</strong> This OTP is valid for only 10 minutes. Do not share it with anyone.</p>
+      <p>If you did not request this, please ignore this email or contact our support team immediately.</p>
+      <p>Best regards,<br><strong>Your Company Name</strong></p>
+    `;
 
-    await sendEmail(user.email, subject, text);
+    // Send the email
+    await sendEmail(user.email, subject, html);
 
     return res.status(200).json(
       createResponse({
@@ -294,8 +316,6 @@ export const handleForgotPassword = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 export const handleOtpVerification = async (req, res, next) => {
   try {
@@ -316,10 +336,7 @@ export const handleOtpVerification = async (req, res, next) => {
     }
 
     // Hash the OTP from the request body using SHA-256
-    const hashedOtp = crypto
-      .createHash("sha256")
-      .update(otp)
-      .digest("hex");
+    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
 
     // Compare the hashed OTP with the stored hashed OTP in the database
     if (hashedOtp !== user.resetPasswordOTP) {
@@ -383,7 +400,7 @@ export const handleOtpVerification = async (req, res, next) => {
 export const handlePasswordReset = async (req, res, next) => {
   try {
     const { email, otp, newPassword } = req.body;
-    console.log("Thr req body is", req.body)  
+    console.log("Thr req body is", req.body);
 
     const user = await userModel.findOne({ email });
 
@@ -398,11 +415,7 @@ export const handlePasswordReset = async (req, res, next) => {
       );
     }
 
-    const hashedOtp = crypto
-    .createHash("sha256")
-    .update(otp)
-    .digest("hex");
-
+    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
 
     // Check if OTP matches and is not expired
     if (

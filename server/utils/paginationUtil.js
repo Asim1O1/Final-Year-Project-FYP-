@@ -1,3 +1,6 @@
+
+
+
 export const paginate = async (model, query = {}, options = {}) => {
   try {
     const { page = 1, limit = 10, sort = { createdAt: -1 } } = options;

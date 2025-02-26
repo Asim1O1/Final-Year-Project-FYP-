@@ -101,3 +101,45 @@ export const validateHospitalInput = Joi.object({
     })
   ),
 });
+
+export const validateDoctorInput = Joi.object({
+  fullName: Joi.string().trim().min(3).max(100).required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).max(50).required(),
+  role: Joi.string().valid("doctor").default("doctor"),
+  gender: Joi.string().valid("male", "female", "other").required(),
+  specialization: Joi.string().trim().min(3).max(100).required(),
+  address: Joi.string().required(),
+  phone: Joi.string()
+  .pattern(/^[0-9]+$/)
+  .min(10)
+  .required(),
+  qualifications: Joi.array().items(
+    Joi.object({
+      degree: Joi.string().required(),
+      university: Joi.string().required(),
+      graduationYear: Joi.number().required(),
+    })
+  ).required(),
+
+  consultationFee: Joi.string().min(0).required(),
+  availability: Joi.array()
+    .items(
+      Joi.object({
+        day: Joi.string()
+          .valid("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+          .required(),
+        startTime: Joi.string()
+          .pattern(/^([0-9]{2}):([0-9]{2})$/)
+          .required(),
+        endTime: Joi.string()
+          .pattern(/^([0-9]{2}):([0-9]{2})$/)
+          .required(),
+      })
+    )
+    .default([]),
+  hospital: Joi.string().length(24).required(),
+  yearsOfExperience: Joi.number().integer().min(0).max(100).required(),
+  isVerified: Joi.boolean().default(false),
+  
+});

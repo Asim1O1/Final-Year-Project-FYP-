@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["system_admin", "hospital_admin", "doctor", "user"],
+      enum: ["system_admin", "hospital_admin", "user"],
       required: true,
       default: "user",
     },
@@ -42,6 +42,7 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Hospital",
     },
+
     resetPasswordOTP: {
       type: String,
       default: null,
