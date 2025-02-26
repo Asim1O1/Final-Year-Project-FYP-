@@ -222,7 +222,7 @@ export const verifyUserAuthentication = async (req, res, next) => {
         isSuccess: true,
         statusCode: 200,
         message: "User is authenticated.",
-        data: user,
+        data: { ...user, role: user.role },
         error: null,
       })
     );
