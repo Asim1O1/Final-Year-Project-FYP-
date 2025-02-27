@@ -12,6 +12,7 @@ import {
 import createResponse from "../../utils/responseBuilder.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 import crypto from "crypto";
+import doctorModel from "../../models/doctor.model.js";
 
 /**
  * Handles user registration.
@@ -101,6 +102,7 @@ export const handleUserLogin = async (req, res, next) => {
   try {
     await validateLoginInput.validateAsync(req.body);
     console.log("ENTERED THE LOGIN FUNCTION IN BACKEND");
+    console.log("The req.body is", req.body);
 
     const { email, password } = req.body;
     if (!req.body || typeof req.body !== "object") {
@@ -113,22 +115,26 @@ export const handleUserLogin = async (req, res, next) => {
         })
       );
     }
-    const user = await userModel.findOne({ email });
 
-    if (!user) {
-      console.log("User not found");
+    // Check both User and Doctor models
+    const user = await userModel.findOne({ email });
+    const doctor = await doctorModel.findOne({ email });
+
+    const account = user || doctor;
+    if (!account) {
+      console.log("Account not found");
       return res.status(401).json(
         createResponse({
           isSuccess: false,
           statusCode: 401,
           message:
-            "Authentication failed. User with the provided email does not exist.",
+            "Authentication failed. Account with the provided email does not exist.",
           error: null,
         })
       );
     }
 
-    const isPasswordValid = await bcryptjs.compare(password, user.password);
+    const isPasswordValid = await bcryptjs.compare(password, account.password);
     if (!isPasswordValid) {
       console.log("Invalid password");
       return res.status(401).json(
@@ -141,25 +147,23 @@ export const handleUserLogin = async (req, res, next) => {
       );
     }
 
-    const accessToken = generateAccessToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
+    const accessToken = generateAccessToken(account._id);
+    const refreshToken = generateRefreshToken(account._id);
 
-    const userObject = user.toObject();
-    delete userObject.password;
+    const accountObject = account.toObject();
+    delete accountObject.password;
 
     console.log("Setting cookies for accessToken and refreshToken");
     console.log("Access Token:", accessToken);
     console.log("Refresh Token:", refreshToken);
 
     // Set cookies for tokens
-
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       maxAge: 30 * 60 * 1000,
     });
-    console.log("cookiee set succesfyll");
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -175,7 +179,7 @@ export const handleUserLogin = async (req, res, next) => {
         isSuccess: true,
         statusCode: 200,
         message: "Login successful. Welcome back!",
-        data: userObject,
+        data: accountObject,
         accessToken,
         refreshToken,
         error: null,
@@ -183,7 +187,6 @@ export const handleUserLogin = async (req, res, next) => {
     );
   } catch (error) {
     // Handle Joi validation errors
-    // Handle validation errors properly
     if (error.isJoi) {
       return res.status(400).json(
         createResponse({
@@ -198,7 +201,6 @@ export const handleUserLogin = async (req, res, next) => {
     next(error);
   }
 };
-
 /**
  * Checks if a user is authenticated.
  */

@@ -1,6 +1,6 @@
 // src/pages/Appointments.js
 import React, { useState } from "react";
-import DoctorLayout from "../layouts/DoctorLayout";
+import DoctorLayout from "../../layouts/DoctorLayout";
 import {
   Calendar,
   Search,
@@ -247,255 +247,239 @@ const Appointments = () => {
   };
 
   return (
-    <DoctorLayout>
-      <div className="space-y-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-800">
-              Manage Appointments
-            </h2>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center">
-              <Calendar size={16} className="mr-2" />
-              Add Appointment
-            </button>
-          </div>
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-800">
+            Manage Appointments
+          </h2>
+          <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center">
+            <Calendar size={16} className="mr-2" />
+            Add Appointment
+          </button>
+        </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap items-center justify-between mb-6">
-            <div className="flex items-center space-x-4 mb-2">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search patients..."
-                  className="pl-8 pr-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <Search
-                  size={16}
-                  className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-                />
-              </div>
-
-              <div className="relative">
-                <input
-                  type="date"
-                  className="pl-8 pr-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                />
-                <Calendar
-                  size={16}
-                  className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-                />
-              </div>
-
-              <div className="relative">
-                <select
-                  className="pl-8 pr-8 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option value="all">All Status</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="pending">Pending</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-                <Filter
-                  size={16}
-                  className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-                />
-                <ChevronDown
-                  size={16}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-                />
-              </div>
+        {/* Filters */}
+        <div className="flex flex-wrap items-center justify-between mb-6">
+          <div className="flex items-center space-x-4 mb-2">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search patients..."
+                className="pl-8 pr-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Search
+                size={16}
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
+              />
             </div>
 
-            <div className="bg-gray-100 rounded-lg p-1 mb-2">
-              <TabButton
-                name="upcoming"
-                label="Upcoming"
-                count={allAppointments.upcoming.length}
+            <div className="relative">
+              <input
+                type="date"
+                className="pl-8 pr-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
               />
-              <TabButton
-                name="completed"
-                label="Completed"
-                count={allAppointments.completed.length}
+              <Calendar
+                size={16}
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
               />
-              <TabButton
-                name="cancelled"
-                label="Cancelled"
-                count={allAppointments.cancelled.length}
+            </div>
+
+            <div className="relative">
+              <select
+                className="pl-8 pr-8 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <Filter
+                size={16}
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
+              />
+              <ChevronDown
+                size={16}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400"
               />
             </div>
           </div>
 
-          {/* Appointments List */}
-          <div className="space-y-4">
-            {filteredAppointments.length > 0 ? (
-              filteredAppointments.map((appointment) => (
-                <div
-                  key={appointment.id}
-                  className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
-                >
-                  <div className="flex justify-between">
-                    <div className="flex items-center space-x-4">
-                      <img
-                        src={appointment.patientImage}
-                        alt={appointment.patientName}
-                        className="h-12 w-12 rounded-full object-cover"
-                      />
-                      <div>
-                        <h3 className="font-medium text-gray-800">
-                          {appointment.patientName}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          {appointment.patientContact}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {appointment.reason}
-                        </p>
-                      </div>
-                    </div>
+          <div className="bg-gray-100 rounded-lg p-1 mb-2">
+            <TabButton
+              name="upcoming"
+              label="Upcoming"
+              count={allAppointments.upcoming.length}
+            />
+            <TabButton
+              name="completed"
+              label="Completed"
+              count={allAppointments.completed.length}
+            />
+            <TabButton
+              name="cancelled"
+              label="Cancelled"
+              count={allAppointments.cancelled.length}
+            />
+          </div>
+        </div>
 
-                    <div className="text-right">
-                      <div className="flex items-center justify-end mb-2">
-                        <Calendar size={16} className="text-gray-500 mr-1" />
-                        <span className="text-sm text-gray-700">
-                          {appointment.date}, {appointment.time}
-                        </span>
-                      </div>
-                      <StatusBadge status={appointment.status} />
+        {/* Appointments List */}
+        <div className="space-y-4">
+          {filteredAppointments.length > 0 ? (
+            filteredAppointments.map((appointment) => (
+              <div
+                key={appointment.id}
+                className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
+              >
+                <div className="flex justify-between">
+                  <div className="flex items-center space-x-4">
+                    <img
+                      src={appointment.patientImage}
+                      alt={appointment.patientName}
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                    <div>
+                      <h3 className="font-medium text-gray-800">
+                        {appointment.patientName}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {appointment.patientContact}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {appointment.reason}
+                      </p>
                     </div>
                   </div>
 
-                  {appointment.notes && (
-                    <div className="mt-3 pt-3 border-t">
-                      <p className="text-sm text-gray-700">
-                        <span className="font-medium">Notes:</span>{" "}
-                        {appointment.notes}
-                      </p>
+                  <div className="text-right">
+                    <div className="flex items-center justify-end mb-2">
+                      <Calendar size={16} className="text-gray-500 mr-1" />
+                      <span className="text-sm text-gray-700">
+                        {appointment.date}, {appointment.time}
+                      </span>
                     </div>
-                  )}
+                    <StatusBadge status={appointment.status} />
+                  </div>
+                </div>
 
-                  {appointment.cancellationReason && (
-                    <div className="mt-3 pt-3 border-t">
-                      <p className="text-sm text-gray-700">
-                        <span className="font-medium">
-                          Cancellation Reason:
-                        </span>{" "}
-                        {appointment.cancellationReason}
-                      </p>
-                    </div>
-                  )}
+                {appointment.notes && (
+                  <div className="mt-3 pt-3 border-t">
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Notes:</span>{" "}
+                      {appointment.notes}
+                    </p>
+                  </div>
+                )}
 
-                  <div className="mt-3 pt-3 border-t flex justify-between">
-                    <button
-                      className="text-blue-600 text-sm hover:underline"
-                      onClick={() => setSelectedAppointment(appointment)}
-                    >
-                      View Details
-                    </button>
+                {appointment.cancellationReason && (
+                  <div className="mt-3 pt-3 border-t">
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Cancellation Reason:</span>{" "}
+                      {appointment.cancellationReason}
+                    </p>
+                  </div>
+                )}
 
-                    <div className="flex space-x-2">
-                      {activeTab === "upcoming" &&
-                        appointment.status === "pending" && (
-                          <>
-                            <button className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 flex items-center">
-                              <Check size={14} className="mr-1" />
-                              Approve
-                            </button>
-                            <button className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center">
-                              <X size={14} className="mr-1" />
-                              Reject
-                            </button>
-                          </>
-                        )}
-                      {activeTab === "upcoming" &&
-                        appointment.status === "confirmed" && (
-                          <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center">
+                <div className="mt-3 pt-3 border-t flex justify-between">
+                  <button
+                    className="text-blue-600 text-sm hover:underline"
+                    onClick={() => setSelectedAppointment(appointment)}
+                  >
+                    View Details
+                  </button>
+
+                  <div className="flex space-x-2">
+                    {activeTab === "upcoming" &&
+                      appointment.status === "pending" && (
+                        <>
+                          <button className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 flex items-center">
                             <Check size={14} className="mr-1" />
-                            Mark Completed
+                            Approve
                           </button>
-                        )}
-                      {activeTab === "upcoming" && (
-                        <button className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300">
-                          Reschedule
-                        </button>
+                          <button className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center">
+                            <X size={14} className="mr-1" />
+                            Reject
+                          </button>
+                        </>
                       )}
-                      {activeTab === "completed" && (
+                    {activeTab === "upcoming" &&
+                      appointment.status === "confirmed" && (
                         <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center">
-                          <Download size={14} className="mr-1" />
-                          Download Report
+                          <Check size={14} className="mr-1" />
+                          Mark Completed
                         </button>
                       )}
-                      {activeTab === "cancelled" && (
-                        <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center">
-                          <RefreshCcw size={14} className="mr-1" />
-                          Reschedule
-                        </button>
-                      )}
-                    </div>
+                    {activeTab === "upcoming" && (
+                      <button className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300">
+                        Reschedule
+                      </button>
+                    )}
+                    {activeTab === "completed" && (
+                      <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center">
+                        <Download size={14} className="mr-1" />
+                        Download Report
+                      </button>
+                    )}
+                    {activeTab === "cancelled" && (
+                      <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center">
+                        <RefreshCcw size={14} className="mr-1" />
+                        Reschedule
+                      </button>
+                    )}
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                  <AlertCircle size={32} className="text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-800 mb-2">
-                  No appointments found
-                </h3>
-                <p className="text-gray-500">
-                  Try changing your filters or create a new appointment
-                </p>
               </div>
-            )}
-          </div>
-
-          {/* Pagination */}
-          {filteredAppointments.length > 0 && (
-            <div className="flex justify-between items-center mt-6">
-              <div className="text-sm text-gray-600">
-                Showing{" "}
-                <span className="font-medium">
-                  {filteredAppointments.length}
-                </span>{" "}
-                of{" "}
-                <span className="font-medium">
-                  {allAppointments[activeTab].length}
-                </span>{" "}
-                appointments
+            ))
+          ) : (
+            <div className="text-center py-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                <AlertCircle size={32} className="text-gray-400" />
               </div>
-
-              <div className="flex space-x-1">
-                <button className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                  Previous
-                </button>
-                <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm">
-                  1
-                </button>
-                <button className="px-3 py-1 border rounded text-sm">2</button>
-                <button className="px-3 py-1 border rounded text-sm">
-                  Next
-                </button>
-              </div>
+              <h3 className="text-lg font-medium text-gray-800 mb-2">
+                No appointments found
+              </h3>
+              <p className="text-gray-500">
+                Try changing your filters or create a new appointment
+              </p>
             </div>
           )}
         </div>
-      </div>
 
-      {/* Modal */}
-      {selectedAppointment && (
-        <AppointmentDetailsModal
-          appointment={selectedAppointment}
-          onClose={() => setSelectedAppointment(null)}
-        />
-      )}
-    </DoctorLayout>
+        {/* Pagination */}
+        {filteredAppointments.length > 0 && (
+          <div className="flex justify-between items-center mt-6">
+            <div className="text-sm text-gray-600">
+              Showing{" "}
+              <span className="font-medium">{filteredAppointments.length}</span>{" "}
+              of{" "}
+              <span className="font-medium">
+                {allAppointments[activeTab].length}
+              </span>{" "}
+              appointments
+            </div>
+
+            <div className="flex space-x-1">
+              <button className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                Previous
+              </button>
+              <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm">
+                1
+              </button>
+              <button className="px-3 py-1 border rounded text-sm">2</button>
+              <button className="px-3 py-1 border rounded text-sm">Next</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

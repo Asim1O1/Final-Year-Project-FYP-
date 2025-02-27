@@ -1,6 +1,6 @@
 // src/pages/Dashboard.js
 import React from "react";
-import DoctorLayout from "../layouts/DoctorLayout";
+import DoctorLayout from "../../layouts/DoctorLayout";
 import {
   Calendar,
   MessageSquare,
@@ -221,54 +221,54 @@ const NotificationsPanel = () => {
   );
 };
 
-const QuickActions = () => {
-  const actions = [
-    {
-      name: "Schedule",
-      icon: <Calendar size={24} />,
-      color: "bg-blue-500",
-      path: "/doctor/schedule",
-    },
-    {
-      name: "Chat",
-      icon: <MessageSquare size={24} />,
-      color: "bg-green-500",
-      path: "/doctor/chat",
-    },
-    {
-      name: "Reports",
-      icon: <FileText size={24} />,
-      color: "bg-purple-500",
-      path: "/doctor/reports",
-    },
-    {
-      name: "Profile",
-      icon: <User size={24} />,
-      color: "bg-orange-500",
-      path: "/doctor/profile",
-    },
-  ];
 
-  return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">
-        Quick Actions
-      </h3>
-      <div className="grid grid-cols-4 gap-4">
-        {actions.map((action) => (
-          <div key={action.name} className="flex flex-col items-center">
-            <button
-              className={`w-12 h-12 ${action.color} rounded-lg text-white flex items-center justify-center shadow-sm hover:shadow-md transition-all`}
-            >
-              {action.icon}
-            </button>
-            <span className="mt-2 text-xs text-gray-600">{action.name}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+//   const actions = [
+//     {
+//       name: "Schedule",
+//       icon: <Calendar size={24} />,
+//       color: "bg-blue-500",
+//       path: "/doctor/schedule",
+//     },
+//     {
+//       name: "Chat",
+//       icon: <MessageSquare size={24} />,
+//       color: "bg-green-500",
+//       path: "/doctor/chat",
+//     },
+//     {
+//       name: "Reports",
+//       icon: <FileText size={24} />,
+//       color: "bg-purple-500",
+//       path: "/doctor/reports",
+//     },
+//     {
+//       name: "Profile",
+//       icon: <User size={24} />,
+//       color: "bg-orange-500",
+//       path: "/doctor/profile",
+//     },
+//   ];
+
+//   return (
+//     <div className="bg-white rounded-lg shadow-md p-6">
+//       <h3 className="text-lg font-semibold text-gray-800 mb-4">
+//         Quick Actions
+//       </h3>
+//       <div className="grid grid-cols-4 gap-4">
+//         {actions.map((action) => (
+//           <div key={action.name} className="flex flex-col items-center">
+//             <button
+//               className={`w-12 h-12 ${action.color} rounded-lg text-white flex items-center justify-center shadow-sm hover:shadow-md transition-all`}
+//             >
+//               {action.icon}
+//             </button>
+//             <span className="mt-2 text-xs text-gray-600">{action.name}</span>
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// };
 
 const StatsSummary = () => {
   const stats = [
@@ -322,30 +322,28 @@ const StatsSummary = () => {
 };
 
 // Main Dashboard Component
-const Dashboard = () => {
+const DoctorDashboard = () => {
   return (
-    <DoctorLayout>
-      <div className="space-y-6">
-        <StatsSummary />
+    <div className="space-y-6">
+      <StatsSummary />
 
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-1">
-            <ProfileSummary />
-          </div>
-          <div className="col-span-2">
-            <AppointmentPreview />
-          </div>
+      <div className="grid grid-cols-3 gap-6">
+        <div className="col-span-1">
+          <ProfileSummary />
         </div>
-
-        <div className="grid grid-cols-2 gap-6">
-          <TestRequestsPreview />
-          <NotificationsPanel />
+        <div className="col-span-2">
+          <AppointmentPreview />
         </div>
-
-        <QuickActions />
       </div>
-    </DoctorLayout>
+
+      <div className="grid grid-cols-2 gap-6">
+        <TestRequestsPreview />
+        <NotificationsPanel />
+      </div>
+
+    
+    </div>
   );
 };
 
-export default Dashboard;
+export default DoctorDashboard;

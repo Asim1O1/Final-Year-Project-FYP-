@@ -21,6 +21,9 @@ import UpdatePassword from "./component/auth/UpdatePassword.jsx";
 import AddDoctorForm from "./component/hospital_admin/doctor/AddDoctor.jsx";
 import { HospitalAdminLayout } from "./layouts/HospitalAdminLayout.jsx";
 import DoctorManagement from "./pages/hospital_admin/DoctorManagement.jsx";
+import DoctorLayout from "./layouts/DoctorLayout.jsx";
+import DoctorDashboard from "./pages/doctor/DoctorDashboard.jsx";
+import Appointments from "./pages/doctor/AppointmentManagement.jsx";
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -64,6 +67,8 @@ function App() {
                 <Navigate to="/admin" />
               ) : user?.data?.role === "hospital_admin" ? (
                 <Navigate to="/hospital-admin" />
+              ) : user?.data?.role === "doctor" ? (
+                <Navigate to="/doctor/dashboard" />
               ) : (
                 <Navigate to="/" />
               )
@@ -99,6 +104,22 @@ function App() {
         >
           <Route index element={<HospitalAdminDashboard />} />
           <Route path="doctors" element={<DoctorManagement />} />
+        </Route>
+
+        <Route
+          path="/doctor/*"
+          element={
+            <CheckAuth role="doctor">
+              {" "}
+              {/* Check role-based auth */}
+              <DoctorLayout /> {/* Layout for doctor */}
+            </CheckAuth>
+          }
+        >
+          <Route index element={<DoctorDashboard />} />
+          <Route path="appointments" element={<Appointments />} />
+
+          {/* Add more doctor-specific routes here */}
         </Route>
 
         {/* Unauthorized Route */}
