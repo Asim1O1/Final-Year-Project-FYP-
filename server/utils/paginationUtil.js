@@ -1,9 +1,11 @@
-
-
-
 export const paginate = async (model, query = {}, options = {}) => {
   try {
-    const { page = 1, limit = 10, sort = { createdAt: -1 } } = options;
+    const {
+      page = 1,
+      limit = 10,
+      sort = { createdAt: -1 },
+      populate = "",
+    } = options;
 
     const pageNumber = parseInt(page, 10);
     const limitNumber = parseInt(limit, 10);
@@ -19,8 +21,18 @@ export const paginate = async (model, query = {}, options = {}) => {
 
     const skip = (pageNumber - 1) * limitNumber;
 
+    const queryBuilder = model
+      .find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(limitNumber);
+
+    if (populate) {
+      queryBuilder.populate(populate);
+    }
+
     const [data, totalCount] = await Promise.all([
-      model.find(query).sort(sort).skip(skip).limit(limitNumber),
+      queryBuilder.exec(),
       model.countDocuments(query),
     ]);
 
@@ -32,6 +44,6 @@ export const paginate = async (model, query = {}, options = {}) => {
     };
   } catch (error) {
     console.error("Error in paginate function:", error);
-    throw error; // Re-throw the error for the caller to handle
+    throw error;
   }
 };

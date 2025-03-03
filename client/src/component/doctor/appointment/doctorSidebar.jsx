@@ -19,7 +19,7 @@ const DoctorSidebar = () => {
   const location = useLocation();
 
   const menuItems = [
-    { name: "Dashboard", icon: <Home size={20} />, path: "/doctor" },
+    { name: "Dashboard", icon: <Home size={20} />, path: "/doctor/dashboard" },
     {
       name: "Appointments",
       icon: <Calendar size={20} />,
@@ -53,9 +53,9 @@ const DoctorSidebar = () => {
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between p-4 border-b">
           {isSidebarOpen ? (
-            <div className="text-xl font-bold text-blue-600">HealthCare</div>
+            <div className="text-xl font-bold text-blue-600">MedConnect</div>
           ) : (
-            <div className="text-xl font-bold text-blue-600">HC</div>
+            <div className="text-xl font-bold text-blue-600">MC</div>
           )}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}

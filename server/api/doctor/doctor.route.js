@@ -5,6 +5,7 @@ import {
   deleteDoctor,
   getAllDoctors,
   getDoctorById,
+  getDoctorsBySpecialization,
 } from "./doctor.controller.js";
 import protectRoute from "../../middlewares/protectRoute.js";
 import upload from "../../imageUpload/multerConfig.js";
@@ -39,5 +40,8 @@ router.get("/:id", getDoctorById);
 
 // ✅ Get All Doctors (with filters & pagination)
 router.get("/", getAllDoctors);
+
+// ✅ Get Doctors by Specialization (with pagination)
+router.get("/specialization/:specialization", getDoctorsBySpecialization);
 
 export default router;

@@ -24,6 +24,12 @@ import DoctorManagement from "./pages/hospital_admin/DoctorManagement.jsx";
 import DoctorLayout from "./layouts/DoctorLayout.jsx";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard.jsx";
 import Appointments from "./pages/doctor/AppointmentManagement.jsx";
+import MainLayout from "./layouts/MainLayout.jsx";
+import SelectSpecialty from "./pages/user/SelectSpeciality.jsx";
+import SelectDoctor from "./pages/user/SelectDoctor.jsx";
+import SelectTime from "./pages/user/SelectTime.jsx";
+import PatientDetails from "./pages/user/PatientDetails.jsx";
+import ConfirmationPage from "./pages/user/ConfirmationPage.jsx";
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -39,6 +45,53 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/hospitals" element={<HospitalsPage />} />
+        {/* Appointment Booking Routes */}
+        <Route
+          path="/book-appointment"
+          element={
+            <MainLayout>
+              <SelectSpecialty />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/book-appointment/select-doctor/:specialization"
+          element={
+            <MainLayout>
+              <SelectDoctor />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/book-appointment/select-time/:doctorId"
+          element={
+            <CheckAuth role="user">
+              <MainLayout>
+                <SelectTime />
+              </MainLayout>
+            </CheckAuth>
+          }
+        />
+        <Route
+          path="/book-appointment/patient-details/:doctorId/:date/:startTime"
+          element={
+            <CheckAuth role="user">
+              <MainLayout>
+                <PatientDetails />
+              </MainLayout>
+            </CheckAuth>
+          }
+        />
+        <Route
+          path="/book-appointment/confirmation/:appointmentId"
+          element={
+            <CheckAuth role="user">
+              <MainLayout>
+                <ConfirmationPage />
+              </MainLayout>
+            </CheckAuth>
+          }
+        />
 
         {/* Protected Routes for Register and Login */}
         <Route
@@ -110,16 +163,13 @@ function App() {
           path="/doctor/*"
           element={
             <CheckAuth role="doctor">
-              {" "}
-              {/* Check role-based auth */}
-              <DoctorLayout /> {/* Layout for doctor */}
+              <DoctorLayout />
             </CheckAuth>
           }
         >
           <Route index element={<DoctorDashboard />} />
+          <Route path="dashboard" element={<DoctorDashboard />} />
           <Route path="appointments" element={<Appointments />} />
-
-          {/* Add more doctor-specific routes here */}
         </Route>
 
         {/* Unauthorized Route */}

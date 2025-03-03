@@ -230,7 +230,12 @@ export const verifyUserAuth = createAsyncThunk(
         });
       }
 
-      return response.data;
+      // Return the success data
+      return {
+        isSuccess: true,
+        message: response?.message || "verfication  successful",
+        data: response?.data,
+      };
     } catch (error) {
       console.error("Verification Error:", error);
 

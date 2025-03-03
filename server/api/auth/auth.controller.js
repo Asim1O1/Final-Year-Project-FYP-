@@ -219,12 +219,37 @@ export const verifyUserAuthentication = async (req, res, next) => {
       );
     }
 
+    // Convert Mongoose document to a plain object and remove sensitive info
+    const plainUser = user.toObject();
+    delete plainUser.password; // Ensure password is not exposed
+
+    // Generate new tokens (if needed)
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+
+    // Set cookies for tokens
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 30 * 60 * 1000, // 30 minutes
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    });
+
     return res.status(200).json(
       createResponse({
         isSuccess: true,
         statusCode: 200,
         message: "User is authenticated.",
-        data: { ...user, role: user.role },
+        data: plainUser, // Plain object without Mongoose properties
+        accessToken,
+        refreshToken,
         error: null,
       })
     );

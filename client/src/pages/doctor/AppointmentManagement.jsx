@@ -1,6 +1,6 @@
 // src/pages/Appointments.js
 import React, { useState } from "react";
-import DoctorLayout from "../../layouts/DoctorLayout";
+
 import {
   Calendar,
   Search,
@@ -15,6 +15,10 @@ import {
   Trash,
   RefreshCcw,
 } from "lucide-react";
+
+import TabButton from "../../component/doctor/appointment/TabButton.jsx";
+import StatusBadge from "../../component/doctor/appointment/StatusBadge.jsx";
+import AppointmentDetailsModal from "../../component/doctor/appointment/AppointmentDetailModal.jsx";
 
 const Appointments = () => {
   const [activeTab, setActiveTab] = useState("upcoming");
@@ -120,132 +124,6 @@ const Appointments = () => {
 
   const filteredAppointments = getFilteredAppointments();
 
-  // Tab buttons component
-  const TabButton = ({ name, label, count }) => (
-    <button
-      className={`px-4 py-2 text-sm font-medium rounded-t-lg ${
-        activeTab === name
-          ? "bg-white text-blue-600 border-b-2 border-blue-600"
-          : "text-gray-600 hover:text-blue-600"
-      }`}
-      onClick={() => setActiveTab(name)}
-    >
-      {label} ({count})
-    </button>
-  );
-
-  // Status badge component
-  const StatusBadge = ({ status }) => {
-    const statusStyles = {
-      confirmed: "bg-green-100 text-green-800",
-      pending: "bg-yellow-100 text-yellow-800",
-      completed: "bg-blue-100 text-blue-800",
-      cancelled: "bg-red-100 text-red-800",
-    };
-
-    return (
-      <span
-        className={`px-2 py-1 text-xs rounded-full ${statusStyles[status]}`}
-      >
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-    );
-  };
-
-  // Appointment Details Modal
-  const AppointmentDetailsModal = ({ appointment, onClose }) => {
-    if (!appointment) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg w-full max-w-lg p-6 mx-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-gray-800">
-              Appointment Details
-            </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <div className="mb-4 flex items-center">
-            <img
-              src={appointment.patientImage}
-              alt={appointment.patientName}
-              className="h-16 w-16 rounded-full object-cover mr-4"
-            />
-            <div>
-              <h4 className="text-xl font-semibold">
-                {appointment.patientName}
-              </h4>
-              <p className="text-gray-600">{appointment.patientContact}</p>
-              <StatusBadge status={appointment.status} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="bg-gray-50 p-3 rounded">
-              <p className="text-sm text-gray-500">Date & Time</p>
-              <p className="font-medium">
-                {appointment.date}, {appointment.time}
-              </p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded">
-              <p className="text-sm text-gray-500">Reason for Visit</p>
-              <p className="font-medium">{appointment.reason}</p>
-            </div>
-          </div>
-
-          {appointment.notes && (
-            <div className="mb-4">
-              <p className="text-sm text-gray-500 mb-1">Notes</p>
-              <div className="bg-gray-50 p-3 rounded">
-                <p>{appointment.notes}</p>
-              </div>
-            </div>
-          )}
-
-          {appointment.cancellationReason && (
-            <div className="mb-4">
-              <p className="text-sm text-gray-500 mb-1">Cancellation Reason</p>
-              <div className="bg-gray-50 p-3 rounded">
-                <p>{appointment.cancellationReason}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-end space-x-2 mt-6">
-            {appointment.status === "pending" && (
-              <>
-                <button className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 flex items-center">
-                  <Check size={14} className="mr-1" />
-                  Approve
-                </button>
-                <button className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center">
-                  <X size={14} className="mr-1" />
-                  Reject
-                </button>
-              </>
-            )}
-            {appointment.status === "confirmed" && (
-              <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center">
-                <Check size={14} className="mr-1" />
-                Mark Completed
-              </button>
-            )}
-            <button className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300 flex items-center">
-              <Edit size={14} className="mr-1" />
-              Edit Details
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -317,16 +195,22 @@ const Appointments = () => {
               name="upcoming"
               label="Upcoming"
               count={allAppointments.upcoming.length}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
             />
             <TabButton
               name="completed"
               label="Completed"
               count={allAppointments.completed.length}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
             />
             <TabButton
               name="cancelled"
               label="Cancelled"
               count={allAppointments.cancelled.length}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
             />
           </div>
         </div>
@@ -341,11 +225,6 @@ const Appointments = () => {
               >
                 <div className="flex justify-between">
                   <div className="flex items-center space-x-4">
-                    <img
-                      src={appointment.patientImage}
-                      alt={appointment.patientName}
-                      className="h-12 w-12 rounded-full object-cover"
-                    />
                     <div>
                       <h3 className="font-medium text-gray-800">
                         {appointment.patientName}
@@ -452,33 +331,15 @@ const Appointments = () => {
             </div>
           )}
         </div>
-
-        {/* Pagination */}
-        {filteredAppointments.length > 0 && (
-          <div className="flex justify-between items-center mt-6">
-            <div className="text-sm text-gray-600">
-              Showing{" "}
-              <span className="font-medium">{filteredAppointments.length}</span>{" "}
-              of{" "}
-              <span className="font-medium">
-                {allAppointments[activeTab].length}
-              </span>{" "}
-              appointments
-            </div>
-
-            <div className="flex space-x-1">
-              <button className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                Previous
-              </button>
-              <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm">
-                1
-              </button>
-              <button className="px-3 py-1 border rounded text-sm">2</button>
-              <button className="px-3 py-1 border rounded text-sm">Next</button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Appointment Details Modal */}
+      {selectedAppointment && (
+        <AppointmentDetailsModal
+          appointment={selectedAppointment}
+          onClose={() => setSelectedAppointment(null)}
+        />
+      )}
     </div>
   );
 };

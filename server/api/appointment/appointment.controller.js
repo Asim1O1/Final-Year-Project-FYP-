@@ -8,16 +8,45 @@ import hospitalModel from "../../models/hospital.model.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 
 export const bookDoctorAppointment = async (req, res, next) => {
-  const { userId, doctorId, date, startTime, reason, hospitalId } = req.body;
+  const {
+    userId,
+    doctorId,
+    date,
+    startTime,
+    reason,
+    hospitalId,
+    paymentMethod,
+  } = req.body;
 
   try {
     // Validate input
-    if (!userId || !doctorId || !date || !startTime || !reason || !hospitalId) {
+    if (
+      !userId ||
+      !doctorId ||
+      !date ||
+      !startTime ||
+      !reason ||
+      !hospitalId ||
+      !paymentMethod
+    ) {
       return res.status(400).json(
         createResponse({
           isSuccess: false,
           statusCode: 400,
           message: "All fields are required",
+          data: null,
+          error: null,
+        })
+      );
+    }
+
+    // Check if the paymentMethod is valid
+    if (!["pay_on_site", "pay_now"].includes(paymentMethod)) {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "Invalid payment method",
           data: null,
           error: null,
         })
@@ -109,6 +138,9 @@ export const bookDoctorAppointment = async (req, res, next) => {
       hospital: hospitalId,
       endTime: allSlots[allSlots.indexOf(startTime) + 1], // Calculate end time
       status: "pending", // Default status
+      paymentMethod: paymentMethod,
+      paymentStatus: paymentMethod === "pay_now" ? "pending" : "not_required", // Handle payment status
+      paymentId: paymentMethod === "pay_now" ? null : undefined, // null for "pay_now", undefined for "pay_on_site"
     });
 
     await newAppointment.save();
@@ -116,8 +148,8 @@ export const bookDoctorAppointment = async (req, res, next) => {
     // Send confirmation email to the user
     const subject = "📅 Appointment Request Received";
     const html = `
-          <p>Dear ${user.name},</p>
-          <p>We have received your appointment request with Dr. ${doctor.name} for ${date} at ${startTime}.</p>
+          <p>Dear ${user.fullName},</p>
+          <p>We have received your appointment request with Dr. ${doctor.fullName} for ${date} at ${startTime}.</p>
           <p>Your appointment is currently pending confirmation. You will receive an official confirmation soon.</p>
           <p>If you have any questions or need to modify your appointment, please don't hesitate to reach out to us.</p>
           <p>Best regards,<br><strong>Your Company Name</strong></p>
@@ -401,17 +433,15 @@ export const rescheduleAppointment = async (req, res, next) => {
       .populate("doctor", "name email");
 
     if (!appointment) {
-      return res
-        .status(404)
-        .json(
-          createResponse({
-            isSuccess: false,
-            statusCode: 404,
-            message: "Appointment not found",
-            data: null,
-            error: null,
-          })
-        );
+      return res.status(404).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 404,
+          message: "Appointment not found",
+          data: null,
+          error: null,
+        })
+      );
     }
 
     // Check if appointment is already completed
@@ -419,17 +449,15 @@ export const rescheduleAppointment = async (req, res, next) => {
       `${appointment.date} ${appointment.startTime}`
     );
     if (appointmentDateTime <= new Date()) {
-      return res
-        .status(400)
-        .json(
-          createResponse({
-            isSuccess: false,
-            statusCode: 400,
-            message: "Cannot reschedule a past or ongoing appointment",
-            data: null,
-            error: null,
-          })
-        );
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "Cannot reschedule a past or ongoing appointment",
+          data: null,
+          error: null,
+        })
+      );
     }
 
     // Check if new time slot is available
@@ -440,17 +468,15 @@ export const rescheduleAppointment = async (req, res, next) => {
     });
 
     if (existingAppointment) {
-      return res
-        .status(400)
-        .json(
-          createResponse({
-            isSuccess: false,
-            statusCode: 400,
-            message: "New time slot is already booked",
-            data: null,
-            error: null,
-          })
-        );
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "New time slot is already booked",
+          data: null,
+          error: null,
+        })
+      );
     }
 
     // Update appointment
@@ -466,17 +492,15 @@ export const rescheduleAppointment = async (req, res, next) => {
 
     await sendEmail(appointment.user.email, subject, html);
 
-    res
-      .status(200)
-      .json(
-        createResponse({
-          isSuccess: true,
-          statusCode: 200,
-          message: "Appointment rescheduled successfully",
-          data: appointment,
-          error: null,
-        })
-      );
+    res.status(200).json(
+      createResponse({
+        isSuccess: true,
+        statusCode: 200,
+        message: "Appointment rescheduled successfully",
+        data: appointment,
+        error: null,
+      })
+    );
   } catch (error) {
     console.error("Error rescheduling appointment:", error.message);
     next(error);

@@ -51,6 +51,8 @@ import {
 import { PhoneIcon } from "@chakra-ui/icons";
 import { notification, Upload } from "antd";
 
+import PREDEFINED_SPECIALTIES from "../../../../../constants/Specialties";
+
 import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
 import Pagination from "../../../utils/Pagination";
 import InputForm from "../../auth/InputForm";
@@ -82,6 +84,8 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
     doctorProfileImage: null,
     certificationImage: [],
   };
+
+  const predefinedSpecialties = PREDEFINED_SPECIALTIES;
 
   const [formData, setFormData] = useState(initialFormData);
 
@@ -458,14 +462,22 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
                           <InputLeftElement pointerEvents="none">
                             <Icon as={AwardIcon} size={18} />
                           </InputLeftElement>
-                          <Input
+
+                          {/* Specialization Dropdown (Select) */}
+                          <Select
                             name="specialization"
                             value={formData.specialization}
                             onChange={handleChange}
-                            placeholder="Cardiology"
+                            placeholder="Select a specialization"
                             bg="gray.50"
                             pl="40px"
-                          />
+                          >
+                            {predefinedSpecialties.map((specialty, index) => (
+                              <option key={index} value={specialty}>
+                                {specialty}
+                              </option>
+                            ))}
+                          </Select>
                         </InputGroup>
                       </FormControl>
 

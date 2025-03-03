@@ -468,7 +468,9 @@ export const getAllDoctors = async (req, res, next) => {
 export const getDoctorById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const doctor = await doctorModel.findById(id);
+    const doctor = await doctorModel
+      .findById(id)
+      .populate("hospital", "name location"); 
 
     if (!doctor) {
       return res.status(404).json(
@@ -523,6 +525,50 @@ export const deleteDoctor = async (req, res, next) => {
     );
   } catch (error) {
     console.error("Error deleting doctor:", error);
+    return next(error);
+  }
+};
+
+export const getDoctorsBySpecialization = async (req, res, next) => {
+  try {
+    const { specialization } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    console.log("The requested specialization:", specialization);
+
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const sortOptions = { createdAt: -1 };
+
+    // Use the paginate function consistently
+    const result = await paginate(
+      doctorModel,
+      { specialization }, // Filter by specialization
+      {
+        page: pageNum,
+        limit: limitNum,
+        sort: sortOptions,
+        populate: { path: "hospital", select: "name" }, // Fetch only hospital name
+      }
+    );
+
+    console.log("Paginated doctors by specialization:", result);
+
+    return res.status(200).json(
+      createResponse({
+        isSuccess: true,
+        statusCode: 200,
+        message: "Doctors fetched successfully.",
+        data: result.data,
+        pagination: {
+          totalCount: result.totalCount,
+          currentPage: result.currentPage,
+          totalPages: result.totalPages,
+        },
+        error: null,
+      })
+    );
+  } catch (error) {
+    console.error("Error fetching doctors by specialization:", error);
     return next(error);
   }
 };

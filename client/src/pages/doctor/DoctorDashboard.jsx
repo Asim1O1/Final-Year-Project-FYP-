@@ -13,29 +13,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-// Dashboard components
-const ProfileSummary = () => (
-  <div className="bg-white rounded-lg shadow-md p-6">
-    <div className="flex items-center space-x-4">
-      <img
-        src="/api/placeholder/80/80"
-        alt="Doctor Profile"
-        className="h-20 w-20 rounded-full object-cover border-4 border-blue-100"
-      />
-      <div>
-        <h2 className="text-2xl font-bold text-gray-800">Dr. Sarah Johnson</h2>
-        <p className="text-gray-600">Cardiologist</p>
-        <p className="text-gray-600">Memorial Hospital</p>
-        <div className="mt-2 flex items-center">
-          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-            4.9 ★ (120 reviews)
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
 const AppointmentPreview = () => {
   const appointments = [
     {
@@ -221,7 +198,6 @@ const NotificationsPanel = () => {
   );
 };
 
-
 //   const actions = [
 //     {
 //       name: "Schedule",
@@ -328,9 +304,6 @@ const DoctorDashboard = () => {
       <StatsSummary />
 
       <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-1">
-          <ProfileSummary />
-        </div>
         <div className="col-span-2">
           <AppointmentPreview />
         </div>
@@ -340,8 +313,6 @@ const DoctorDashboard = () => {
         <TestRequestsPreview />
         <NotificationsPanel />
       </div>
-
-    
     </div>
   );
 };

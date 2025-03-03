@@ -7,6 +7,7 @@ import {
   LogIn,
   User,
   LogOut,
+  Calendar,
 } from "lucide-react";
 import MedConnectLogo from "../../assets/MedConnect_Logo3-removebg.png";
 import { useSelector, useDispatch } from "react-redux";
@@ -56,6 +57,7 @@ const Navbar = () => {
     { href: "/", label: "Home", icon: Home },
     { href: "/hospitals", label: "Hospitals", icon: Hospital },
     { href: "/medicalTests", label: "Medical Tests", icon: DollarSign },
+    { href: "/book-appointment", label: "Book Appointment", icon: Calendar },
   ];
 
   return (

@@ -38,9 +38,28 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    rejectionReason: { type: String, default: null },
+    rejectionReason: {
+      type: String,
+      default: null,
+    },
+    // New Fields for Payment
+    paymentMethod: {
+      type: String,
+      enum: ["pay_on_site", "pay_now"],
+      required: true,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "not_required"],
+      default: "pending",
+    },
+    paymentId: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );
+
 const appointmentModel = mongoose.model("Appointment", appointmentSchema);
 export default appointmentModel;

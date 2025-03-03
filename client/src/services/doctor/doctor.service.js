@@ -2,7 +2,7 @@ import axios from "axios";
 import createApiResponse from "../../utils/createApiResponse";
 import axiosInstance from "../../utils/axiosInstance";
 import { BASE_BACKEND_URL } from "../../../constants";
-import { ChartNoAxesColumnDecreasing } from "lucide-react";
+
 
 const createDoctorService = async (doctorData) => {
   try {
@@ -103,9 +103,7 @@ const updateDoctorService = async (doctorId, doctorData) => {
 // Delete a doctor
 const deleteDoctorService = async (doctorId) => {
   try {
-    const response = await axiosInstance.delete(
-      `/api/doctor/${doctorId}`
-    );
+    const response = await axiosInstance.delete(`/api/doctor/${doctorId}`);
 
     if (!response?.data?.isSuccess) {
       throw createApiResponse({
@@ -136,7 +134,11 @@ const deleteDoctorService = async (doctorId) => {
 const getDoctorByIdService = async (doctorId) => {
   try {
     const response = await axiosInstance.get(
-      `${BASE_BACKEND_URL}/api/doctor/${doctorId}`
+      `/api/doctor/${doctorId}`
+    );
+    console.log(
+      "The response while fetching doctor by ID is",
+      response
     );
 
     if (!response?.data?.isSuccess) {
@@ -150,7 +152,7 @@ const getDoctorByIdService = async (doctorId) => {
     return createApiResponse({
       isSuccess: true,
       message: "Doctor retrieved successfully",
-      data: response?.data?.result,
+      data: response?.data?.data,
     });
   } catch (error) {
     return createApiResponse({
@@ -187,7 +189,7 @@ const getAllDoctorsService = async (filters = {}) => {
       isSuccess: true,
       message: "Doctors retrieved successfully",
       data: {
-        doctors: response?.data?.data, 
+        doctors: response?.data?.data,
         totalCount: response?.data?.data?.totalCount,
         currentPage: response?.data?.data?.currentPage,
         totalPages: response?.data?.data?.totalPages,
@@ -205,12 +207,60 @@ const getAllDoctorsService = async (filters = {}) => {
   }
 };
 
+const getDoctorsBySpecialization = async (specialization, filters = {}) => {
+  try {
+    console.log("The specialization in getDoctorsBySpecialization are", specialization);
+    const { page = 1, limit = 10 } = filters;
+    const queryParams = new URLSearchParams({ page, limit }).toString();
+
+    const response = await axios.get(
+      `${BASE_BACKEND_URL}/api/doctor/specialization/${specialization}?${queryParams}`
+    );
+    console.log(
+      "The response while fetching doctors by specialization is",
+      response
+    );
+
+    if (!response?.data?.isSuccess) {
+      throw createApiResponse({
+        isSuccess: false,
+        message:
+          response?.data?.message ||
+          "Failed to retrieve doctors by specialization",
+        error: response?.data?.error || null,
+      });
+    }
+
+    return createApiResponse({
+      isSuccess: true,
+      message: "Doctors retrieved successfully",
+      data: {
+        doctors: response?.data?.data,
+        totalCount: response?.data?.pagination?.totalCount,
+        currentPage: response?.data?.pagination?.currentPage,
+        totalPages: response?.data?.pagination?.totalPages,
+      },
+    });
+  } catch (error) {
+    return createApiResponse({
+      isSuccess: false,
+      message: "An error occurred while fetching doctors by specialization",
+      error:
+        error?.response?.data?.error?.[0] ||
+        error?.response?.data?.message ||
+        "Something went wrong",
+    });
+  }
+};
+
 const doctorService = {
   createDoctorService,
   updateDoctorService,
   deleteDoctorService,
   getDoctorByIdService,
   getAllDoctorsService,
+  getDoctorsBySpecialization,
+ 
 };
 
 export default doctorService;

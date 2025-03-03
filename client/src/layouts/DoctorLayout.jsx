@@ -2,7 +2,7 @@
 import React from "react";
 
 import { Bell } from "lucide-react";
-import DoctorSidebar from "../component/doctor/doctorSidebar";
+import DoctorSidebar from "../component/doctor/appointment/doctorSidebar";
 import { Box } from "@chakra-ui/react";
 import { Outlet } from "react-router-dom";
 

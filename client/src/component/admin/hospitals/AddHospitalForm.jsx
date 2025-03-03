@@ -27,12 +27,15 @@ import {
   Textarea,
   InputGroup,
   InputLeftAddon,
+  Select,
 } from "@chakra-ui/react";
 import { X } from "lucide-react";
 import { notification } from "antd";
 import { handleHospitalRegistration } from "../../../features/hospital/hospitalSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
+
+import PREDEFINED_SPECIALTIES from "../../../../../constants/Specialties";
 const AddHospitalForm = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
   const [currentPage, setCurrentPage] = useState(1);
@@ -63,6 +66,8 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
       }));
     }
   };
+
+  const predefinedSpecialties = PREDEFINED_SPECIALTIES;
   const handleValidation = () => {
     const errors = {};
 
@@ -133,10 +138,10 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
 
       console.log("The hospital data is", hospitalData);
 
-      const result = await  dispatch(handleHospitalRegistration(hospitalData));
+      const result = await dispatch(handleHospitalRegistration(hospitalData));
       console.log("The resultt while adding hospital i is", result);
 
-      if (handleHospitalRegistration.fulfilled.match(result)  ) {
+      if (handleHospitalRegistration.fulfilled.match(result)) {
         notification.success({
           message: "Hospital Registration Successful",
           description:
@@ -155,7 +160,9 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
           campaigns: [],
         });
 
-        await dispatch(fetchAllHospitals({ page: currentPage, limit: 10 })).unwrap();
+        await dispatch(
+          fetchAllHospitals({ page: currentPage, limit: 10 })
+        ).unwrap();
         onClose();
       } else if (handleHospitalRegistration.rejected.match(result)) {
         notification.error({
@@ -271,124 +278,56 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
                       <Heading size="sm" mb={2}>
                         Specialties
                       </Heading>
-                      {formData.specialties.map((specialty, index) => (
-                        <HStack key={index} mb={2}>
-                          <Input
-                            placeholder="Enter specialty"
-                            value={specialty}
-                            onChange={(e) => {
-                              const newSpecialties = [...formData.specialties];
-                              newSpecialties[index] = e.target.value;
-                              setFormData({
-                                ...formData,
-                                specialties: newSpecialties,
-                              });
-                            }}
-                          />
-                          <IconButton
-                            aria-label="Remove specialty"
-                            icon={<X size={16} />}
-                            onClick={() => {
-                              const newSpecialties =
-                                formData.specialties.filter(
-                                  (_, i) => i !== index
-                                );
-                              setFormData({
-                                ...formData,
-                                specialties: newSpecialties,
-                              });
-                            }}
-                          />
-                        </HStack>
-                      ))}
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          setFormData({
-                            ...formData,
-                            specialties: [...formData.specialties, ""],
-                          })
-                        }
-                      >
-                        Add Specialty
-                      </Button>
-                    </Box>
+                      <FormControl isRequired>
+                        <FormLabel>Select Specialties</FormLabel>
+                        <Select
+                          placeholder="Select specialties"
+                          onChange={(e) => {
+                            const newSpecialties = [
+                              ...formData.specialties,
+                              e.target.value,
+                            ];
+                            setFormData({
+                              ...formData,
+                              specialties: newSpecialties,
+                            });
+                          }}
+                        >
+                          {predefinedSpecialties.map((specialty, index) => (
+                            <option key={index} value={specialty}>
+                              {specialty}
+                            </option>
+                          ))}
+                        </Select>
+                      </FormControl>
 
-                    <Box>
-                      <Heading size="sm" mb={2}>
-                        Medical Tests
-                      </Heading>
-                      {formData.medicalTests.map((test, index) => (
-                        <HStack key={`medical-test-${index}`} mb={2}>
-                          <Input
-                            placeholder="Enter medical test name"
-                            value={test.name || ""}
-                            onChange={(e) => {
-                              const newMedicalTests = [
-                                ...formData.medicalTests,
-                              ];
-                              newMedicalTests[index] = {
-                                ...test,
-                                name: e.target.value,
-                              };
-                              setFormData({
-                                ...formData,
-                                medicalTests: newMedicalTests,
-                              });
-                            }}
-                          />
-                          <InputGroup>
-                            <InputLeftAddon children="Rs" />
-                            <Input
-                              placeholder="Enter price"
-                              type="number"
-                              value={test.price || ""}
-                              onChange={(e) => {
-                                const newMedicalTests = [
-                                  ...formData.medicalTests,
-                                ];
-                                newMedicalTests[index] = {
-                                  ...test,
-                                  price: e.target.value,
-                                };
-                                setFormData({
-                                  ...formData,
-                                  medicalTests: newMedicalTests,
-                                });
-                              }}
-                            />
-                          </InputGroup>
-                          <IconButton
-                            aria-label={`Remove medical test ${index}`}
-                            icon={<X size={16} />}
-                            onClick={() => {
-                              const newMedicalTests =
-                                formData.medicalTests.filter(
-                                  (_, i) => i !== index
-                                );
-                              setFormData({
-                                ...formData,
-                                medicalTests: newMedicalTests,
-                              });
-                            }}
-                          />
-                        </HStack>
-                      ))}
-
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          setFormData({
-                            ...formData,
-                            medicalTests: [
-                              ...formData.medicalTests,
-                              { name: "", price: "" },
-                            ],
-                          })
-                        }
-                      >
-                        Add Medical Test
-                      </Button>
+                      {formData.specialties.length > 0 && (
+                        <Box mt={2}>
+                          <Heading size="sm" mb={2}>
+                            Selected Specialties
+                          </Heading>
+                          <VStack spacing={2}>
+                            {formData.specialties.map((specialty, index) => (
+                              <HStack key={index} mb={2}>
+                                <Box>{specialty}</Box>
+                                <IconButton
+                                  icon={<X />}
+                                  onClick={() => {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      specialties: prev.specialties.filter(
+                                        (_, idx) => idx !== index
+                                      ),
+                                    }));
+                                  }}
+                                  size="sm"
+                                  colorScheme="red"
+                                />
+                              </HStack>
+                            ))}
+                          </VStack>
+                        </Box>
+                      )}
                     </Box>
                   </VStack>
                 </TabPanel>

@@ -2,27 +2,27 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import doctorService from "../../services/doctor/doctor.service";
 import createApiResponse from "../../utils/createApiResponse";
 
-  export const handleDoctorRegistration = createAsyncThunk(
-    "doctor/addDoctor",
-    async (doctorData, { rejectWithValue }) => {
-        console.log("Entered the handle doctor registration", doctorData);
-      try {
-        const response = await doctorService.createDoctorService(doctorData);
-        console.log("The response is", response);
-        if (!response.isSuccess) throw response;
-        return response;
-      } catch (error) {
-        return rejectWithValue(
-          createApiResponse({
-            isSuccess: false,
-            message:
-              error?.message || "Failed to register doctor. Please try again.",
-            error: error?.error || null,
-          })
-        );
-      }
+export const handleDoctorRegistration = createAsyncThunk(
+  "doctor/addDoctor",
+  async (doctorData, { rejectWithValue }) => {
+    console.log("Entered the handle doctor registration", doctorData);
+    try {
+      const response = await doctorService.createDoctorService(doctorData);
+      console.log("The response is", response);
+      if (!response.isSuccess) throw response;
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        createApiResponse({
+          isSuccess: false,
+          message:
+            error?.message || "Failed to register doctor. Please try again.",
+          error: error?.error || null,
+        })
+      );
     }
-  );
+  }
+);
 
 // **Update Doctor**
 export const handleDoctorUpdate = createAsyncThunk(
@@ -33,7 +33,10 @@ export const handleDoctorUpdate = createAsyncThunk(
         doctorId,
         doctorData
       );
-      console.log("The response in the handle doctor update slice is ", response);
+      console.log(
+        "The response in the handle doctor update slice is ",
+        response
+      );
       if (!response.isSuccess) throw response?.data;
       return response;
     } catch (error) {
@@ -66,8 +69,8 @@ export const fetchAllDoctors = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       const response = await doctorService.getAllDoctorsService(params);
-      console.log("The response while dinf fetcgAll doctors in thun", response)
-      
+      console.log("The response while dinf fetcgAll doctors in thun", response);
+
       if (!response.isSuccess) throw response?.data;
       return response.data;
     } catch (error) {
@@ -78,12 +81,38 @@ export const fetchAllDoctors = createAsyncThunk(
   }
 );
 
+// **Fetch Doctors by Specialization**
+export const fetchDoctorsBySpecialization = createAsyncThunk(
+  "doctor/fetchDoctorsBySpecialization",
+  async ({ specialization, params = {} }, { rejectWithValue }) => {
+    try {
+      console.log("The specialization in the slice is", specialization);
+      const response = await doctorService.getDoctorsBySpecialization(
+        specialization,
+        params
+      );
+      console.log(
+        "The response while fetching doctors by specialization:",
+        response
+      );
+
+      if (!response.isSuccess) throw response?.data;
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        createApiResponse(error, "Failed to fetch doctors by specialization")
+      );
+    }
+  }
+);
+
 // **Fetch Single Doctor**
 export const fetchSingleDoctor = createAsyncThunk(
   "doctor/fetchSingleDoctor",
   async (doctorId, { rejectWithValue }) => {
     try {
-      const response = await doctorService.fetchSingleDoctorService(doctorId);
+      const response = await doctorService.getDoctorByIdService(doctorId);
+      console.log("The response while fetching doctor details:", response);
       if (!response.isSuccess) throw response;
       return response.data;
     } catch (error) {
@@ -170,6 +199,14 @@ const doctorSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchSingleDoctor.rejected, handleRejected);
+    builder
+      .addCase(fetchDoctorsBySpecialization.pending, handlePending)
+      .addCase(fetchDoctorsBySpecialization.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.doctors = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchDoctorsBySpecialization.rejected, handleRejected);
   },
 });
 

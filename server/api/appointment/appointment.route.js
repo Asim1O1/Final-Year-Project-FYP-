@@ -9,7 +9,7 @@ import protectRoute from "../../middlewares/protectRoute.js";
 
 const router = express.Router();
 
-router.post("/book", bookDoctorAppointment);
+router.post("/book", protectRoute, bookDoctorAppointment);
 // Route to get available time slots for a doctor on a specific date
 router.get("/available-slots/:doctorId/:date", getAvailableTimeSlots);
 

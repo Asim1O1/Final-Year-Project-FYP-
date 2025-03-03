@@ -16,7 +16,7 @@ function CheckAuth({ role, children }) {
   }
 
   // If authenticated but role does not match
-  if (user?.data?.role !== role) {
+  if (user?.data?.role !== role ) {
     console.log(
       `User role mismatch: Expected ${role}, got ${user?.data?.role}. Redirecting to /unauthorized...`
     );
