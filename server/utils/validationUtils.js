@@ -84,22 +84,6 @@ export const validateHospitalInput = Joi.object({
       date: Joi.date().optional(),
     })
   ),
-  campaigns: Joi.array().items(
-    Joi.object({
-      title: Joi.string().min(3).required().messages({
-        "string.empty": "Campaign title is required.",
-        "string.min": "Campaign title must be at least 3 characters long.",
-      }),
-      description: Joi.string().min(10).required().messages({
-        "string.empty": "Campaign description is required.",
-        "string.min":
-          "Campaign description must be at least 10 characters long.",
-      }),
-      date: Joi.date().required().messages({
-        "date.base": "A valid date is required for the campaign.",
-      }),
-    })
-  ),
 });
 
 export const validateDoctorInput = Joi.object({
@@ -111,16 +95,18 @@ export const validateDoctorInput = Joi.object({
   specialization: Joi.string().trim().min(3).max(100).required(),
   address: Joi.string().required(),
   phone: Joi.string()
-  .pattern(/^[0-9]+$/)
-  .min(10)
-  .required(),
-  qualifications: Joi.array().items(
-    Joi.object({
-      degree: Joi.string().required(),
-      university: Joi.string().required(),
-      graduationYear: Joi.number().required(),
-    })
-  ).required(),
+    .pattern(/^[0-9]+$/)
+    .min(10)
+    .required(),
+  qualifications: Joi.array()
+    .items(
+      Joi.object({
+        degree: Joi.string().required(),
+        university: Joi.string().required(),
+        graduationYear: Joi.number().required(),
+      })
+    )
+    .required(),
 
   consultationFee: Joi.string().min(0).required(),
   availability: Joi.array()
@@ -141,5 +127,4 @@ export const validateDoctorInput = Joi.object({
   hospital: Joi.string().length(24).required(),
   yearsOfExperience: Joi.number().integer().min(0).max(100).required(),
   isVerified: Joi.boolean().default(false),
-  
 });

@@ -42,14 +42,7 @@ const hospitalSchema = new mongoose.Schema(
         date: { type: Date, default: Date.now },
       },
     ],
-    campaigns: [
-      {
-        title: { type: String, required: true },
-        description: { type: String, required: true },
-        date: { type: Date, required: true },
-        volunteers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-      },
-    ],
+
     hospital_admin: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
