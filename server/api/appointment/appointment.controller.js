@@ -136,11 +136,11 @@ export const bookDoctorAppointment = async (req, res, next) => {
       startTime,
       reason,
       hospital: hospitalId,
-      endTime: allSlots[allSlots.indexOf(startTime) + 1], // Calculate end time
+      endTime: allSlots[allSlots.indexOf(startTime) + 1],
       status: "pending", // Default status
       paymentMethod: paymentMethod,
-      paymentStatus: paymentMethod === "pay_now" ? "pending" : "not_required", // Handle payment status
-      paymentId: paymentMethod === "pay_now" ? null : undefined, // null for "pay_now", undefined for "pay_on_site"
+      paymentStatus: paymentMethod === "pay_now" ? "pending" : "not_required",
+      paymentId: paymentMethod === "pay_now" ? null : undefined,
     });
 
     await newAppointment.save();
@@ -331,6 +331,7 @@ export const getUserAppointments = async (req, res, next) => {
 };
 
 export const getDoctorAppointments = async (req, res, next) => {
+  console.log(" fetchingDoctorAppointments")
   const { doctorId } = req.params;
   try {
     const doctor = await doctorModel.findById(doctorId);
@@ -349,7 +350,7 @@ export const getDoctorAppointments = async (req, res, next) => {
     // Fetch appointments related to this doctor
     const appointments = await appointmentModel
       .find({ doctor: doctorId })
-      .populate("user", "name email") // Populate user details
+      .populate("user", "fullName email") 
       .populate("hospital", "name location") // Populate hospital details
       .sort({ date: 1 }); // Sort by appointment date
 

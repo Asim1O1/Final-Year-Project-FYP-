@@ -23,8 +23,11 @@ const handleRefreshAccessToken = async (req, res, next) => {
     // Verify the refresh token
     const decoded = jwt.verify(refreshToken, appConfig.refresh_secret);
 
-    // Generate a new access token
-    const newAccessToken = generateAccessToken(decoded.sub);
+    // Generate a new access token with accountType
+    const newAccessToken = generateAccessToken(
+      decoded.sub,
+      decoded.accountType
+    );
 
     console.log("Generated new access token:", newAccessToken);
 
@@ -42,7 +45,7 @@ const handleRefreshAccessToken = async (req, res, next) => {
         isSuccess: true,
         statusCode: 200,
         message: "Access token refreshed successfully.",
-        data: { accessToken: newAccessToken }, 
+        data: { accessToken: newAccessToken },
         error: null,
       })
     );
@@ -83,5 +86,4 @@ const handleRefreshAccessToken = async (req, res, next) => {
     );
   }
 };
-
 export default handleRefreshAccessToken;

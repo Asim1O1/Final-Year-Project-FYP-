@@ -147,8 +147,12 @@ export const handleUserLogin = async (req, res, next) => {
       );
     }
 
-    const accessToken = generateAccessToken(account._id);
-    const refreshToken = generateRefreshToken(account._id);
+    // Determine account type
+    const accountType = user ? "user" : "doctor";
+
+    // Generate tokens with accountType
+    const accessToken = generateAccessToken(account._id, accountType);
+    const refreshToken = generateRefreshToken(account._id, accountType);
 
     const accountObject = account.toObject();
     delete accountObject.password;

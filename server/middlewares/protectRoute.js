@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import appConfig from "../config/appConfig.js";
 import userModel from "../models/user.model.js";
+import doctorModel from "../models/doctor.model.js"; // Import doctor model
 import createResponse from "../utils/responseBuilder.js";
 
 const protectRoute = async (req, res, next) => {
@@ -12,15 +13,12 @@ const protectRoute = async (req, res, next) => {
         ? req.headers.authorization.split(" ")[1]
         : null);
 
-    console.log("The token is: ", token);
-
     if (!token) {
       return res.status(401).json(
         createResponse({
           isSuccess: false,
           statusCode: 401,
-          message:
-            "Authentication required. Please log in to access this resource.",
+          message: "Authentication required. Please log in.",
           error: null,
         })
       );
@@ -28,40 +26,59 @@ const protectRoute = async (req, res, next) => {
 
     // Verify and decode token
     const decoded = jwt.verify(token, appConfig.jwt_secret);
-    console.log("Decoded token:", decoded);
+    console.log("tHE DECOED IS", decoded);
 
-    if (!decoded?.sub) {
+    // Validate token structure
+    if (!decoded?.sub || !decoded?.accountType) {
       return res.status(401).json(
         createResponse({
           isSuccess: false,
           statusCode: 401,
-          message: "Invalid token, access denied.",
+          message: "Invalid token structure",
           error: null,
         })
       );
     }
-    console.log("The decoded token is: ", decoded);
 
-    // Fetch user without password field
-    const user = await userModel.findById(decoded.sub).select("-password");
+    let account;
+    const { sub, accountType } = decoded;
 
-    console.log("The user is: ", user);
+    // Check account type and fetch appropriate model
+    switch (accountType) {
+      case "user":
+        account = await userModel.findById(sub).select("-password");
+        break;
+      case "doctor":
+        account = await doctorModel.findById(sub).select("-password");
+        break;
+      default:
+        return res.status(401).json(
+          createResponse({
+            isSuccess: false,
+            statusCode: 401,
+            message: "Invalid account type",
+            error: null,
+          })
+        );
+    }
 
-    if (!user) {
+    if (!account) {
       return res.status(404).json(
         createResponse({
           isSuccess: false,
           statusCode: 404,
-          message: "User not found.",
+          message: `${accountType} not found`,
           error: null,
         })
       );
     }
 
-    // Attach user object to the request
-    req.user = user;
+    // Attach account info to request
+    req.user = account;
+    req.accountType = accountType; // Add account type to request
     next();
   } catch (error) {
+    // Handle different error types
     if (error.name === "TokenExpiredError") {
       return res.status(401).json(
         createResponse({
@@ -71,24 +88,25 @@ const protectRoute = async (req, res, next) => {
           error: null,
         })
       );
-    } else if (error.name === "JsonWebTokenError") {
+    }
+
+    if (error.name === "JsonWebTokenError") {
       return res.status(401).json(
         createResponse({
           isSuccess: false,
           statusCode: 401,
-          message: "Invalid token, access denied.",
+          message: "Invalid token",
           error: null,
         })
       );
     }
 
-    console.error("Error in protectRoute middleware: ", error);
-
+    console.error("Error in protectRoute:", error);
     return res.status(500).json(
       createResponse({
         isSuccess: false,
         statusCode: 500,
-        message: "An error occurred while processing your request.",
+        message: "Internal server error",
         error: error.message,
       })
     );
