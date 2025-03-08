@@ -13,20 +13,62 @@ import MedConnectLogo from "../../assets/MedConnect_Logo3-removebg.png";
 import { useSelector, useDispatch } from "react-redux";
 import { logoutUser } from "../../features/auth/authSlice";
 import { useNavigate } from "react-router-dom";
+import Notifications from "../common/Notification";
+
+import {
+  handleClearAllNotifications,
+  handleGetUserNotifications,
+  handleMarkAllNotificationsAsRead,
+  handleMarkNotificationAsRead,
+} from "../../features/notification/notificationSlice";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [prevScrollPos, setPrevScrollPos] = useState(window.scrollY);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  // Get notifications from Redux store
+  const { notifications } = useSelector((state) => state?.notifications);
+
+  const { user, isAuthenticated } = useSelector((state) => state?.auth);
+
+  const userId = user?.data?._id;
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(handleGetUserNotifications());
+    }
+  }, [dispatch, isAuthenticated]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const { isAuthenticated } = useSelector((state) => state?.auth);
-  const dispatch = useDispatch();
+  const toggleNotifications = () => {
+    setIsNotificationsOpen(!isNotificationsOpen);
+    if (!isNotificationsOpen) {
+      setIsMenuOpen(false);
+    }
+  };
 
+  const markAsRead = (notificationId) => {
+    console.log("Marking notification as read:", notificationId);
+    if (notificationId) {
+      dispatch(handleMarkNotificationAsRead(notificationId));
+    } else {
+      console.error("Invalid notification or user ID");
+    }
+  };
+  const markAllAsRead = () => {
+    dispatch(handleMarkAllNotificationsAsRead());
+  };
+
+  const clearNotifications = () => {
+    dispatch(handleClearAllNotifications());
+  };
   const handleLogout = () => {
     dispatch(logoutUser());
     navigate("/login");
@@ -35,19 +77,13 @@ const Navbar = () => {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollPos = window.scrollY;
-      const isScrollingUp = prevScrollPos > currentScrollPos;
-
-      if (isScrollingUp || currentScrollPos <= 0) {
-        setIsNavbarVisible(true);
-      } else {
-        setIsNavbarVisible(false);
-      }
-
+      setIsNavbarVisible(
+        prevScrollPos > currentScrollPos || currentScrollPos <= 0
+      );
       setPrevScrollPos(currentScrollPos);
     };
 
     window.addEventListener("scroll", handleScroll);
-
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
@@ -60,6 +96,9 @@ const Navbar = () => {
     { href: "/book-appointment", label: "Book Appointment", icon: Calendar },
   ];
 
+  const unreadCount =
+    notifications?.filter((notification) => !notification.read)?.length || 0;
+
   return (
     <nav
       className={`sticky top-0 z-50 bg-transparent transition-transform duration-300 ${
@@ -68,7 +107,6 @@ const Navbar = () => {
     >
       <div className="container mx-auto px-4 lg:px-12 py-4">
         <div className="flex items-center justify-between">
-          {/* Logo Section */}
           <div className="flex items-center">
             <img
               src={MedConnectLogo}
@@ -77,7 +115,6 @@ const Navbar = () => {
             />
           </div>
 
-          {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center space-x-8">
             {NavLinks.map((link) => (
               <a
@@ -94,11 +131,18 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Desktop Buttons Section */}
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated ? (
               <>
-                {/* Profile Icon */}
+                <Notifications
+                  notifications={notifications}
+                  isNotificationsOpen={isNotificationsOpen}
+                  toggleNotifications={toggleNotifications}
+                  unreadCount={unreadCount}
+                  markAsRead={markAsRead}
+                  markAllAsRead={markAllAsRead}
+                  clearNotifications={clearNotifications}
+                />
                 <a
                   href="/profile"
                   className="flex items-center text-blue-500 hover:text-blue-600 text-lg font-medium transition"
@@ -106,18 +150,15 @@ const Navbar = () => {
                   <User className="mr-1" size={20} />
                   Profile
                 </a>
-                {/* Logout Button */}
                 <button
                   onClick={handleLogout}
                   className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-8 py-2 rounded-full hover:shadow-xl transition flex items-center text-lg"
                 >
-                  Logout
-                  <LogOut className="ml-2" size={20} />
+                  Logout <LogOut className="ml-2" size={20} />
                 </button>
               </>
             ) : (
               <>
-                {/* Signup Button */}
                 <a
                   href="/register"
                   className="flex items-center text-blue-500 hover:text-blue-600 text-lg font-medium transition"
@@ -125,45 +166,54 @@ const Navbar = () => {
                   <User className="mr-1" size={20} />
                   SignUp
                 </a>
-                {/* Login Button */}
                 <a
                   href="/login"
                   className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-2 rounded-full hover:shadow-xl transition flex items-center text-lg"
                 >
-                  Login
-                  <LogIn className="ml-2" size={20} />
+                  Login <LogIn className="ml-2" size={20} />
                 </a>
               </>
             )}
           </div>
 
-          {/* Mobile Menu Toggle */}
-          <button
-            className="md:hidden p-2 rounded-md hover:bg-gray-100 transition"
-            onClick={toggleMenu}
-          >
-            <svg
-              className="w-6 h-6 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16m-7 6h7"
+          <div className="md:hidden flex items-center space-x-2">
+            {isAuthenticated && (
+              <Notifications
+                notifications={notifications}
+                isNotificationsOpen={isNotificationsOpen}
+                toggleNotifications={toggleNotifications}
+                unreadCount={unreadCount}
+                markAsRead={markAsRead}
+                markAllAsRead={markAllAsRead}
+                clearNotifications={clearNotifications}
               />
-            </svg>
-          </button>
+            )}
+            <button
+              className="p-2 rounded-md hover:bg-gray-100 transition"
+              onClick={toggleMenu}
+            >
+              <svg
+                className="w-6 h-6 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16m-7 6h7"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        {/* Mobile Menu */}
         <div
           className={`${
             isMenuOpen ? "flex" : "hidden"
-          } md:hidden absolute left-0 right-0 top-full bg-transparent backdrop-blur-md shadow-lg flex-col w-full py-4 px-4 mt-2 space-y-2`}
+          } md:hidden absolute left-0 right-0 top-full bg-transparent backdrop-blur-md shadow-lg flex-col w-full py-4 px-4 mt-2 space-y-2 z-40`}
         >
           {NavLinks.map((link) => (
             <a
@@ -179,7 +229,6 @@ const Navbar = () => {
           <div className="border-t border-gray-200 pt-4 space-y-2">
             {isAuthenticated ? (
               <>
-                {/* Profile Link */}
                 <a
                   href="/profile"
                   className="flex items-center text-blue-500 hover:bg-blue-50 px-4 py-2 rounded-md text-lg font-medium transition"
@@ -187,18 +236,15 @@ const Navbar = () => {
                   <User className="mr-3" size={20} />
                   Profile
                 </a>
-                {/* Logout Button */}
                 <button
                   onClick={handleLogout}
                   className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2 rounded-full hover:shadow-lg transition flex items-center justify-center text-lg w-full"
                 >
-                  Logout
-                  <LogOut className="ml-2" size={20} />
+                  Logout <LogOut className="ml-2" size={20} />
                 </button>
               </>
             ) : (
               <>
-                {/* Signup Link */}
                 <a
                   href="/register"
                   className="flex items-center text-blue-500 hover:bg-blue-50 px-4 py-2 rounded-md text-lg font-medium transition"
@@ -206,13 +252,11 @@ const Navbar = () => {
                   <User className="mr-3" size={20} />
                   SignUp
                 </a>
-                {/* Login Button */}
                 <a
                   href="/login"
                   className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-2 rounded-full hover:shadow-lg transition flex items-center justify-center text-lg"
                 >
-                  Login
-                  <LogIn className="ml-2" size={20} />
+                  Login <LogIn className="ml-2" size={20} />
                 </a>
               </>
             )}

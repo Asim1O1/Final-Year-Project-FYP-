@@ -33,7 +33,7 @@ export const HospitalSidebar = () => {
     {
       icon: RiMegaphoneLine,
       label: "Campaigns",
-      path: "/hospital-admin/campaigns",
+      path: "/hospital-admin/campaign",
     },
     {
       icon: RiSettings4Line,

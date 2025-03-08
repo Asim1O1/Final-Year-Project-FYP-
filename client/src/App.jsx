@@ -30,6 +30,7 @@ import SelectDoctor from "./pages/user/SelectDoctor.jsx";
 import SelectTime from "./pages/user/SelectTime.jsx";
 import PatientDetails from "./pages/user/PatientDetails.jsx";
 import ConfirmationPage from "./pages/user/ConfirmationPage.jsx";
+import CampaignManagement from "./pages/hospital_admin/CampaignManagement.jsx";
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -157,6 +158,7 @@ function App() {
         >
           <Route index element={<HospitalAdminDashboard />} />
           <Route path="doctors" element={<DoctorManagement />} />
+          <Route path="campaign" element={<CampaignManagement />} />
         </Route>
 
         <Route
