@@ -2,6 +2,9 @@ import createResponse from "../../utils/responseBuilder.js";
 
 import Campaign from "../../models/campaign.model.js";
 import Hospital from "../../models/hospital.model.js";
+import Notification from "../../models/notification.model.js";
+import userModel from "../../models/user.model.js";
+import { sendEmail } from "../../utils/sendEmail.js";
 
 export const createCampaign = async (req, res, next) => {
   const { title, description, date, location, hospital } = req.body;
@@ -22,7 +25,7 @@ export const createCampaign = async (req, res, next) => {
 
   try {
     // Check if hospital exists
-    const hospitalExists = await Hospital.findById(hospital);
+    const hospitalExists = await Hospital.exists({ _id: hospital });
     if (!hospitalExists) {
       return res.status(404).json(
         createResponse({
@@ -59,6 +62,36 @@ export const createCampaign = async (req, res, next) => {
     });
 
     await campaign.save();
+
+    const users = await userModel.find({ role: "user" }, "_id email");
+    console.log("The filtered users are:", users);
+
+    // Create notifications for all users
+    const notifications = users.map((user) => ({
+      user: user._id,
+      message: `New campaign: ${title}. Join us on ${new Date(
+        date
+      ).toLocaleDateString()} at ${location}.`,
+      type: "campaign",
+    }));
+
+    await Notification.insertMany(notifications);
+
+    const io = req.app.get("socketio");
+    io.emit("new-campaign", {
+      message: `New campaign: ${title}`,
+    });
+
+    // Send email notifications
+    for (const user of users) {
+      await sendEmail(
+        user.email,
+        "New Campaign Alert",
+        `A new campaign has been created: ${title}. Join us on ${new Date(
+          date
+        ).toLocaleDateString()} at ${location}.`
+      );
+    }
 
     // Return success response
     return res.status(201).json(
