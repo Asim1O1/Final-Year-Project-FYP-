@@ -76,7 +76,7 @@ const getUserAppointmentsService = async (userId) => {
 const getDoctorAppointmentsService = async (doctorId) => {
   try {
     const response = await axiosInstance.get(
-      `/api/appointments/doctor/${doctorId}`
+      `/api/appointments/doctor-appointments/${doctorId}`
     );
 
     console.log("Fetching appointments for doctor:", doctorId);
