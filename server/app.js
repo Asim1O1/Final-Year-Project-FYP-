@@ -9,6 +9,7 @@ import hospitalAdminRoute from "./api/hospital_admin/hospital_admin.route.js";
 import appointmentRoute from "./api/appointment/appointment.route.js";
 import campaignRoute from "./api/campaign/campaign.route.js";
 import notificationRoute from "./api/notification/notification.route.js";
+import userRoute from "./api/user/user.route.js"
 
 import globalErrorHandler from "./middlewares/globalErrorHandler.js";
 
@@ -27,6 +28,7 @@ app.use(cookieParser());
 
 // ROUTES
 app.use("/api/auth", authRoute);
+app.use("/api/user", userRoute);
 app.use("/api", hospitalRoute);
 app.use("/api/doctor", doctorRoute);
 app.use("/api/hospitalAdmin", hospitalAdminRoute);
