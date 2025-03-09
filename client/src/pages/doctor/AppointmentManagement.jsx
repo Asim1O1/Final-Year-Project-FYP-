@@ -1,18 +1,12 @@
-// src/pages/Appointments.js
-import React, { useState } from "react";
-
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Calendar,
-  Search,
-  Filter,
-  ChevronDown,
   Check,
   X,
   Clock,
   AlertCircle,
   Download,
-  Edit,
-  Trash,
   RefreshCcw,
 } from "lucide-react";
 
@@ -20,109 +14,43 @@ import TabButton from "../../component/doctor/appointment/TabButton.jsx";
 import StatusBadge from "../../component/doctor/appointment/StatusBadge.jsx";
 import AppointmentDetailsModal from "../../component/doctor/appointment/AppointmentDetailModal.jsx";
 
+import { fetchDoctorAppointments } from "../../features/appointment/appointmentSlice.jsx";
+
 const Appointments = () => {
+  const dispatch = useDispatch();
+  const {
+    appointments: rawAppointments,
+    isLoading,
+    error,
+  } = useSelector((state) => state?.appointmentSlice);
   const [activeTab, setActiveTab] = useState("upcoming");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
-  // Sample appointments data
-  const allAppointments = {
-    upcoming: [
-      {
-        id: 1,
-        patientName: "Michael Brown",
-        patientImage: "/api/placeholder/40/40",
-        patientContact: "+1 (555) 123-4567",
-        reason: "Annual Checkup",
-        date: "Feb 27, 2025",
-        time: "09:00 AM",
-        status: "confirmed",
-      },
-      {
-        id: 2,
-        patientName: "Emily Wilson",
-        patientImage: "/api/placeholder/40/40",
-        patientContact: "+1 (555) 987-6543",
-        reason: "Follow-up Consultation",
-        date: "Feb 27, 2025",
-        time: "10:30 AM",
-        status: "confirmed",
-      },
-      {
-        id: 3,
-        patientName: "Robert Davis",
-        patientImage: "/api/placeholder/40/40",
-        patientContact: "+1 (555) 456-7890",
-        reason: "Blood Pressure Check",
-        date: "Feb 28, 2025",
-        time: "01:15 PM",
-        status: "pending",
-      },
-    ],
-    completed: [
-      {
-        id: 4,
-        patientName: "Jessica Adams",
-        patientImage: "/api/placeholder/40/40",
-        patientContact: "+1 (555) 234-5678",
-        reason: "Diabetes Follow-up",
-        date: "Feb 25, 2025",
-        time: "11:00 AM",
-        status: "completed",
-        notes:
-          "Patient responded well to medication adjustment. Schedule follow-up in 3 months.",
-      },
-      {
-        id: 5,
-        patientName: "Thomas Moore",
-        patientImage: "/api/placeholder/40/40",
-        patientContact: "+1 (555) 876-5432",
-        reason: "Post-surgery Check",
-        date: "Feb 24, 2025",
-        time: "02:30 PM",
-        status: "completed",
-        notes: "Healing well. Removed stitches. Advised on physical therapy.",
-      },
-    ],
-    cancelled: [
-      {
-        id: 6,
-        patientName: "Sarah Johnson",
-        patientImage: "/api/placeholder/40/40",
-        patientContact: "+1 (555) 345-6789",
-        reason: "Respiratory Issues",
-        date: "Feb 26, 2025",
-        time: "03:45 PM",
-        status: "cancelled",
-        cancellationReason: "Patient requested reschedule",
-      },
-    ],
+  const doctorId = useSelector((state) => state?.auth?.user?.data?._id);
+
+  // Transform raw appointments into grouped structure
+  const appointments = {
+    upcoming: rawAppointments.filter(
+      (app) => app.status === "pending" || app.status === "confirmed"
+    ),
+    completed: rawAppointments.filter((app) => app.status === "completed"),
+    cancelled: rawAppointments.filter((app) => app.status === "cancelled"),
   };
 
-  // Filter appointments based on search query and filters
-  const getFilteredAppointments = () => {
-    let filtered = allAppointments[activeTab];
-
-    if (searchQuery) {
-      filtered = filtered.filter((app) =>
-        app.patientName.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+  // Fetch appointments when the component mounts
+  useEffect(() => {
+    if (doctorId) {
+      dispatch(fetchDoctorAppointments(doctorId));
     }
+  }, [dispatch, doctorId]);
 
-    if (dateFilter) {
-      filtered = filtered.filter((app) => app.date === dateFilter);
-    }
+  if (isLoading) {
+    return <div>Loading appointments...</div>;
+  }
 
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((app) => app.status === statusFilter);
-    }
-
-    return filtered;
-  };
-
-  const filteredAppointments = getFilteredAppointments();
+  if (error) {
+    return <div>Error fetching appointments: {error}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -137,100 +65,47 @@ const Appointments = () => {
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center justify-between mb-6">
-          <div className="flex items-center space-x-4 mb-2">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search patients..."
-                className="pl-8 pr-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <Search
-                size={16}
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-              />
-            </div>
-
-            <div className="relative">
-              <input
-                type="date"
-                className="pl-8 pr-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-              />
-              <Calendar
-                size={16}
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-              />
-            </div>
-
-            <div className="relative">
-              <select
-                className="pl-8 pr-8 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">All Status</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-              <Filter
-                size={16}
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-              />
-              <ChevronDown
-                size={16}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-              />
-            </div>
-          </div>
-
-          <div className="bg-gray-100 rounded-lg p-1 mb-2">
-            <TabButton
-              name="upcoming"
-              label="Upcoming"
-              count={allAppointments.upcoming.length}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            />
-            <TabButton
-              name="completed"
-              label="Completed"
-              count={allAppointments.completed.length}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            />
-            <TabButton
-              name="cancelled"
-              label="Cancelled"
-              count={allAppointments.cancelled.length}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            />
-          </div>
+        {/* Tabs for Upcoming, Completed, and Cancelled Appointments */}
+        <div className="bg-gray-100 rounded-lg p-1 mb-6">
+          <TabButton
+            name="upcoming"
+            label="Upcoming"
+            count={appointments.upcoming?.length || 0}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          />
+          <TabButton
+            name="completed"
+            label="Completed"
+            count={appointments.completed?.length || 0}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          />
+          <TabButton
+            name="cancelled"
+            label="Cancelled"
+            count={appointments.cancelled?.length || 0}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          />
         </div>
 
         {/* Appointments List */}
         <div className="space-y-4">
-          {filteredAppointments.length > 0 ? (
-            filteredAppointments.map((appointment) => (
+          {appointments[activeTab]?.length > 0 ? (
+            appointments[activeTab].map((appointment) => (
               <div
-                key={appointment.id}
+                key={appointment._id} // Use _id instead of id
                 className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
               >
                 <div className="flex justify-between">
                   <div className="flex items-center space-x-4">
                     <div>
                       <h3 className="font-medium text-gray-800">
-                        {appointment.patientName}
+                        {appointment?.user?.fullName}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        {appointment.patientContact}
+                        {appointment?.user?.email}
                       </p>
                       <p className="text-sm text-gray-600 mt-1">
                         {appointment.reason}
@@ -242,7 +117,8 @@ const Appointments = () => {
                     <div className="flex items-center justify-end mb-2">
                       <Calendar size={16} className="text-gray-500 mr-1" />
                       <span className="text-sm text-gray-700">
-                        {appointment.date}, {appointment.time}
+                        {new Date(appointment.date).toLocaleDateString()},{" "}
+                        {appointment.startTime} - {appointment.endTime}
                       </span>
                     </div>
                     <StatusBadge status={appointment.status} />

@@ -118,9 +118,12 @@ export const handleUserLogin = async (req, res, next) => {
 
     // Check both User and Doctor models
     const user = await userModel.findOne({ email });
+    console.log("The user is", user)
     const doctor = await doctorModel.findOne({ email });
+    console.log("The doctor is", doctor)
 
     const account = user || doctor;
+    console.log("The account is", account)
     if (!account) {
       console.log("Account not found");
       return res.status(401).json(

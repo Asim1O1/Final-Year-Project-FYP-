@@ -7,6 +7,7 @@ import doctorSlice from "../features/doctor/doctorSlice.jsx";
 import appointmentSlice from "../features/appointment/appointmentSlice.jsx";
 import campaignSlice from "../features/campaign/campaignSlice.jsx";
 import notificationSlice from "../features/notification/notificationSlice.jsx";
+import userSlice from "../features/user/userSlice.jsx"
 
 const store = configureStore({
   reducer: {
@@ -17,7 +18,8 @@ const store = configureStore({
     appointmentSlice: appointmentSlice,
     campaignSlice: campaignSlice,
     notifications: notificationSlice,
-    // Add more reducers here as needed
+    userSlice: userSlice, 
+   
   },
 });
 
