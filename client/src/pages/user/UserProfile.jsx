@@ -75,7 +75,7 @@ const UserProfile = () => {
       const date = new Date(dateString);
       return format(date, 'MMMM d, yyyy');
     } catch (e) {
-      return dateString;
+      return e;
     }
   };
   

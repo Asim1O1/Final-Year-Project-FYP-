@@ -4,7 +4,7 @@ import {
   Calendar,
   Check,
   X,
-  Clock,
+
   AlertCircle,
   Download,
   RefreshCcw,
@@ -14,43 +14,192 @@ import TabButton from "../../component/doctor/appointment/TabButton.jsx";
 import StatusBadge from "../../component/doctor/appointment/StatusBadge.jsx";
 import AppointmentDetailsModal from "../../component/doctor/appointment/AppointmentDetailModal.jsx";
 
-import { fetchDoctorAppointments } from "../../features/appointment/appointmentSlice.jsx";
+import {
+  fetchDoctorAppointments,
+  updateAppointmentStatus,
+} from "../../features/appointment/appointmentSlice.jsx";
 
 const Appointments = () => {
   const dispatch = useDispatch();
   const {
-    appointments: rawAppointments,
+    appointments: rawAppointments = [], // Provide default empty array
     isLoading,
     error,
   } = useSelector((state) => state?.appointmentSlice);
   const [activeTab, setActiveTab] = useState("upcoming");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [appointmentToReject, setAppointmentToReject] = useState(null);
 
   const doctorId = useSelector((state) => state?.auth?.user?.data?._id);
 
-  // Transform raw appointments into grouped structure
-  const appointments = {
-    upcoming: rawAppointments.filter(
-      (app) => app.status === "pending" || app.status === "confirmed"
-    ),
-    completed: rawAppointments.filter((app) => app.status === "completed"),
-    cancelled: rawAppointments.filter((app) => app.status === "cancelled"),
-  };
-
-  // Fetch appointments when the component mounts
+  // Fetch appointments when the component mounts or the active tab changes
   useEffect(() => {
     if (doctorId) {
-      dispatch(fetchDoctorAppointments(doctorId));
+      let status = [];
+
+      // Set status based on the active tab
+      if (activeTab === "upcoming") {
+        status = ["pending"];
+      } else if (activeTab === "completed") {
+        status = ["completed"];
+      } else if (activeTab === "canceled") {
+        status = ["canceled"];
+      } else if (activeTab === "confirmed") {
+        status = ["confirmed"];
+      } else if (activeTab === "all") {
+        status = ["all"];
+      }
+
+      // Dispatch the action with the individual status values
+      dispatch(fetchDoctorAppointments({ doctorId, status }));
     }
-  }, [dispatch, doctorId]);
+  }, [dispatch, doctorId, activeTab]);
+
+  // Handle appointment approval
+  const handleApproveAppointment = (appointmentId) => {
+    dispatch(
+      updateAppointmentStatus({
+        appointmentId,
+        status: "confirmed",
+      })
+    )
+      .unwrap()
+      .then(() => {
+        // Refresh the appointments list after successful update
+        dispatch(
+          fetchDoctorAppointments({ doctorId, status: "pending,confirmed" })
+        );
+      })
+      .catch((error) => {
+        console.error("Failed to approve appointment:", error);
+        // You can add toast notification here
+      });
+  };
+
+  // Handle appointment rejection
+  const handleRejectClick = (appointment) => {
+    setAppointmentToReject(appointment);
+    setShowRejectionModal(true);
+  };
+
+  const handleRejectConfirm = () => {
+    if (!appointmentToReject) return;
+
+    dispatch(
+      updateAppointmentStatus({
+        appointmentId: appointmentToReject._id,
+        status: "rejected",
+        rejectionReason,
+      })
+    )
+      .unwrap()
+      .then(() => {
+        // Close modal and refresh appointments
+        setShowRejectionModal(false);
+        setRejectionReason("");
+        setAppointmentToReject(null);
+        dispatch(fetchDoctorAppointments({ doctorId, status: "canceled" }));
+      })
+      .catch((error) => {
+        console.error("Failed to reject appointment:", error);
+
+      });
+  };
+
+  // Handle marking appointment as completed
+  const handleCompleteAppointment = (appointmentId) => {
+    dispatch(
+      updateAppointmentStatus({
+        appointmentId,
+        status: "completed",
+      })
+    )
+      .unwrap()
+      .then(() => {
+        // Refresh the appointments list after successful update
+        dispatch(fetchDoctorAppointments({ doctorId, status: "completed" }));
+      })
+      .catch((error) => {
+        console.error("Failed to complete appointment:", error);
+        // You can add toast notification here
+      });
+  };
+
+  // Transform raw appointments into grouped structure
+
+  const appointments = {
+    upcoming: Array.isArray(rawAppointments)
+      ? rawAppointments.filter((app) => app.status === "pending")
+      : [],
+    completed: Array.isArray(rawAppointments)
+      ? rawAppointments.filter((app) => app.status === "completed")
+      : [],
+    cancelled: Array.isArray(rawAppointments)
+      ? rawAppointments.filter((app) => app.status === "canceled")
+      : [],
+    confirmed: Array.isArray(rawAppointments)
+      ? rawAppointments.filter((app) => app.status === "confirmed")
+      : [],
+    all: Array.isArray(rawAppointments)
+      ? rawAppointments.filter(
+          (app) =>
+            app.status === "pending" ||
+            app.status === "confirmed" ||
+            app.status === "completed" ||
+            app.status === "canceled" ||
+            app.status === "rejected"
+        )
+      : [],
+  };
+
+  // Handler for Add Appointment button
+  const handleAddAppointment = () => {
+    // Implement your add appointment logic here
+    console.log("Add appointment clicked");
+    // You could navigate to another page or open a modal
+  };
+
+  // Handler for Reschedule button
+  const handleReschedule = (appointment) => {
+    // Implement your reschedule logic here
+    console.log("Reschedule clicked for appointment:", appointment._id);
+    // You could open a reschedule modal
+  };
+
+  // Function to safely check if error contains a specific string
+  const errorIncludes = (searchString) => {
+    if (!error) return false;
+    if (typeof error === "string") return error.includes(searchString);
+    if (error.message && typeof error.message === "string")
+      return error.message.includes(searchString);
+    if (error.statusCode) return error.statusCode === 404;
+    return false;
+  };
 
   if (isLoading) {
-    return <div>Loading appointments...</div>;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
-  if (error) {
-    return <div>Error fetching appointments: {error}</div>;
-  }
+  // Helper function to get error message
+  const getErrorMessage = () => {
+    if (!error) return "Try changing your filters or create a new appointment";
+
+    // If it's a 404 error
+    if (errorIncludes("404") || error.statusCode === 404) {
+      return "No appointments in this category yet.";
+    }
+
+    // For other errors, try to extract a readable message
+    if (typeof error === "string") return `Error: ${error}`;
+    if (error.message) return `Error: ${error.message}`;
+    return "Something went wrong. Please try again.";
+  };
 
   return (
     <div className="space-y-6">
@@ -59,14 +208,31 @@ const Appointments = () => {
           <h2 className="text-xl font-bold text-gray-800">
             Manage Appointments
           </h2>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center">
+          <button
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center"
+            onClick={handleAddAppointment}
+          >
             <Calendar size={16} className="mr-2" />
             Add Appointment
           </button>
         </div>
 
-        {/* Tabs for Upcoming, Completed, and Cancelled Appointments */}
         <div className="bg-gray-100 rounded-lg p-1 mb-6">
+          <TabButton
+            name="all"
+            label="All"
+            count={appointments.all?.length || 0}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          />
+          <TabButton
+            name="confirmed"
+            label="Approved"
+            count={appointments.confirmed?.length || 0}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          />
+
           <TabButton
             name="upcoming"
             label="Upcoming"
@@ -95,7 +261,7 @@ const Appointments = () => {
           {appointments[activeTab]?.length > 0 ? (
             appointments[activeTab].map((appointment) => (
               <div
-                key={appointment._id} // Use _id instead of id
+                key={appointment._id}
                 className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
               >
                 <div className="flex justify-between">
@@ -134,11 +300,11 @@ const Appointments = () => {
                   </div>
                 )}
 
-                {appointment.cancellationReason && (
+                {appointment.rejectionReason && (
                   <div className="mt-3 pt-3 border-t">
                     <p className="text-sm text-gray-700">
-                      <span className="font-medium">Cancellation Reason:</span>{" "}
-                      {appointment.cancellationReason}
+                      <span className="font-medium">Rejection Reason:</span>{" "}
+                      {appointment.rejectionReason}
                     </p>
                   </div>
                 )}
@@ -155,11 +321,19 @@ const Appointments = () => {
                     {activeTab === "upcoming" &&
                       appointment.status === "pending" && (
                         <>
-                          <button className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 flex items-center">
+                          <button
+                            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 flex items-center"
+                            onClick={() =>
+                              handleApproveAppointment(appointment._id)
+                            }
+                          >
                             <Check size={14} className="mr-1" />
                             Approve
                           </button>
-                          <button className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center">
+                          <button
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center"
+                            onClick={() => handleRejectClick(appointment)}
+                          >
                             <X size={14} className="mr-1" />
                             Reject
                           </button>
@@ -167,13 +341,21 @@ const Appointments = () => {
                       )}
                     {activeTab === "upcoming" &&
                       appointment.status === "confirmed" && (
-                        <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center">
+                        <button
+                          className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center"
+                          onClick={() =>
+                            handleCompleteAppointment(appointment._id)
+                          }
+                        >
                           <Check size={14} className="mr-1" />
                           Mark Completed
                         </button>
                       )}
                     {activeTab === "upcoming" && (
-                      <button className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300">
+                      <button
+                        className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300"
+                        onClick={() => handleReschedule(appointment)}
+                      >
                         Reschedule
                       </button>
                     )}
@@ -184,7 +366,10 @@ const Appointments = () => {
                       </button>
                     )}
                     {activeTab === "cancelled" && (
-                      <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center">
+                      <button
+                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center"
+                        onClick={() => handleReschedule(appointment)}
+                      >
                         <RefreshCcw size={14} className="mr-1" />
                         Reschedule
                       </button>
@@ -201,9 +386,7 @@ const Appointments = () => {
               <h3 className="text-lg font-medium text-gray-800 mb-2">
                 No appointments found
               </h3>
-              <p className="text-gray-500">
-                Try changing your filters or create a new appointment
-              </p>
+              <p className="text-gray-500">{getErrorMessage()}</p>
             </div>
           )}
         </div>
@@ -215,6 +398,43 @@ const Appointments = () => {
           appointment={selectedAppointment}
           onClose={() => setSelectedAppointment(null)}
         />
+      )}
+
+      {/* Rejection Reason Modal */}
+      {showRejectionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4">Reject Appointment</h3>
+            <p className="mb-4">
+              Please provide a reason for rejecting this appointment:
+            </p>
+            <textarea
+              className="w-full border rounded p-2 mb-4 h-24"
+              placeholder="Enter rejection reason..."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+            ></textarea>
+            <div className="flex justify-end space-x-3">
+              <button
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                onClick={() => {
+                  setShowRejectionModal(false);
+                  setRejectionReason("");
+                  setAppointmentToReject(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                onClick={handleRejectConfirm}
+                disabled={!rejectionReason.trim()}
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

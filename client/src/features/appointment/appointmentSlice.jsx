@@ -60,11 +60,14 @@ export const fetchUserAppointments = createAsyncThunk(
 // **Fetch Doctor Appointments**
 export const fetchDoctorAppointments = createAsyncThunk(
   "appointment/fetchDoctorAppointments",
-  async (doctorId, { rejectWithValue }) => {
+  async ({ doctorId, status = "all" }, { rejectWithValue }) => {
+    console.log("The status is " , status)
     try {
       const response = await appointmentService.getDoctorAppointmentsService(
-        doctorId
+        doctorId,
+        status
       );
+
       if (!response.isSuccess) throw response;
       return response.data;
     } catch (error) {

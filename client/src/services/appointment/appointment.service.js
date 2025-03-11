@@ -73,10 +73,15 @@ const getUserAppointmentsService = async (userId) => {
   }
 };
 
-const getDoctorAppointmentsService = async (doctorId) => {
+const getDoctorAppointmentsService = async (doctorId, status = "all") => {
+  console.log("The doc id is", doctorId);
+  console.log("The status is", status)
   try {
     const response = await axiosInstance.get(
-      `/api/appointments/doctor-appointments/${doctorId}`
+      `/api/appointments/doctor-appointments/${doctorId}`,
+      {
+        params: { status }, 
+      }
     );
 
     console.log("Fetching appointments for doctor:", doctorId);
@@ -116,8 +121,14 @@ const updateAppointmentStatusService = async (
   rejectionReason = ""
 ) => {
   try {
-    const payload = { status };
-    if (status === "rejected") {
+    // Fix status mapping
+    const statusMap = {
+      approved: "confirmed",
+      rejected: "canceled",
+    };
+
+    const payload = { status: statusMap[status] || status };
+    if (payload.status === "canceled") {
       payload.rejectionReason = rejectionReason || "No reason provided";
     }
 
@@ -125,9 +136,6 @@ const updateAppointmentStatusService = async (
       `/api/appointments/${appointmentId}/status`,
       payload
     );
-
-    console.log("Updating appointment status:", appointmentId, "to", status);
-    console.log("Response from updateAppointmentStatusService:", response);
 
     if (!response?.data?.isSuccess) {
       return createApiResponse({
@@ -141,7 +149,7 @@ const updateAppointmentStatusService = async (
     return createApiResponse({
       isSuccess: true,
       message: response?.data?.message || `Appointment ${status} successfully`,
-      data: response?.data?.data, // Extract the updated appointment data
+      data: response?.data?.data,
     });
   } catch (error) {
     console.error("Error in updateAppointmentStatusService:", error?.response);

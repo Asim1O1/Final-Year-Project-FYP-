@@ -1,6 +1,6 @@
 // src/components/Sidebar.js
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
   Calendar,
@@ -13,10 +13,19 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { useDispatch } from "react-redux";
+import { logoutUser } from "../../../features/auth/authSlice";
 
 const DoctorSidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    dispatch(logoutUser());
+    navigate("/login"); // Navigate to login page after logging out
+  };
 
   const menuItems = [
     { name: "Dashboard", icon: <Home size={20} />, path: "/doctor/dashboard" },
@@ -83,13 +92,13 @@ const DoctorSidebar = () => {
         </div>
 
         <div className="p-4 border-t">
-          <Link
-            to="/logout"
+          <button
+            onClick={handleLogout}
             className="flex items-center p-2 rounded-md text-gray-700 hover:bg-blue-50 hover:text-blue-600"
           >
             <LogOut size={20} className="mr-4" />
             {isSidebarOpen && <span>Logout</span>}
-          </Link>
+          </button>
         </div>
       </div>
     </div>

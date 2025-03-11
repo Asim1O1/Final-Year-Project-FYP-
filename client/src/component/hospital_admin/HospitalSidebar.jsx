@@ -9,9 +9,19 @@ import {
   RiMegaphoneLine,
   RiSettings4Line,
 } from "react-icons/ri";
+import { useDispatch } from "react-redux";
+import { logoutUser } from "../../features/auth/authSlice";
+import { LogOutIcon } from "lucide-react";
 
 export const HospitalSidebar = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleLogout = () => {
+    console.log("Entered the handle logout");
+    dispatch(logoutUser());
+    navigate("/login");
+  };
 
   const menuItems = [
     { icon: RiDashboardLine, label: "Dashboard", path: "/hospital-admin" },
@@ -40,6 +50,11 @@ export const HospitalSidebar = () => {
       label: "Settings",
       path: "/hospital-admin/settings",
     },
+    {
+      icon: LogOutIcon,
+      label: "Logout",
+      action: handleLogout, // Logout action
+    },
   ];
 
   return (
@@ -60,7 +75,13 @@ export const HospitalSidebar = () => {
             _hover={{ bg: "blue.50" }}
             color="gray.700"
             alignItems="center"
-            onClick={() => navigate(item.path)} // Trigger navigation on click
+            onClick={() => {
+              if (item.action) {
+                item.action(); // Call the logout action
+              } else {
+                navigate(item.path); // Navigate if no action is present
+              }
+            }}
           >
             <Icon as={item.icon} boxSize={5} mr={3} />
             <Text>{item.label}</Text>

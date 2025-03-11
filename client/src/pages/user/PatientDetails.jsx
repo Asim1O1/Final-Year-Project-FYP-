@@ -29,7 +29,7 @@ import {
   HStack,
   SimpleGrid,
 } from "@chakra-ui/react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { bookAppointment } from "../../features/appointment/appointmentSlice";
 import { fetchSingleDoctor } from "../../features/doctor/doctorSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -44,6 +44,10 @@ import {
   FaUserGraduate,
 } from "react-icons/fa";
 import { notification } from "antd";
+import {
+  initiatePayment,
+  completePayment,
+} from "../../features/payment/paymentSlice"; // Import payment thunks
 
 const PatientDetails = () => {
   const { doctorId, date, startTime } = useParams();
@@ -54,17 +58,60 @@ const PatientDetails = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingDoctor, setIsLoadingDoctor] = useState(true);
+  const [searchParams] = useSearchParams();
   const toast = useToast();
-
+  const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const userId = useSelector((state) => state?.auth?.user?.data?._id);
-  const doctor = useSelector((state) => state.doctorSlice.doctor);
+
+  const doctor = useSelector((state) => state?.doctorSlice?.doctor);
 
   const bgColor = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const highlightColor = useColorModeValue("blue.50", "blue.900");
   const cardBg = useColorModeValue("white", "gray.700");
+
+  useEffect(() => {
+    const handlePaymentCompletion = async () => {
+      try {
+        const pidx = searchParams.get("pidx");
+        const transaction_id = searchParams.get("transaction_id");
+        const amount = searchParams.get("amount");
+        const purchase_order_id = searchParams.get("purchase_order_id");
+
+        if (pidx && transaction_id && amount && purchase_order_id) {
+          const result = await dispatch(
+            completePayment({ pidx, transaction_id, amount, purchase_order_id })
+          ).unwrap();
+
+          if (result.IsSuccess) {
+            notification.success({
+              message: "Payment Successful",
+              description: "Your payment has been completed successfully.",
+              duration: 3,
+              placement: "topRight",
+            });
+            navigate("/payment-success", {
+              state: { transactionDetails: result },
+            }); // Pass transaction details
+          } else {
+            throw new Error("Payment verification failed.");
+          }
+        }
+      } catch (error) {
+        notification.error({
+          message: "Payment Failed",
+          description: error.message || "Payment verification failed.",
+          duration: 3,
+          placement: "topRight",
+        });
+        navigate("/payment-failed");
+      }
+    };
+
+    handlePaymentCompletion();
+  }, [searchParams, dispatch, navigate]);
 
   useEffect(() => {
     const loadDoctorInfo = async () => {
@@ -144,27 +191,38 @@ const PatientDetails = () => {
     setIsLoading(true);
 
     try {
+      // First, create the appointment regardless of payment method
       const result = await dispatch(bookAppointment(appointmentData)).unwrap();
-      console.log("The result is ", result);
 
-      if (!result.isSuccess) {
-        notification.error({
-          title: result?.message || "Booking Failed",
-          description: result?.error || "Something went wrong",
-          status: "error",
+      if (formData.paymentMethod === "pay_now") {
+        // Get the appointmentId from the result
+        const appointmentId = result.data.appointmentId;
+
+        // Now initiate Khalti payment with the new appointmentId
+        const paymentResponse = await dispatch(
+          initiatePayment({
+            userId,
+            bookingId: appointmentId, 
+            amount: doctor.consultationFee,
+            bookingType: "appointment",
+          })
+        ).unwrap();
+
+        
+        window.location.href = paymentResponse.payment_url;
+      } else {
+        // For pay_on_site, just show success and redirect
+        notification.success({
+          title: "Appointment Booked",
+          description: result.message,
+          status: "success",
           duration: 5000,
           isClosable: true,
         });
-        return;
+        navigate("/appointment-success");
       }
-      notification.success({
-        title: "Appointment Booked",
-        description: result.message,
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-      });
     } catch (error) {
+      console.log("The error is", error);
       notification.error({
         title: "Booking Failed",
         description:
@@ -177,7 +235,6 @@ const PatientDetails = () => {
       setIsLoading(false);
     }
   };
-
   return (
     <Container maxW="container.lg" py={8}>
       <Box

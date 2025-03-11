@@ -31,6 +31,8 @@ import SelectTime from "./pages/user/SelectTime.jsx";
 import PatientDetails from "./pages/user/PatientDetails.jsx";
 import ConfirmationPage from "./pages/user/ConfirmationPage.jsx";
 import CampaignManagement from "./pages/hospital_admin/CampaignManagement.jsx";
+import PaymentSuccess from "../src/component/payment/PaymentSuccess.jsx"
+import PaymentFailed from "../src/component/payment/PaymentFailed.jsx"
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -46,6 +48,8 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/hospitals" element={<HospitalsPage />} />
+        <Route path = "/payment-success" element={<PaymentSuccess />} />
+        <Route path = "/paymentFailed" element={<PaymentFailed />} />
         {/* Appointment Booking Routes */}
         <Route
           path="/book-appointment"
