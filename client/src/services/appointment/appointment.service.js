@@ -40,7 +40,7 @@ const bookAppointmentService = async (appointmentData) => {
 const getUserAppointmentsService = async (userId) => {
   try {
     const response = await axiosInstance.get(
-      `/api/appointments/user/${userId}`
+      `/api/appointments/user-appointments/${userId}`
     );
 
     console.log("Fetching appointments for user:", userId);

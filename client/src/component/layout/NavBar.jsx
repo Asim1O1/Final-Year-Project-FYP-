@@ -35,8 +35,6 @@ const Navbar = () => {
 
   const { user, isAuthenticated } = useSelector((state) => state?.auth);
 
-  const userId = user?.data?._id;
-
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(handleGetUserNotifications());
@@ -143,13 +141,13 @@ const Navbar = () => {
                   markAllAsRead={markAllAsRead}
                   clearNotifications={clearNotifications}
                 />
-                <a
-                  href="/profile"
+                <button
+                  onClick={() => navigate("/profile")}
                   className="flex items-center text-blue-500 hover:text-blue-600 text-lg font-medium transition"
                 >
                   <User className="mr-1" size={20} />
                   Profile
-                </a>
+                </button>
                 <button
                   onClick={handleLogout}
                   className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-8 py-2 rounded-full hover:shadow-xl transition flex items-center text-lg"
@@ -229,13 +227,16 @@ const Navbar = () => {
           <div className="border-t border-gray-200 pt-4 space-y-2">
             {isAuthenticated ? (
               <>
-                <a
-                  href="/profile"
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    navigate("/profile");
+                  }}
                   className="flex items-center text-blue-500 hover:bg-blue-50 px-4 py-2 rounded-md text-lg font-medium transition"
                 >
                   <User className="mr-3" size={20} />
                   Profile
-                </a>
+                </button>
                 <button
                   onClick={handleLogout}
                   className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2 rounded-full hover:shadow-lg transition flex items-center justify-center text-lg w-full"

@@ -42,6 +42,9 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Hospital",
     },
+    appointments: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "Appointment" },
+    ],
 
     resetPasswordOTP: {
       type: String,

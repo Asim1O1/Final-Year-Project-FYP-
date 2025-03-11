@@ -1,6 +1,7 @@
 import userModel from "../../models/user.model.js";
 import { paginate } from "../../utils/paginationUtil.js";
 import createResponse from "../../utils/responseBuilder.js";
+import mongoose from "mongoose";
 
 export const getUserById = async (req, res, next) => {
   const userId = req.params.id;

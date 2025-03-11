@@ -1,38 +1,43 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { useEffect } from "react";
+import { verifyUserAuth } from "./features/auth/authSlice";
+import CheckAuth from "./utils/CheckAuth.jsx";
+
 import RegisterPage from "./pages/auth/RegisterPage";
 import LoginPage from "./pages/auth/LoginPage";
 import HomePage from "./pages/public/HomePage";
 import HospitalsPage from "./pages/public/HospitalsPage";
-import { AdminDashboard } from "./pages/admin/AdminDashboard";
-import { Users } from "./pages/admin/Users";
-import { HospitalAdminDashboard } from "./pages/hospital_admin/HospitalAdminDashboard";
-import HospitalManagement from "./pages/admin/HospitalManagement";
-import HospitalAdminManagement from "./pages/admin/HospitalAdminManagement.jsx";
-import { useDispatch, useSelector } from "react-redux";
-import { verifyUserAuth } from "./features/auth/authSlice";
-import { useEffect } from "react";
-import CheckAuth from "./utils/CheckAuth.jsx";
 import NotFoundPage from "./pages/public/404Page";
-import { AdminLayout } from "./layouts/AdminLayout";
 import UnauthorizedPage from "./pages/auth/UnauthorizedPage.jsx";
 import ForgotPassword from "./component/auth/ForgotPassword.jsx";
 import OTPVerification from "./component/auth/OtpVerification.jsx";
 import UpdatePassword from "./component/auth/UpdatePassword.jsx";
-import AddDoctorForm from "./component/hospital_admin/doctor/AddDoctor.jsx";
+import PaymentSuccess from "./component/payment/PaymentSuccess.jsx";
+import PaymentFailed from "./component/payment/PaymentFailed.jsx";
+
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { Users } from "./pages/admin/Users";
+import HospitalManagement from "./pages/admin/HospitalManagement";
+import HospitalAdminManagement from "./pages/admin/HospitalAdminManagement.jsx";
+import { AdminLayout } from "./layouts/AdminLayout";
+
+import { HospitalAdminDashboard } from "./pages/hospital_admin/HospitalAdminDashboard";
 import { HospitalAdminLayout } from "./layouts/HospitalAdminLayout.jsx";
 import DoctorManagement from "./pages/hospital_admin/DoctorManagement.jsx";
+import CampaignManagement from "./pages/hospital_admin/CampaignManagement.jsx";
+
 import DoctorLayout from "./layouts/DoctorLayout.jsx";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard.jsx";
 import Appointments from "./pages/doctor/AppointmentManagement.jsx";
+
 import MainLayout from "./layouts/MainLayout.jsx";
 import SelectSpecialty from "./pages/user/SelectSpeciality.jsx";
 import SelectDoctor from "./pages/user/SelectDoctor.jsx";
 import SelectTime from "./pages/user/SelectTime.jsx";
 import PatientDetails from "./pages/user/PatientDetails.jsx";
 import ConfirmationPage from "./pages/user/ConfirmationPage.jsx";
-import CampaignManagement from "./pages/hospital_admin/CampaignManagement.jsx";
-import PaymentSuccess from "../src/component/payment/PaymentSuccess.jsx"
-import PaymentFailed from "../src/component/payment/PaymentFailed.jsx"
+import UserProfile from "./pages/user/UserProfile"; // Import UserProfile Component
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -48,8 +53,9 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/hospitals" element={<HospitalsPage />} />
-        <Route path = "/payment-success" element={<PaymentSuccess />} />
-        <Route path = "/paymentFailed" element={<PaymentFailed />} />
+        <Route path="/payment-success" element={<PaymentSuccess />} />
+        <Route path="/paymentFailed" element={<PaymentFailed />} />
+
         {/* Appointment Booking Routes */}
         <Route
           path="/book-appointment"
@@ -113,7 +119,6 @@ function App() {
             )
           }
         />
-
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify-otp" element={<OTPVerification />} />
         <Route path="/update-password" element={<UpdatePassword />} />
@@ -136,6 +141,18 @@ function App() {
           }
         />
 
+        {/* User Profile Route */}
+        <Route
+          path="/profile"
+          element={
+            <CheckAuth role="user">
+              <MainLayout>
+                <UserProfile />
+              </MainLayout>
+            </CheckAuth>
+          }
+        />
+
         {/* Admin Protected Routes */}
         <Route
           path="/admin/*"
@@ -148,7 +165,7 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<Users />} />
           <Route path="hospitals" element={<HospitalManagement />} />
-          <Route path="hospital admin" element={<HospitalAdminManagement />} />
+          <Route path="hospital-admin" element={<HospitalAdminManagement />} />
         </Route>
 
         {/* Hospital Admin Protected Routes */}
@@ -165,6 +182,7 @@ function App() {
           <Route path="campaign" element={<CampaignManagement />} />
         </Route>
 
+        {/* Doctor Protected Routes */}
         <Route
           path="/doctor/*"
           element={
