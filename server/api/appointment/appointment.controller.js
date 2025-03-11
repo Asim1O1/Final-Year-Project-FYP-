@@ -53,47 +53,36 @@ export const bookDoctorAppointment = async (req, res, next) => {
       );
     }
 
-    // Check if the user exists
+    // Check if the user, doctor, and hospital exist
     const user = await userModel.findById(userId);
-    if (!user) {
+    if (!user)
       return res.status(404).json(
         createResponse({
           isSuccess: false,
           statusCode: 404,
           message: "User not found",
-          data: null,
-          error: null,
         })
       );
-    }
 
-    // Check if the doctor exists
     const doctor = await doctorModel.findById(doctorId);
-    if (!doctor) {
+    if (!doctor)
       return res.status(404).json(
         createResponse({
           isSuccess: false,
           statusCode: 404,
           message: "Doctor not found",
-          data: null,
-          error: null,
         })
       );
-    }
 
-    // Check if the hospital exists
     const hospital = await hospitalModel.findById(hospitalId);
-    if (!hospital) {
+    if (!hospital)
       return res.status(404).json(
         createResponse({
           isSuccess: false,
           statusCode: 404,
           message: "Hospital not found",
-          data: null,
-          error: null,
         })
       );
-    }
 
     // Check if the time slot is valid
     const allSlots = generateTimeSlots();
@@ -103,8 +92,6 @@ export const bookDoctorAppointment = async (req, res, next) => {
           isSuccess: false,
           statusCode: 400,
           message: "Invalid time slot",
-          data: null,
-          error: null,
         })
       );
     }
@@ -115,15 +102,12 @@ export const bookDoctorAppointment = async (req, res, next) => {
       date: new Date(date),
       startTime,
     });
-
     if (existingAppointment) {
       return res.status(400).json(
         createResponse({
           isSuccess: false,
           statusCode: 400,
           message: "This time slot is already booked",
-          data: null,
-          error: null,
         })
       );
     }
@@ -154,16 +138,18 @@ export const bookDoctorAppointment = async (req, res, next) => {
           <p>If you have any questions or need to modify your appointment, please don't hesitate to reach out to us.</p>
           <p>Best regards,<br><strong>Your Company Name</strong></p>
         `;
-    // Send email
     await sendEmail(user.email, subject, html);
 
-    // Send success response
+    // **Return appointmentId if payment is required**
     res.status(201).json(
       createResponse({
         isSuccess: true,
         statusCode: 201,
         message: "Appointment booked successfully",
-        data: newAppointment,
+        data: {
+          appointmentId: newAppointment._id,
+          paymentRequired: paymentMethod === "pay_now" ? true : false,
+        },
         error: null,
       })
     );
@@ -178,7 +164,7 @@ export const updateAppointmentStatus = async (req, res, next) => {
   const { status, rejectionReason } = req.body;
 
   try {
-    if (!["approved", "rejected"].includes(status)) {
+    if (!["confirmed", "canceled"].includes(status)) {
       return res.status(400).json(
         createResponse({
           isSuccess: false,
@@ -205,7 +191,7 @@ export const updateAppointmentStatus = async (req, res, next) => {
 
     // Update appointment status
     appointment.status = status;
-    if (status === "rejected") {
+    if (status === "canceled") {
       appointment.rejectionReason = rejectionReason || "No reason provided";
     }
 
@@ -218,15 +204,15 @@ export const updateAppointmentStatus = async (req, res, next) => {
     let subject = "";
     let html = "";
 
-    if (status === "approved") {
+    if (status === "confirmed") {
       subject = "✅ Appointment Confirmed";
       html = `<p>Dear ${user.name},</p>
               <p>Your appointment with Dr. ${doctor.name} on ${appointment.date} at ${appointment.startTime} has been confirmed.</p>
               <p>Thank you for using our service!</p>`;
     } else {
-      subject = "❌ Appointment Rejected";
+      subject = "❌ Appointment Canceled";
       html = `<p>Dear ${user.name},</p>
-              <p>Unfortunately, your appointment with Dr. ${doctor.name} on ${appointment.date} has been rejected.</p>
+              <p>Unfortunately, your appointment with Dr. ${doctor.name} on ${appointment.date} has been canceled.</p>
               <p>Reason: ${appointment.rejectionReason}</p>`;
     }
 
@@ -331,9 +317,17 @@ export const getUserAppointments = async (req, res, next) => {
 };
 
 export const getDoctorAppointments = async (req, res, next) => {
-  console.log(" fetchingDoctorAppointments")
+  console.log("Fetching doctor appointments");
   const { doctorId } = req.params;
+  let { status = "all" } = req.query;
+  console.log("The status is", status);
+
+  if (Array.isArray(status)) {
+    status = status[0]; 
+  }
+
   try {
+    // Check if the doctor exists
     const doctor = await doctorModel.findById(doctorId);
     if (!doctor) {
       return res.status(404).json(
@@ -347,10 +341,33 @@ export const getDoctorAppointments = async (req, res, next) => {
       );
     }
 
-    // Fetch appointments related to this doctor
+    // Define the filter object
+    const filter = { doctor: doctorId };
+
+    // Add status filter only if it's not "all"
+    if (status !== "all") {
+      // Ensure the status is a string before calling split
+      if (typeof status === "string") {
+        const statuses = status.split(",");
+        filter.status = { $in: statuses }; // Use $in to match any of the statuses
+      } else {
+        console.error("Invalid status value:", status);
+        return res.status(400).json(
+          createResponse({
+            isSuccess: false,
+            statusCode: 400,
+            message: "Invalid status value",
+            data: null,
+            error: null,
+          })
+        );
+      }
+    }
+
+    // Fetch appointments based on the filter
     const appointments = await appointmentModel
-      .find({ doctor: doctorId })
-      .populate("user", "fullName email") 
+      .find(filter)
+      .populate("user", "fullName email")
       .populate("hospital", "name location") // Populate hospital details
       .sort({ date: 1 }); // Sort by appointment date
 
@@ -359,19 +376,23 @@ export const getDoctorAppointments = async (req, res, next) => {
         createResponse({
           isSuccess: false,
           statusCode: 404,
-          message: "No appointments found for this doctor",
+          message: `No ${
+            status !== "all" ? status : ""
+          } appointments found for this doctor`,
           data: null,
           error: null,
         })
       );
     }
 
-    // Return the doctor's appointments
+    // Return the filtered appointments
     res.status(200).json(
       createResponse({
         isSuccess: true,
         statusCode: 200,
-        message: "Appointments fetched successfully",
+        message: `Appointments fetched successfully${
+          status !== "all" ? ` (Filter: ${status})` : ""
+        }`,
         data: appointments,
         error: null,
       })

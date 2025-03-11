@@ -4,6 +4,7 @@ import {
   getAvailableTimeSlots,
   getDoctorAppointments,
   getUserAppointments,
+  updateAppointmentStatus,
 } from "./appointment.controller.js";
 import protectRoute from "../../middlewares/protectRoute.js";
 
@@ -22,5 +23,7 @@ router.get(
   protectRoute,
   getDoctorAppointments
 );
+
+router.patch("/:appointmentId/status", updateAppointmentStatus);
 
 export default router;

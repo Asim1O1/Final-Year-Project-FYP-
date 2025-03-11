@@ -118,12 +118,12 @@ export const handleUserLogin = async (req, res, next) => {
 
     // Check both User and Doctor models
     const user = await userModel.findOne({ email });
-    console.log("The user is", user)
+    console.log("The user is", user);
     const doctor = await doctorModel.findOne({ email });
-    console.log("The doctor is", doctor)
+    console.log("The doctor is", doctor);
 
     const account = user || doctor;
-    console.log("The account is", account)
+    console.log("The account is", account);
     if (!account) {
       console.log("Account not found");
       return res.status(401).json(
@@ -161,8 +161,8 @@ export const handleUserLogin = async (req, res, next) => {
     delete accountObject.password;
 
     console.log("Setting cookies for accessToken and refreshToken");
-    console.log("Access Token:", accessToken);
-    console.log("Refresh Token:", refreshToken);
+    console.log("generated Access Token:", accessToken);
+    console.log("generated Refresh Token:", refreshToken);
 
     // Set cookies for tokens
     res.cookie("accessToken", accessToken, {
@@ -211,9 +211,12 @@ export const handleUserLogin = async (req, res, next) => {
 /**
  * Checks if a user is authenticated.
  */
+
+// Updated authentication check handler
 export const verifyUserAuthentication = async (req, res, next) => {
   try {
-    const user = req.user;
+    const { user } = req; // Assuming user data is stored in req.user after authentication middleware
+
     if (!user) {
       return res.status(401).json(
         createResponse({
@@ -226,13 +229,31 @@ export const verifyUserAuthentication = async (req, res, next) => {
       );
     }
 
+    // Check if user exists in either User or Doctor model
+    const account =
+      (await userModel.findById(user._id)) ||
+      (await doctorModel.findById(user._id));
+
+    if (!account) {
+      return res.status(401).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 401,
+          message:
+            "Account not found. The user does not exist in the database.",
+          error: null,
+        })
+      );
+    }
+
     // Convert Mongoose document to a plain object and remove sensitive info
-    const plainUser = user.toObject();
+    const plainUser = account.toObject();
     delete plainUser.password; // Ensure password is not exposed
 
-    // Generate new tokens (if needed)
-    const accessToken = generateAccessToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
+    // Generate tokens with accountType
+    const accountType = account instanceof userModel ? "user" : "doctor";
+    const accessToken = generateAccessToken(account._id, accountType);
+    const refreshToken = generateRefreshToken(account._id, accountType);
 
     // Set cookies for tokens
     res.cookie("accessToken", accessToken, {

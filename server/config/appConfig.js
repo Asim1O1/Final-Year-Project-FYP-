@@ -11,6 +11,10 @@ const appConfig = Object.freeze({
   smtp_user: process.env.SMTP_USER,
   smtp_pass: process.env.SMTP_PASS,
   smtp_secure: process.env.SMTP_SECURE,
+  backend_url: process.env.BACKEND_URL,
+  frontend_url: process.env.CLIENT_URL,
+  khalti_secret_key:process.env.KHALTI_SECRET_KEY,
+  khalti_url: process.env.KHALTI_GATEWAY_URL
 });
 
 export default appConfig;
