@@ -3,7 +3,11 @@ import axiosInstance from "../../utils/axiosInstance";
 
 const createCampaignService = async (campaignData) => {
   try {
-    const response = await axiosInstance.post("/api/campaigns/", campaignData);
+    const response = await axiosInstance.post("/api/campaigns/", {
+      ...campaignData,
+      allowVolunteers: campaignData.allowVolunteers ?? false,
+      maxVolunteers: campaignData.maxVolunteers ?? 0,
+    });
 
     if (!response?.data?.isSuccess) {
       return createApiResponse({

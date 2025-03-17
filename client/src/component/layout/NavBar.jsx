@@ -33,7 +33,7 @@ const Navbar = () => {
   // Get notifications from Redux store
   const { notifications } = useSelector((state) => state?.notifications);
 
-  const { user, isAuthenticated } = useSelector((state) => state?.auth);
+  const {  isAuthenticated } = useSelector((state) => state?.auth);
 
   useEffect(() => {
     if (isAuthenticated) {

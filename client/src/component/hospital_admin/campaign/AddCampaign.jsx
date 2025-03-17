@@ -15,6 +15,7 @@ import {
   Textarea,
   Select,
   Input,
+  Checkbox,
 } from "@chakra-ui/react";
 import { notification } from "antd";
 import { useDispatch, useSelector } from "react-redux";
@@ -31,48 +32,41 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
     date: "",
     location: "",
     hospital: "",
+    allowVolunteers: false,
+    maxVolunteers: 0,
   });
 
   const [errors, setErrors] = useState({});
 
   // Fetch hospitals from Redux store
   const hospitals = useSelector((state) => {
-    // Check both possible structures
     if (state?.hospitalSlice?.hospitals?.hospitals) {
       return state.hospitalSlice.hospitals.hospitals;
     }
-    // If hospitals is directly in hospitalSlice
     return state?.hospitalSlice?.hospitals || [];
   });
-
-  console.log("Hospitals from Redux:", hospitals);
 
   useEffect(() => {
     dispatch(fetchAllHospitals({ page: 1, limit: 10 }));
   }, [dispatch]);
 
-  // Handle input change
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  // Handle date change
-  const handleDateChange = (e) => {
-    const value = e.target.value;
-    setFormData((prev) => ({ ...prev, date: value }));
-    if (errors.date) setErrors((prev) => ({ ...prev, date: "" }));
+  const handleCheckboxChange = (e) => {
+    const { name, checked } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
-  // Handle hospital selection
   const handleHospitalChange = (e) => {
     const value = e.target.value;
     setFormData((prev) => ({ ...prev, hospital: value }));
     if (errors.hospital) setErrors((prev) => ({ ...prev, hospital: "" }));
   };
 
-  // Validate form
   const validateForm = () => {
     const newErrors = {};
     if (!formData.title.trim()) newErrors.title = "Title is required";
@@ -81,12 +75,13 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
     if (!formData.date) newErrors.date = "Date is required";
     if (!formData.location.trim()) newErrors.location = "Location is required";
     if (!formData.hospital) newErrors.hospital = "Hospital is required";
+    if (formData.allowVolunteers && formData.maxVolunteers <= 0)
+      newErrors.maxVolunteers = "Maximum volunteers must be greater than 0";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
@@ -107,13 +102,14 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
         duration: 5,
       });
 
-      // Reset form and close modal
       setFormData({
         title: "",
         description: "",
         date: "",
         location: "",
         hospital: "",
+        allowVolunteers: false,
+        maxVolunteers: 0,
       });
       onClose();
     } catch (error) {
@@ -166,7 +162,7 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
                 name="date"
                 type="date"
                 value={formData.date}
-                onChange={handleDateChange}
+                onChange={handleInputChange}
               />
               <FormErrorMessage>{errors.date}</FormErrorMessage>
             </FormControl>
@@ -197,6 +193,31 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
               </Select>
               <FormErrorMessage>{errors.hospital}</FormErrorMessage>
             </FormControl>
+
+            <FormControl>
+              <FormLabel>Allow Volunteers</FormLabel>
+              <Checkbox
+                name="allowVolunteers"
+                isChecked={formData.allowVolunteers}
+                onChange={handleCheckboxChange}
+              >
+                Allow Volunteers
+              </Checkbox>
+            </FormControl>
+
+            {formData.allowVolunteers && (
+              <FormControl isInvalid={errors.maxVolunteers}>
+                <FormLabel>Max Volunteers</FormLabel>
+                <Input
+                  name="maxVolunteers"
+                  type="number"
+                  placeholder="Enter max number of volunteers"
+                  value={formData.maxVolunteers}
+                  onChange={handleInputChange}
+                />
+                <FormErrorMessage>{errors.maxVolunteers}</FormErrorMessage>
+              </FormControl>
+            )}
           </Stack>
         </ModalBody>
 

@@ -7,13 +7,21 @@ export const handleCampaignCreation = createAsyncThunk(
   "campaign/createCampaign",
   async (campaignData, { rejectWithValue }) => {
     try {
-      const response = await campaignServices.createCampaignService(
-        campaignData
-      );
-      if (!response.isSuccess) throw response;
-      console.log("The response in the campaing lsice ", response)
-      return response.data?.data;
+      
+      const updatedCampaignData = {
+        ...campaignData,
+        allowVolunteers: campaignData.allowVolunteers ?? false, 
+        maxVolunteers: campaignData.maxVolunteers ?? 0,
+      };
 
+      const response = await campaignServices.createCampaignService(
+        updatedCampaignData
+      );
+
+      if (!response.isSuccess) throw response;
+      console.log("The response in the campaign slice:", response);
+
+      return response.data?.data;
     } catch (error) {
       return rejectWithValue(
         createApiResponse(error, "Failed to create campaign")

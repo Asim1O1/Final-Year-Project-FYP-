@@ -75,12 +75,12 @@ const getUserAppointmentsService = async (userId) => {
 
 const getDoctorAppointmentsService = async (doctorId, status = "all") => {
   console.log("The doc id is", doctorId);
-  console.log("The status is", status)
+  console.log("The status is", status);
   try {
     const response = await axiosInstance.get(
       `/api/appointments/doctor-appointments/${doctorId}`,
       {
-        params: { status }, 
+        params: { status },
       }
     );
 
@@ -206,12 +206,44 @@ const getAvailableTimeSlotsService = async (doctorId, date) => {
   }
 };
 
+const getAppointmentById = async (appointmentId) => {
+  try {
+    const response = await axiosInstance.get(
+      `/api/appointments/${appointmentId}`
+    );
+    console.log("Fetching appointment:", appointmentId);
+    console.log("Response from getAppointmentById:", response);
+    if (!response?.data?.isSuccess) {
+      return createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "Failed to fetch appointment",
+        error: response?.data?.error || null,
+      });
+    }
+    return createApiResponse({
+      isSuccess: true,
+      message: response?.data?.message || "Appointment fetched successfully",
+      data: response?.data?.data, // Extract the appointment data
+    });
+  } catch (error) {
+    console.error("Error in getAppointmentById:", error?.response);
+    return createApiResponse({
+      isSuccess: false,
+      message:
+        error?.response?.data?.message ||
+        "An error occurred while fetching appointment",
+      error: error?.response?.data?.error || error.message,
+    });
+  }
+};
+
 const appointmentService = {
   bookAppointmentService,
   getUserAppointmentsService,
   getDoctorAppointmentsService,
   updateAppointmentStatusService,
   getAvailableTimeSlotsService,
+  getAppointmentById,
 };
 
 export default appointmentService;

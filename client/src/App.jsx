@@ -37,7 +37,9 @@ import SelectDoctor from "./pages/user/SelectDoctor.jsx";
 import SelectTime from "./pages/user/SelectTime.jsx";
 import PatientDetails from "./pages/user/PatientDetails.jsx";
 import ConfirmationPage from "./pages/user/ConfirmationPage.jsx";
-import UserProfile from "./pages/user/UserProfile"; // Import UserProfile Component
+import UserProfile from "./pages/user/UserProfile";
+import CampaignDetails from "./component/user/CampaignDetail.jsx";
+import AppointmentDetail from "./component/user/AppointmentDetail.jsx";
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -55,6 +57,27 @@ function App() {
         <Route path="/hospitals" element={<HospitalsPage />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/paymentFailed" element={<PaymentFailed />} />
+
+        <Route
+          path="/campaigns/:id"
+          element={
+            <CheckAuth role="user">
+              <MainLayout>
+                <CampaignDetails />
+              </MainLayout>
+            </CheckAuth>
+          }
+        ></Route>
+        <Route
+          path="/appointments/:id"
+          element={
+            <CheckAuth role="user">
+              <MainLayout>
+                <AppointmentDetail />
+              </MainLayout>
+            </CheckAuth>
+          }
+        ></Route>
 
         {/* Appointment Booking Routes */}
         <Route

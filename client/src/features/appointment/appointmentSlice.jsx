@@ -61,7 +61,7 @@ export const fetchUserAppointments = createAsyncThunk(
 export const fetchDoctorAppointments = createAsyncThunk(
   "appointment/fetchDoctorAppointments",
   async ({ doctorId, status = "all" }, { rejectWithValue }) => {
-    console.log("The status is " , status)
+    console.log("The status is ", status);
     try {
       const response = await appointmentService.getDoctorAppointmentsService(
         doctorId,
@@ -114,6 +114,23 @@ export const deleteAppointment = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         createApiResponse(error, "Failed to delete appointment")
+      );
+    }
+  }
+);
+
+export const fetchAppointmentById = createAsyncThunk(
+  "appointment/fetchAppointmentById",
+  async (appointmentId, { rejectWithValue }) => {
+    try {
+      const response = await appointmentService.getAppointmentById(
+        appointmentId
+      );
+      if (!response.isSuccess) throw response;
+      return response.data; // Assuming `data` contains the appointment details
+    } catch (error) {
+      return rejectWithValue(
+        createApiResponse(error, "Failed to fetch appointment")
       );
     }
   }
@@ -207,6 +224,15 @@ const appointmentSlice = createSlice({
         state.error = null;
       })
       .addCase(deleteAppointment.rejected, handleRejected);
+
+    builder
+      .addCase(fetchAppointmentById.pending, handlePending)
+      .addCase(fetchAppointmentById.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.appointment = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchAppointmentById.rejected, handleRejected);
   },
 });
 

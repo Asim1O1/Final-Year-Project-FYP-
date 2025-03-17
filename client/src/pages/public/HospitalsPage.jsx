@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Box, SimpleGrid, Text } from "@chakra-ui/react";
-import { TopSection } from "../../component/common/TopSection";
+import  TopSection  from "../../component/common/TopSection";
 import Footer from "../../component/layout/Footer";
 import HospitalCard from "../../component/common/HospitalCard";
 import { useDispatch, useSelector } from "react-redux";
@@ -51,3 +51,4 @@ export const HospitalsPage = () => {
 };
 
 export default HospitalsPage;
+

@@ -26,7 +26,7 @@ export const Sidebar = () => {
     {
       icon: RiAdminLine,
       label: "Hospital Admin",
-      path: "/admin/hospital admin",
+      path: "/admin/hospital-admin",
     },
     { icon: RiStethoscopeLine, label: "Doctors", path: "/admin/doctors" },
     {

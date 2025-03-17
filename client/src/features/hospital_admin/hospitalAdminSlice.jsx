@@ -207,7 +207,7 @@ const hospitalAdminSlice = createSlice({
       .addCase(handleHospitalAdminDeletion.fulfilled, (state, action) => {
         handleFulfilled(state, action);
         state.hospitalAdmins = state.hospitalAdmins.filter(
-          (admin) => admin.id !== action.payload
+          (admin) => admin._id !== action.payload
         );
         state.successMessage = "Hospital admin deleted successfully!";
       })

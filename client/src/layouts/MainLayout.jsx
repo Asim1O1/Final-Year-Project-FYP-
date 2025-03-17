@@ -2,16 +2,11 @@
 import React from "react";
 import {
   Box,
-  Flex,
-  Container,
-  Link,
-  Image,
-  Button,
-  HStack,
-  Text,
+
 } from "@chakra-ui/react";
-import { PhoneIcon, EmailIcon } from "@chakra-ui/icons";
+
 import NavBar from "../component/layout/NavBar";
+import Footer from "../component/layout/Footer";
 
 const MainLayout = ({ children }) => {
   return (
@@ -20,6 +15,7 @@ const MainLayout = ({ children }) => {
       <Box as="main" flex="1" bg="gray.50">
         {children}
       </Box>
+      <Footer/>
     </Box>
   );
 };

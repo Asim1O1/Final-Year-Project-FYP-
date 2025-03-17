@@ -34,85 +34,132 @@ const SelectTime = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const [selectedDay, setSelectedDay] = useState(3);
+  const [selectedDay, setSelectedDay] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const { availableSlots, loading, error } = useSelector(
-    (state) => state?.appointmentSlice
+    (state) => state.appointmentSlice
   );
 
-  const calendarDays = [
-    { day: 25, month: "Feb" },
-    { day: 26, month: "Feb" },
-    { day: 27, month: "Feb" },
-    { day: 28, month: "Feb" },
-    { day: 1, month: "Mar" },
-    { day: 2, month: "Mar" },
-    { day: 3, month: "Mar" },
-    { day: 4, month: "Mar" },
-    { day: 5, month: "Mar" },
-    { day: 6, month: "Mar" },
-    { day: 7, month: "Mar" },
-    { day: 8, month: "Mar" },
-    { day: 9, month: "Mar" },
-  ];
+  // Get today's date for comparison
+  const today = new Date();
+  const currentDate = today.getDate();
+  const currentMonthIndex = today.getMonth();
+  const currentYearValue = today.getFullYear();
 
+  // Generate calendar days dynamically
+  const generateCalendarDays = (year, month) => {
+    const firstDayOfMonth = new Date(year, month, 1);
+    const lastDayOfMonth = new Date(year, month + 1, 0);
+    const daysInMonth = lastDayOfMonth.getDate();
+    const startingDay = firstDayOfMonth.getDay(); // 0 (Sun) to 6 (Sat)
+
+    const calendarDays = [];
+
+    // Add empty slots for days before the first day of the month
+    for (let i = 0; i < startingDay; i++) {
+      calendarDays.push({ day: null, month: null });
+    }
+
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      calendarDays.push({ day, month: month });
+    }
+
+    return calendarDays;
+  };
+
+  const calendarDays = generateCalendarDays(currentYear, currentMonth);
+
+  // Handle month navigation
+  const handlePreviousMonth = () => {
+    setCurrentMonth((prev) => (prev === 0 ? 11 : prev - 1));
+    if (currentMonth === 0) {
+      setCurrentYear((prev) => prev - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth((prev) => (prev === 11 ? 0 : prev + 1));
+    if (currentMonth === 11) {
+      setCurrentYear((prev) => prev + 1);
+    }
+  };
+
+  // Handle date selection
+  const handleDateSelection = (index) => {
+    const selectedDayData = calendarDays[index];
+    if (!selectedDayData.day) return; // Skip empty slots
+
+    // Check if the selected date is in the past
+    const selectedDateObj = new Date(currentYear, selectedDayData.month, selectedDayData.day);
+    if (selectedDateObj < new Date(currentYearValue, currentMonthIndex, currentDate)) {
+      return; // Disable selection for past dates
+    }
+
+    setSelectedDay(index);
+    const month = (selectedDayData.month + 1).toString().padStart(2, "0");
+    const day = selectedDayData.day.toString().padStart(2, "0");
+    const dateStr = `${currentYear}-${month}-${day}`;
+    setSelectedDate(dateStr);
+  };
+
+  // Fetch available time slots when the selected date changes
   useEffect(() => {
     dispatch(fetchAvailableTimeSlots({ doctorId, date: selectedDate }));
   }, [doctorId, selectedDate, dispatch]);
 
-  const handleDateSelection = (index) => {
-    setSelectedDay(index);
-    const selectedDayData = calendarDays[index];
-    let dateStr = `2025-`;
-    if (selectedDayData.month === "Feb") {
-      dateStr += `02-${selectedDayData.day.toString().padStart(2, "0")}`;
-    } else {
-      dateStr += `03-${selectedDayData.day.toString().padStart(2, "0")}`;
-    }
-    setSelectedDate(dateStr);
-  };
-
+  // Handle navigation to the next step
   const handleNext = () => {
     if (!selectedSlot) {
       alert("Please select a time slot");
       return;
     }
-
     navigate(
       `/book-appointment/patient-details/${doctorId}/${selectedDate}/${selectedSlot}`
     );
   };
 
+  // Group time slots into morning, afternoon, and evening
   const groupTimeSlots = (slots) => {
     const morning = slots.filter((slot) => {
-      const time = parseInt(slot.split(":")[0]);
-      return time >= 8 && time < 12;
+      const hour = parseInt(slot.split(":")[0]);
+      return hour >= 8 && hour < 12; // 8:00 AM - 11:59 AM
     });
 
     const afternoon = slots.filter((slot) => {
-      const time = parseInt(slot.split(":")[0]);
-      return time >= 12 && time < 17;
+      const hour = parseInt(slot.split(":")[0]);
+      return hour >= 12 && hour < 17; // 12:00 PM - 4:59 PM
     });
 
     const evening = slots.filter((slot) => {
-      const time = parseInt(slot.split(":")[0]);
-      return time >= 17 && time < 21;
+      const hour = parseInt(slot.split(":")[0]);
+      return hour >= 17 && hour < 21; // 5:00 PM - 8:59 PM
     });
 
     return { morning, afternoon, evening };
   };
 
+  const { morning, afternoon, evening } = groupTimeSlots(availableSlots || []);
+
+  // Check if a time slot is in the past
+  const isPastTimeSlot = (slot) => {
+    const [hour, minute] = slot.split(":").map(Number);
+    const slotTime = new Date(currentYear, currentMonth, selectedDay, hour, minute);
+    const now = new Date();
+    return slotTime < now;
+  };
+
+  // Theme colors
   const cardBg = useColorModeValue("white", "gray.700");
   const borderColor = useColorModeValue("gray.200", "gray.600");
 
-  const { morning, afternoon, evening } = groupTimeSlots(availableSlots || []);
-
   return (
     <Container maxW="container.md" py={8}>
+      {/* Breadcrumb Navigation */}
       <Breadcrumb separator={<ChevronRightIcon color="gray.500" />} mb={4}>
         <BreadcrumbItem>
           <BreadcrumbLink href="/select-specialty" color="blue.500">
@@ -135,26 +182,20 @@ const SelectTime = () => {
         </BreadcrumbItem>
       </Breadcrumb>
 
+      {/* Heading and Step Indicator */}
       <Heading size="md" color="blue.500" mb={4}>
         Select Time Slot
       </Heading>
-
       <Box mb={8} textAlign="right">
         <Text fontSize="sm" color="gray.500">
           Step 3 of 5
         </Text>
       </Box>
 
-      <Card
-        borderWidth="1px"
-        borderRadius="lg"
-        overflow="hidden"
-        boxShadow="md"
-        bg={cardBg}
-        borderColor={borderColor}
-        mb={6}
-      >
+      {/* Doctor Details Card */}
+      <Card borderWidth="1px" borderRadius="lg" overflow="hidden" boxShadow="md" bg={cardBg} borderColor={borderColor} mb={6}>
         <CardBody>
+          {/* Doctor Info */}
           <Flex align="center" mb={6}>
             <Avatar src="/doctor-placeholder-1.jpg" size="md" mr={4} />
             <Box>
@@ -172,9 +213,13 @@ const SelectTime = () => {
 
           <Divider mb={6} />
 
+          {/* Calendar Navigation */}
           <Flex justify="space-between" align="center" mb={4}>
             <Text fontWeight="medium" color="gray.700">
-              March 2025
+              {new Date(currentYear, currentMonth).toLocaleString("default", {
+                month: "long",
+                year: "numeric",
+              })}
             </Text>
             <Flex>
               <IconButton
@@ -182,6 +227,7 @@ const SelectTime = () => {
                 variant="ghost"
                 colorScheme="blue"
                 aria-label="Previous month"
+                onClick={handlePreviousMonth}
                 mr={2}
               />
               <IconButton
@@ -189,49 +235,68 @@ const SelectTime = () => {
                 variant="ghost"
                 colorScheme="blue"
                 aria-label="Next month"
+                onClick={handleNextMonth}
               />
             </Flex>
           </Flex>
 
+          {/* Calendar Days */}
           <SimpleGrid columns={7} spacing={2} mb={6}>
             {daysOfWeek.map((day) => (
-              <Box
-                key={day}
-                textAlign="center"
-                fontSize="sm"
-                fontWeight="medium"
-                color="gray.500"
-                py={1}
-              >
+              <Box key={day} textAlign="center" fontSize="sm" fontWeight="medium" color="gray.500" py={1}>
                 {day}
               </Box>
             ))}
+            {calendarDays.map((date, index) => {
+              const isPastDate =
+                date.day &&
+                new Date(currentYear, date.month, date.day) <
+                  new Date(currentYearValue, currentMonthIndex, currentDate);
+              const isCurrentDate =
+                date.day === currentDate &&
+                currentMonth === currentMonthIndex &&
+                currentYear === currentYearValue;
 
-            {calendarDays.map((date, index) => (
-              <Button
-                key={index}
-                size="sm"
-                variant={index === selectedDay ? "solid" : "outline"}
-                colorScheme="blue"
-                borderRadius="md"
-                onClick={() => handleDateSelection(index)}
-                isDisabled={index < 3} // Disable past days
-                opacity={index < 3 ? 0.5 : 1}
-                _disabled={{ opacity: 0.5 }}
-              >
-                {date.day}
-              </Button>
-            ))}
+              return (
+                <Button
+                  key={index}
+                  size="sm"
+                  variant={
+                    index === selectedDay
+                      ? "solid"
+                      : isCurrentDate
+                      ? "outline"
+                      : "ghost"
+                  }
+                  colorScheme={
+                    isCurrentDate
+                      ? "green"
+                      : index === selectedDay
+                      ? "blue"
+                      : "gray"
+                  }
+                  borderRadius="md"
+                  onClick={() => handleDateSelection(index)}
+                  isDisabled={!date.day || isPastDate}
+                  opacity={!date.day || isPastDate ? 0.5 : 1}
+                  _disabled={{ opacity: 0.5 }}
+                >
+                  {date.day || ""}
+                </Button>
+              );
+            })}
           </SimpleGrid>
 
           <Divider mb={6} />
 
+          {/* Loading State */}
           {loading && (
             <Flex justify="center" my={8}>
               <Text color="gray.500">Loading time slots...</Text>
             </Flex>
           )}
 
+          {/* Error State */}
           {error && (
             <Alert status="error" mb={6} borderRadius="md">
               <AlertIcon />
@@ -239,8 +304,10 @@ const SelectTime = () => {
             </Alert>
           )}
 
+          {/* Time Slots */}
           {!loading && !error && (
             <VStack spacing={6} align="stretch">
+              {/* Morning Slots */}
               <Box>
                 <Flex align="center" mb={4}>
                   <Badge colorScheme="blue" borderRadius="full" px={2} mr={2}>
@@ -250,27 +317,33 @@ const SelectTime = () => {
                     Morning
                   </Text>
                 </Flex>
-
                 <HStack spacing={4} mb={6} wrap="wrap">
                   {morning.length > 0 ? (
-                    morning.map((slot) => (
-                      <Button
-                        key={slot}
-                        size="md"
-                        variant={selectedSlot === slot ? "solid" : "outline"}
-                        colorScheme="blue"
-                        onClick={() => setSelectedSlot(slot)}
-                        borderRadius="md"
-                      >
-                        {slot}
-                      </Button>
-                    ))
+                    morning.map((slot) => {
+                      const isPast = isPastTimeSlot(slot);
+                      return (
+                        <Button
+                          key={slot}
+                          size="md"
+                          variant={selectedSlot === slot ? "solid" : "outline"}
+                          colorScheme={isPast ? "gray" : "blue"}
+                          onClick={() => !isPast && setSelectedSlot(slot)}
+                          borderRadius="md"
+                          isDisabled={isPast}
+                          opacity={isPast ? 0.5 : 1}
+                          _disabled={{ opacity: 0.5 }}
+                        >
+                          {slot}
+                        </Button>
+                      );
+                    })
                   ) : (
                     <Text color="gray.500">No morning slots available</Text>
                   )}
                 </HStack>
               </Box>
 
+              {/* Afternoon Slots */}
               <Box>
                 <Flex align="center" mb={4}>
                   <Badge colorScheme="blue" borderRadius="full" px={2} mr={2}>
@@ -280,27 +353,33 @@ const SelectTime = () => {
                     Afternoon
                   </Text>
                 </Flex>
-
                 <HStack spacing={4} mb={6} wrap="wrap">
                   {afternoon.length > 0 ? (
-                    afternoon.map((slot) => (
-                      <Button
-                        key={slot}
-                        size="md"
-                        variant={selectedSlot === slot ? "solid" : "outline"}
-                        colorScheme="blue"
-                        onClick={() => setSelectedSlot(slot)}
-                        borderRadius="md"
-                      >
-                        {slot}
-                      </Button>
-                    ))
+                    afternoon.map((slot) => {
+                      const isPast = isPastTimeSlot(slot);
+                      return (
+                        <Button
+                          key={slot}
+                          size="md"
+                          variant={selectedSlot === slot ? "solid" : "outline"}
+                          colorScheme={isPast ? "gray" : "blue"}
+                          onClick={() => !isPast && setSelectedSlot(slot)}
+                          borderRadius="md"
+                          isDisabled={isPast}
+                          opacity={isPast ? 0.5 : 1}
+                          _disabled={{ opacity: 0.5 }}
+                        >
+                          {slot}
+                        </Button>
+                      );
+                    })
                   ) : (
                     <Text color="gray.500">No afternoon slots available</Text>
                   )}
                 </HStack>
               </Box>
 
+              {/* Evening Slots */}
               <Box>
                 <Flex align="center" mb={4}>
                   <Badge colorScheme="blue" borderRadius="full" px={2} mr={2}>
@@ -310,21 +389,26 @@ const SelectTime = () => {
                     Evening
                   </Text>
                 </Flex>
-
                 <HStack spacing={4} mb={6} wrap="wrap">
                   {evening.length > 0 ? (
-                    evening.map((slot) => (
-                      <Button
-                        key={slot}
-                        size="md"
-                        variant={selectedSlot === slot ? "solid" : "outline"}
-                        colorScheme="blue"
-                        onClick={() => setSelectedSlot(slot)}
-                        borderRadius="md"
-                      >
-                        {slot}
-                      </Button>
-                    ))
+                    evening.map((slot) => {
+                      const isPast = isPastTimeSlot(slot);
+                      return (
+                        <Button
+                          key={slot}
+                          size="md"
+                          variant={selectedSlot === slot ? "solid" : "outline"}
+                          colorScheme={isPast ? "gray" : "blue"}
+                          onClick={() => !isPast && setSelectedSlot(slot)}
+                          borderRadius="md"
+                          isDisabled={isPast}
+                          opacity={isPast ? 0.5 : 1}
+                          _disabled={{ opacity: 0.5 }}
+                        >
+                          {slot}
+                        </Button>
+                      );
+                    })
                   ) : (
                     <Text color="gray.500">No evening slots available</Text>
                   )}
@@ -335,6 +419,7 @@ const SelectTime = () => {
         </CardBody>
       </Card>
 
+      {/* Navigation Buttons */}
       <Flex justify="space-between" mt={8}>
         <Button
           variant="outline"
