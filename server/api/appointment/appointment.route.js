@@ -1,6 +1,8 @@
 import express from "express";
 import {
   bookDoctorAppointment,
+  deleteAppointments,
+  getAppointmentById,
   getAvailableTimeSlots,
   getDoctorAppointments,
   getUserAppointments,
@@ -24,6 +26,10 @@ router.get(
   getDoctorAppointments
 );
 
+router.get("/:appointmentId", protectRoute, getAppointmentById);
+
 router.patch("/:appointmentId/status", updateAppointmentStatus);
+
+router.post("/delete", protectRoute, deleteAppointments);
 
 export default router;

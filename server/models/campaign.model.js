@@ -37,6 +37,19 @@ const campaignSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    allowVolunteers: { type: Boolean, default: false },
+    maxVolunteers: { type: Number, default: 0 },
+    volunteerRequests: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        status: {
+          type: String,
+          enum: ["pending", "approved", "rejected"],
+          default: "pending",
+        },
+        requestedAt: { type: Date, default: Date.now },
+      },
+    ],
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

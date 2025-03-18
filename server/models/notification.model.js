@@ -27,12 +27,12 @@ const notificationSchema = new mongoose.Schema(
     campaign: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Campaign",
-      default: null, // Only for campaign notifications
+      default: null,
     },
     appointment: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Appointment",
-      default: null, // Only for appointment notifications
+      default: null,
     },
   },
   { timestamps: true }

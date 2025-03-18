@@ -1,12 +1,25 @@
 import transporter from "../config/mailer.js";
 
-export const sendEmail = async (to, subject, text) => {
+const replacePlaceholders = (template, data) => {
+  let result = template;
+  for (const key in data) {
+    const regex = new RegExp(`{{${key}}}`, "g");
+    result = result.replace(regex, data[key]);
+  }
+  return result;
+};
+
+export const sendEmail = async (to, subject, template, data) => {
   try {
+ 
+    const htmlContent = replacePlaceholders(template.body, data);
+
     const mailOptions = {
       from: process.env.SMTP_USER,
       to,
       subject,
-      text,
+      text: htmlContent, // Plain text version (optional)
+      html: htmlContent, // HTML version
     };
 
     await transporter.sendMail(mailOptions);

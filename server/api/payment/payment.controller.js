@@ -4,7 +4,7 @@ import paymentModel from "../../models/payment.model.js";
 import userModel from "../../models/user.model.js";
 import axios from "axios";
 import appConfig from "../../config/appConfig.js";
-import createError from "http-errors"; // For error handling
+
 
 export const initiatePayment = async (req, res) => {
   const { userId, bookingId, amount, bookingType } = req.body;

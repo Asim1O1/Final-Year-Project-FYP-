@@ -5,9 +5,18 @@ import Hospital from "../../models/hospital.model.js";
 import Notification from "../../models/notification.model.js";
 import userModel from "../../models/user.model.js";
 import { sendEmail } from "../../utils/sendEmail.js";
+import { emailTemplates } from "../../utils/emailTemplates.js";
 
 export const createCampaign = async (req, res, next) => {
-  const { title, description, date, location, hospital } = req.body;
+  const {
+    title,
+    description,
+    date,
+    location,
+    hospital,
+    maxVolunteers,
+    allowVolunteers,
+  } = req.body;
 
   // Validate request body
   if (!title || !description || !date || !location || !hospital) {
@@ -59,12 +68,14 @@ export const createCampaign = async (req, res, next) => {
       location,
       hospital,
       createdBy: req.user._id,
+      allowVolunteers: allowVolunteers || false,
+      maxVolunteers: maxVolunteers || 0,
     });
 
     await campaign.save();
 
+    // Fetch all users
     const users = await userModel.find({ role: "user" }, "_id email");
-    console.log("The filtered users are:", users);
 
     // Create notifications for all users
     const notifications = users.map((user) => ({
@@ -73,24 +84,28 @@ export const createCampaign = async (req, res, next) => {
         date
       ).toLocaleDateString()} at ${location}.`,
       type: "campaign",
+      relatedId: campaign._id, // Linking the notification to the campaign
     }));
 
     await Notification.insertMany(notifications);
 
+    // Emit event via Socket.io
     const io = req.app.get("socketio");
-    io.emit("new-campaign", {
-      message: `New campaign: ${title}`,
-    });
+    io.emit("new-campaign", { message: `New campaign: ${title}` });
 
     // Send email notifications
     for (const user of users) {
-      await sendEmail(
-        user.email,
-        "New Campaign Alert",
-        `A new campaign has been created: ${title}. Join us on ${new Date(
-          date
-        ).toLocaleDateString()} at ${location}.`
-      );
+      const data = {
+        fullName: user.fullName,
+        title: campaign.title,
+        date: new Date(campaign.date).toLocaleDateString(),
+        location: campaign.location,
+      };
+
+      const subject = emailTemplates.campaignCreated.subject;
+      const template = emailTemplates.campaignCreated;
+
+      await sendEmail(user.email, subject, template, data);
     }
 
     // Return success response
@@ -108,6 +123,7 @@ export const createCampaign = async (req, res, next) => {
     return next(error);
   }
 };
+
 
 export const updateCampaign = async (req, res, next) => {
   const { id } = req.params;
@@ -356,18 +372,24 @@ export const getAllCampaigns = async (req, res, next) => {
 };
 
 export const volunteerForCampaign = async (req, res, next) => {
-  const { campaign } = await Campaign.findById(req.params);
+  const { id } = req.params; // Campaign ID
+  const userId = req.user._id; // Logged-in user ID
 
   try {
+    // Find the campaign by ID
+    const campaign = await Campaign.findById(id);
     if (!campaign) {
-      return res.status(404).json({
-        isSuccess: false,
-        statusCode: 404,
-        message: "Campaign not found",
-        error: null,
-        data: null,
-      });
+      return res.status(404).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 404,
+          message: "Campaign not found",
+          error: null,
+          data: null,
+        })
+      );
     }
+
     // Check if the user is already a volunteer
     if (campaign.volunteers.includes(userId)) {
       return res.status(400).json(
@@ -380,8 +402,25 @@ export const volunteerForCampaign = async (req, res, next) => {
         })
       );
     }
-    campaign.volunteers.push(req.user._id);
+
+    // Add the user to the volunteers list
+    campaign.volunteers.push(userId);
     await campaign.save();
+
+    // Create a notification for the user
+    const notification = new Notification({
+      user: userId,
+      message: `You have successfully volunteered for the campaign: ${campaign.title}`,
+      type: "volunteer",
+    });
+    await notification.save();
+
+    // Emit real-time notification using Socket.IO
+    const io = req.app.get("socketio");
+    io.to(userId.toString()).emit("new-notification", {
+      message: `You have successfully volunteered for the campaign: ${campaign.title}`,
+    });
+
     // Return success response
     return res.status(200).json(
       createResponse({
