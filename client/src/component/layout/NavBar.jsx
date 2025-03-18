@@ -33,7 +33,7 @@ const Navbar = () => {
   // Get notifications from Redux store
   const { notifications } = useSelector((state) => state?.notifications);
 
-  const {  isAuthenticated } = useSelector((state) => state?.auth);
+  const { isAuthenticated } = useSelector((state) => state?.auth);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -99,7 +99,7 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`sticky top-0 z-50 bg-transparent transition-transform duration-300 ${
+      className={`sticky top-0 z-50 bg-[#CDF5FD] transition-transform duration-300 ${
         isNavbarVisible ? "translate-y-0" : "-translate-y-full"
       }`}
     >
@@ -187,7 +187,7 @@ const Navbar = () => {
               />
             )}
             <button
-              className="p-2 rounded-md hover:bg-gray-100 transition"
+              className="p-2 rounded-md hover:bg-blue-100 transition"
               onClick={toggleMenu}
             >
               <svg
@@ -211,7 +211,7 @@ const Navbar = () => {
         <div
           className={`${
             isMenuOpen ? "flex" : "hidden"
-          } md:hidden absolute left-0 right-0 top-full bg-transparent backdrop-blur-md shadow-lg flex-col w-full py-4 px-4 mt-2 space-y-2 z-40`}
+          } md:hidden absolute left-0 right-0 top-full bg-[#CDF5FD] shadow-lg flex-col w-full py-4 px-4 mt-2 space-y-2 z-40`}
         >
           {NavLinks.map((link) => (
             <a

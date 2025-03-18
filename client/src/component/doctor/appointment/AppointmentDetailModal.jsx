@@ -1,4 +1,3 @@
-// src/components/AppointmentDetailsModal.js
 import React from "react";
 import { X, Check, Edit } from "lucide-react";
 import StatusBadge from "./StatusBadge";

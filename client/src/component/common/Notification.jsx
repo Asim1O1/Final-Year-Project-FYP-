@@ -1,4 +1,3 @@
-import React from "react";
 import { Bell, Check, Clock, Info, AlertTriangle, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 

@@ -101,23 +101,30 @@ export const updateAppointmentStatus = createAsyncThunk(
   }
 );
 
-// **Delete Appointment**
-export const deleteAppointment = createAsyncThunk(
-  "appointment/deleteAppointment",
-  async (appointmentId, { rejectWithValue }) => {
+// **Delete Appointments**
+export const deleteAppointments = createAsyncThunk(
+  "appointment/deleteAppointments",
+  async (appointmentIds, { rejectWithValue }) => {
     try {
-      const response = await appointmentService.deleteAppointmentService(
-        appointmentId
+      const response = await appointmentService.deleteAppointmentsService(
+        appointmentIds
       );
+
+      console.log("Deleting appointments:", appointmentIds);
+      console.log("Response from deleteAppointmentsService:", response);
+
       if (!response.isSuccess) throw response;
-      return { appointmentId, message: response.message };
+
+      return { appointmentIds, message: response.message };
     } catch (error) {
       return rejectWithValue(
-        createApiResponse(error, "Failed to delete appointment")
+        createApiResponse(error, "Failed to delete appointments")
       );
     }
   }
 );
+
+// ** fetchAppointmentById **
 
 export const fetchAppointmentById = createAsyncThunk(
   "appointment/fetchAppointmentById",
@@ -211,19 +218,20 @@ const appointmentSlice = createSlice({
       .addCase(updateAppointmentStatus.rejected, handleRejected);
 
     builder
-      .addCase(deleteAppointment.pending, handlePending)
-      .addCase(deleteAppointment.fulfilled, (state, action) => {
+      .addCase(deleteAppointments.pending, handlePending)
+      .addCase(deleteAppointments.fulfilled, (state, action) => {
         state.isLoading = false;
         if (Array.isArray(state.appointments)) {
           state.appointments = state.appointments.filter(
-            (appointment) => appointment.id !== action.payload.appointmentId
+            (appointment) =>
+              !action.payload.appointmentIds.includes(appointment.id)
           );
         } else {
           state.appointments = [];
         }
         state.error = null;
       })
-      .addCase(deleteAppointment.rejected, handleRejected);
+      .addCase(deleteAppointments.rejected, handleRejected);
 
     builder
       .addCase(fetchAppointmentById.pending, handlePending)

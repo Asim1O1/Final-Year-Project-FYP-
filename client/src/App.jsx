@@ -138,7 +138,9 @@ function App() {
                 <Navigate to="/" />
               )
             ) : (
-              <RegisterPage />
+              <MainLayout>
+                <RegisterPage />
+              </MainLayout>
             )
           }
         />
@@ -159,7 +161,9 @@ function App() {
                 <Navigate to="/" />
               )
             ) : (
-              <LoginPage />
+              <MainLayout>
+                <LoginPage />
+              </MainLayout>
             )
           }
         />

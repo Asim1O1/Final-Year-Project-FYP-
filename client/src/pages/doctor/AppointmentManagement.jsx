@@ -1,36 +1,36 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Calendar,
-  Check,
-  X,
-
-  AlertCircle,
-  Download,
-  RefreshCcw,
-} from "lucide-react";
-
-import TabButton from "../../component/doctor/appointment/TabButton.jsx";
-import StatusBadge from "../../component/doctor/appointment/StatusBadge.jsx";
-import AppointmentDetailsModal from "../../component/doctor/appointment/AppointmentDetailModal.jsx";
+import { Calendar, Trash } from "lucide-react";
 
 import {
   fetchDoctorAppointments,
   updateAppointmentStatus,
+  deleteAppointments,
 } from "../../features/appointment/appointmentSlice.jsx";
+import AppointmentDetailsModal from "../../component/doctor/appointment/AppointmentDetailModal.jsx";
+import RejectionModal from "../../component/doctor/appointment/RejectionModal.jsx";
+import DeleteConfirmationModal from "../../component/doctor/appointment/DeleteConfirmationModal.jsx";
+import AppointmentTabs from "../../component/doctor/appointment/AppointmentTabs.jsx";
+import BulkSelectionHeader from "../../component/doctor/appointment/BulkSelectionHeader.jsx";
+import EmptyState from "../../component/doctor/appointment/EmptyState.jsx";
+import AppointmentList from "../../component/doctor/appointment/AppointmentList.jsx";
+import { notification } from "antd";
 
 const Appointments = () => {
   const dispatch = useDispatch();
   const {
-    appointments: rawAppointments = [], // Provide default empty array
+    appointments: rawAppointments = [],
     isLoading,
     error,
   } = useSelector((state) => state?.appointmentSlice);
-  const [activeTab, setActiveTab] = useState("upcoming");
+  const [activeTab, setActiveTab] = useState("all");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [appointmentToReject, setAppointmentToReject] = useState(null);
+  const [selectedAppointments, setSelectedAppointments] = useState([]);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [appointmentToDelete, setAppointmentToDelete] = useState(null);
 
   const doctorId = useSelector((state) => state?.auth?.user?.data?._id);
 
@@ -52,10 +52,17 @@ const Appointments = () => {
         status = ["all"];
       }
 
-      // Dispatch the action with the individual status values
       dispatch(fetchDoctorAppointments({ doctorId, status }));
     }
   }, [dispatch, doctorId, activeTab]);
+  // 🔔 Show Notification
+  const showNotification = (type, message, description) => {
+    notification[type]({
+      message,
+      description,
+      placement: "topRight",
+    });
+  };
 
   // Handle appointment approval
   const handleApproveAppointment = (appointmentId) => {
@@ -67,14 +74,22 @@ const Appointments = () => {
     )
       .unwrap()
       .then(() => {
-        // Refresh the appointments list after successful update
         dispatch(
           fetchDoctorAppointments({ doctorId, status: "pending,confirmed" })
+        );
+        showNotification(
+          "success",
+          "Appointment Approved",
+          "The appointment has been successfully confirmed."
         );
       })
       .catch((error) => {
         console.error("Failed to approve appointment:", error);
-        // You can add toast notification here
+        showNotification(
+          "error",
+          "Approval Failed",
+          error?.message || "Could not confirm the appointment."
+        );
       });
   };
 
@@ -96,15 +111,23 @@ const Appointments = () => {
     )
       .unwrap()
       .then(() => {
-        // Close modal and refresh appointments
         setShowRejectionModal(false);
         setRejectionReason("");
         setAppointmentToReject(null);
         dispatch(fetchDoctorAppointments({ doctorId, status: "canceled" }));
+        showNotification(
+          "info",
+          "Appointment Rejected",
+          "The appointment has been successfully rejected."
+        );
       })
       .catch((error) => {
         console.error("Failed to reject appointment:", error);
-
+        showNotification(
+          "error",
+          "Rejection Failed",
+          error?.message || "Could not reject the appointment."
+        );
       });
   };
 
@@ -118,17 +141,98 @@ const Appointments = () => {
     )
       .unwrap()
       .then(() => {
-        // Refresh the appointments list after successful update
         dispatch(fetchDoctorAppointments({ doctorId, status: "completed" }));
+        showNotification(
+          "success",
+          "Appointment Completed",
+          "The appointment has been successfully marked as completed."
+        );
       })
       .catch((error) => {
         console.error("Failed to complete appointment:", error);
-        // You can add toast notification here
+        showNotification(
+          "error",
+          "Completion Failed",
+          error?.message || "Could not mark the appointment as completed."
+        );
       });
   };
 
-  // Transform raw appointments into grouped structure
+  // Handle single appointment deletion
+  const handleDeleteClick = (appointment) => {
+    setAppointmentToDelete(appointment);
+    setShowDeleteConfirmation(true);
+  };
 
+  const handleDeleteConfirm = () => {
+    if (appointmentToDelete) {
+      // Single appointment deletion
+      dispatch(deleteAppointments([appointmentToDelete._id]))
+        .unwrap()
+        .then((response) => {
+          setShowDeleteConfirmation(false);
+          setAppointmentToDelete(null);
+          dispatch(fetchDoctorAppointments({ doctorId, status: ["all"] }));
+          showNotification("success", "Appointment Deleted", response.message);
+        })
+        .catch((error) => {
+          console.error("Failed to delete appointment:", error);
+          showNotification(
+            "error",
+            "Deletion Failed",
+            error?.message || "Failed to delete appointment"
+          );
+        });
+    } else if (selectedAppointments.length > 0) {
+      // Bulk deletion
+      dispatch(deleteAppointments(selectedAppointments))
+        .unwrap()
+        .then((response) => {
+          setShowDeleteConfirmation(false);
+          setSelectedAppointments([]);
+          dispatch(fetchDoctorAppointments({ doctorId, status: ["all"] }));
+          showNotification("success", "Appointments Deleted", response.message);
+        })
+        .catch((error) => {
+          console.error("Failed to delete appointments:", error);
+          showNotification(
+            "error",
+            "Bulk Deletion Failed",
+            error?.message || "Failed to delete selected appointments"
+          );
+        });
+    }
+  };
+
+  // Handle checkbox selection for bulk operations
+  const handleSelectAppointment = (appointmentId) => {
+    setSelectedAppointments((prev) => {
+      if (prev.includes(appointmentId)) {
+        return prev.filter((id) => id !== appointmentId);
+      } else {
+        return [...prev, appointmentId];
+      }
+    });
+  };
+
+  // Handle select all appointments
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      const allIds = appointments[activeTab].map((app) => app._id);
+      setSelectedAppointments(allIds);
+    } else {
+      setSelectedAppointments([]);
+    }
+  };
+
+  // Handle bulk delete button click
+  const handleBulkDeleteClick = () => {
+    if (selectedAppointments.length > 0) {
+      setShowDeleteConfirmation(true);
+    }
+  };
+
+  // Transform raw appointments into grouped structure
   const appointments = {
     upcoming: Array.isArray(rawAppointments)
       ? rawAppointments.filter((app) => app.status === "pending")
@@ -154,19 +258,22 @@ const Appointments = () => {
       : [],
   };
 
-  // Handler for Add Appointment button
   const handleAddAppointment = () => {
-    // Implement your add appointment logic here
     console.log("Add appointment clicked");
-    // You could navigate to another page or open a modal
   };
 
   // Handler for Reschedule button
   const handleReschedule = (appointment) => {
-    // Implement your reschedule logic here
     console.log("Reschedule clicked for appointment:", appointment._id);
-    // You could open a reschedule modal
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   // Function to safely check if error contains a specific string
   const errorIncludes = (searchString) => {
@@ -177,14 +284,6 @@ const Appointments = () => {
     if (error.statusCode) return error.statusCode === 404;
     return false;
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
 
   // Helper function to get error message
   const getErrorMessage = () => {
@@ -208,191 +307,64 @@ const Appointments = () => {
           <h2 className="text-xl font-bold text-gray-800">
             Manage Appointments
           </h2>
-          <button
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center"
-            onClick={handleAddAppointment}
-          >
-            <Calendar size={16} className="mr-2" />
-            Add Appointment
-          </button>
+          <div className="flex space-x-2">
+            {selectedAppointments.length > 0 && (
+              <button
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 flex items-center"
+                onClick={handleBulkDeleteClick}
+              >
+                <Trash size={16} className="mr-2" />
+                Delete Selected ({selectedAppointments.length})
+              </button>
+            )}
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center"
+              onClick={handleAddAppointment}
+            >
+              <Calendar size={16} className="mr-2" />
+              Add Appointment
+            </button>
+          </div>
         </div>
 
-        <div className="bg-gray-100 rounded-lg p-1 mb-6">
-          <TabButton
-            name="all"
-            label="All"
-            count={appointments.all?.length || 0}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-          />
-          <TabButton
-            name="confirmed"
-            label="Approved"
-            count={appointments.confirmed?.length || 0}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-          />
+        <AppointmentTabs
+          appointments={appointments}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
 
-          <TabButton
-            name="upcoming"
-            label="Upcoming"
-            count={appointments.upcoming?.length || 0}
+        {/* Bulk Selection Header */}
+        {appointments[activeTab]?.length > 0 && (
+          <BulkSelectionHeader
+            selectedAppointments={selectedAppointments}
+            appointments={appointments}
             activeTab={activeTab}
-            setActiveTab={setActiveTab}
+            handleSelectAll={handleSelectAll}
           />
-          <TabButton
-            name="completed"
-            label="Completed"
-            count={appointments.completed?.length || 0}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-          />
-          <TabButton
-            name="cancelled"
-            label="Cancelled"
-            count={appointments.cancelled?.length || 0}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-          />
-        </div>
+        )}
 
         {/* Appointments List */}
         <div className="space-y-4">
           {appointments[activeTab]?.length > 0 ? (
-            appointments[activeTab].map((appointment) => (
-              <div
-                key={appointment._id}
-                className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
-              >
-                <div className="flex justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div>
-                      <h3 className="font-medium text-gray-800">
-                        {appointment?.user?.fullName}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        {appointment?.user?.email}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {appointment.reason}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <div className="flex items-center justify-end mb-2">
-                      <Calendar size={16} className="text-gray-500 mr-1" />
-                      <span className="text-sm text-gray-700">
-                        {new Date(appointment.date).toLocaleDateString()},{" "}
-                        {appointment.startTime} - {appointment.endTime}
-                      </span>
-                    </div>
-                    <StatusBadge status={appointment.status} />
-                  </div>
-                </div>
-
-                {appointment.notes && (
-                  <div className="mt-3 pt-3 border-t">
-                    <p className="text-sm text-gray-700">
-                      <span className="font-medium">Notes:</span>{" "}
-                      {appointment.notes}
-                    </p>
-                  </div>
-                )}
-
-                {appointment.rejectionReason && (
-                  <div className="mt-3 pt-3 border-t">
-                    <p className="text-sm text-gray-700">
-                      <span className="font-medium">Rejection Reason:</span>{" "}
-                      {appointment.rejectionReason}
-                    </p>
-                  </div>
-                )}
-
-                <div className="mt-3 pt-3 border-t flex justify-between">
-                  <button
-                    className="text-blue-600 text-sm hover:underline"
-                    onClick={() => setSelectedAppointment(appointment)}
-                  >
-                    View Details
-                  </button>
-
-                  <div className="flex space-x-2">
-                    {activeTab === "upcoming" &&
-                      appointment.status === "pending" && (
-                        <>
-                          <button
-                            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 flex items-center"
-                            onClick={() =>
-                              handleApproveAppointment(appointment._id)
-                            }
-                          >
-                            <Check size={14} className="mr-1" />
-                            Approve
-                          </button>
-                          <button
-                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center"
-                            onClick={() => handleRejectClick(appointment)}
-                          >
-                            <X size={14} className="mr-1" />
-                            Reject
-                          </button>
-                        </>
-                      )}
-                    {activeTab === "upcoming" &&
-                      appointment.status === "confirmed" && (
-                        <button
-                          className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center"
-                          onClick={() =>
-                            handleCompleteAppointment(appointment._id)
-                          }
-                        >
-                          <Check size={14} className="mr-1" />
-                          Mark Completed
-                        </button>
-                      )}
-                    {activeTab === "upcoming" && (
-                      <button
-                        className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300"
-                        onClick={() => handleReschedule(appointment)}
-                      >
-                        Reschedule
-                      </button>
-                    )}
-                    {activeTab === "completed" && (
-                      <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center">
-                        <Download size={14} className="mr-1" />
-                        Download Report
-                      </button>
-                    )}
-                    {activeTab === "cancelled" && (
-                      <button
-                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center"
-                        onClick={() => handleReschedule(appointment)}
-                      >
-                        <RefreshCcw size={14} className="mr-1" />
-                        Reschedule
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))
+            <AppointmentList
+              appointments={appointments[activeTab]}
+              selectedAppointments={selectedAppointments}
+              activeTab={activeTab}
+              handleSelectAppointment={handleSelectAppointment}
+              handleApproveAppointment={handleApproveAppointment}
+              handleRejectClick={handleRejectClick}
+              handleCompleteAppointment={handleCompleteAppointment}
+              handleReschedule={handleReschedule}
+              handleDeleteClick={handleDeleteClick}
+              setSelectedAppointment={setSelectedAppointment}
+            />
           ) : (
-            <div className="text-center py-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                <AlertCircle size={32} className="text-gray-400" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-800 mb-2">
-                No appointments found
-              </h3>
-              <p className="text-gray-500">{getErrorMessage()}</p>
-            </div>
+            <EmptyState getErrorMessage={getErrorMessage} />
           )}
         </div>
       </div>
 
-      {/* Appointment Details Modal */}
+      {/* Modals */}
       {selectedAppointment && (
         <AppointmentDetailsModal
           appointment={selectedAppointment}
@@ -400,41 +372,29 @@ const Appointments = () => {
         />
       )}
 
-      {/* Rejection Reason Modal */}
       {showRejectionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">Reject Appointment</h3>
-            <p className="mb-4">
-              Please provide a reason for rejecting this appointment:
-            </p>
-            <textarea
-              className="w-full border rounded p-2 mb-4 h-24"
-              placeholder="Enter rejection reason..."
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-            ></textarea>
-            <div className="flex justify-end space-x-3">
-              <button
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-                onClick={() => {
-                  setShowRejectionModal(false);
-                  setRejectionReason("");
-                  setAppointmentToReject(null);
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                onClick={handleRejectConfirm}
-                disabled={!rejectionReason.trim()}
-              >
-                Reject
-              </button>
-            </div>
-          </div>
-        </div>
+        <RejectionModal
+          rejectionReason={rejectionReason}
+          setRejectionReason={setRejectionReason}
+          handleRejectConfirm={handleRejectConfirm}
+          onClose={() => {
+            setShowRejectionModal(false);
+            setRejectionReason("");
+            setAppointmentToReject(null);
+          }}
+        />
+      )}
+
+      {showDeleteConfirmation && (
+        <DeleteConfirmationModal
+          appointmentToDelete={appointmentToDelete}
+          selectedAppointments={selectedAppointments}
+          handleDeleteConfirm={handleDeleteConfirm}
+          onClose={() => {
+            setShowDeleteConfirmation(false);
+            setAppointmentToDelete(null);
+          }}
+        />
       )}
     </div>
   );

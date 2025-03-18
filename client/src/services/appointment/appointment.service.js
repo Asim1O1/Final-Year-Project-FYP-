@@ -237,6 +237,42 @@ const getAppointmentById = async (appointmentId) => {
   }
 };
 
+const deleteAppointmentsService = async (appointmentIds) => {
+  try {
+    const response = await axiosInstance.post(`/api/appointments/delete`, {
+      appointmentIds,
+    });
+
+    console.log("Deleting appointments:", appointmentIds);
+    console.log("Response from deleteAppointmentsService:", response);
+
+    if (!response?.data?.isSuccess) {
+      return createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "Failed to delete appointments",
+        error: response?.data?.error || null,
+      });
+    }
+
+    return createApiResponse({
+      isSuccess: true,
+      message: response?.data?.message || "Appointments deleted successfully",
+      data: response?.data?.data, // Any returned data
+    });
+  } catch (error) {
+    console.error("Error in deleteAppointmentsService:", error?.response);
+
+    return createApiResponse({
+      isSuccess: false,
+      message:
+        error?.response?.data?.message ||
+        "An error occurred while deleting appointments",
+      error: error?.response?.data?.error || error.message,
+    });
+  }
+};
+
+
 const appointmentService = {
   bookAppointmentService,
   getUserAppointmentsService,
@@ -244,6 +280,7 @@ const appointmentService = {
   updateAppointmentStatusService,
   getAvailableTimeSlotsService,
   getAppointmentById,
+  deleteAppointmentsService
 };
 
 export default appointmentService;
