@@ -8,6 +8,7 @@ import {
   User,
   LogOut,
   Calendar,
+  MessageSquare,
 } from "lucide-react";
 import MedConnectLogo from "../../assets/MedConnect_Logo3-removebg.png";
 import { useSelector, useDispatch } from "react-redux";
@@ -70,6 +71,11 @@ const Navbar = () => {
   const handleLogout = () => {
     dispatch(logoutUser());
     navigate("/login");
+  };
+
+  const navigateToChat = () => {
+    navigate("/chat/users");
+    setIsMenuOpen(false);
   };
 
   useEffect(() => {
@@ -142,6 +148,13 @@ const Navbar = () => {
                   clearNotifications={clearNotifications}
                 />
                 <button
+                  onClick={navigateToChat}
+                  className="flex items-center text-blue-500 hover:text-blue-600 text-lg font-medium transition"
+                >
+                  <MessageSquare className="mr-1" size={20} />
+                  Messages
+                </button>
+                <button
                   onClick={() => navigate("/profile")}
                   className="flex items-center text-blue-500 hover:text-blue-600 text-lg font-medium transition"
                 >
@@ -176,15 +189,23 @@ const Navbar = () => {
 
           <div className="md:hidden flex items-center space-x-2">
             {isAuthenticated && (
-              <Notifications
-                notifications={notifications}
-                isNotificationsOpen={isNotificationsOpen}
-                toggleNotifications={toggleNotifications}
-                unreadCount={unreadCount}
-                markAsRead={markAsRead}
-                markAllAsRead={markAllAsRead}
-                clearNotifications={clearNotifications}
-              />
+              <>
+                <Notifications
+                  notifications={notifications}
+                  isNotificationsOpen={isNotificationsOpen}
+                  toggleNotifications={toggleNotifications}
+                  unreadCount={unreadCount}
+                  markAsRead={markAsRead}
+                  markAllAsRead={markAllAsRead}
+                  clearNotifications={clearNotifications}
+                />
+                <button
+                  onClick={navigateToChat}
+                  className="p-2 rounded-md hover:bg-blue-100 transition"
+                >
+                  <MessageSquare className="w-6 h-6 text-blue-500" />
+                </button>
+              </>
             )}
             <button
               className="p-2 rounded-md hover:bg-blue-100 transition"
@@ -228,11 +249,18 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <button
+                  onClick={navigateToChat}
+                  className="flex items-center text-blue-500 hover:bg-blue-50 px-4 py-2 rounded-md text-lg font-medium transition w-full"
+                >
+                  <MessageSquare className="mr-3" size={20} />
+                  Messages
+                </button>
+                <button
                   onClick={() => {
                     setIsMenuOpen(false);
                     navigate("/profile");
                   }}
-                  className="flex items-center text-blue-500 hover:bg-blue-50 px-4 py-2 rounded-md text-lg font-medium transition"
+                  className="flex items-center text-blue-500 hover:bg-blue-50 px-4 py-2 rounded-md text-lg font-medium transition w-full"
                 >
                   <User className="mr-3" size={20} />
                   Profile

@@ -1,4 +1,3 @@
-// server.js
 import http from "http";
 import { Server } from "socket.io";
 import app from "./app.js";
@@ -7,75 +6,80 @@ import initializeDbConnection, {
   closeDbConnection,
 } from "./config/connectToDB.js";
 
+
 const port = appConfig.port;
+
+const onlineUsers = new Map(); // To track online users
 
 const initializeServer = async () => {
   try {
-    // Connect to the database
     await initializeDbConnection();
-
-    // Create an HTTP server
     const server = http.createServer(app);
 
-    // Initialize WebSocket server
     const io = new Server(server, {
       cors: {
-        origin: "http://localhost:5173", // Allow your frontend origin
-        methods: ["GET", "POST"], // Allowed HTTP methods
-        credentials: true, // Allow credentials (cookies, authorization headers)
+        origin: "http://localhost:5173", // Adjust to your frontend
+        methods: ["GET", "POST"],
+        credentials: true,
       },
     });
 
-    // Attach WebSocket instance to the app for use in controllers
     app.set("socketio", io);
 
-    // WebSocket connection handler
     io.on("connection", (socket) => {
-      console.log("A user connected:", socket.id);
+      console.log("🔗 A user connected:", socket.id);
 
-      // Join a room for the user (e.g., user ID)
+      // User joins the chat
       socket.on("join-room", (userId) => {
         socket.join(userId);
-        console.log(`User ${userId} joined room`);
+        onlineUsers.set(userId, socket.id);
+        io.emit("update-online-users", Array.from(onlineUsers.keys()));
+        console.log(`✅ User ${userId} is online`);
       });
 
+      // Handle typing event
+      socket.on("typing", ({ senderId, receiverId }) => {
+        io.to(receiverId).emit("typing", senderId);
+      });
+
+      // Handle stop typing event
+      socket.on("stop-typing", ({ senderId, receiverId }) => {
+        io.to(receiverId).emit("stop-typing", senderId);
+      });
+
+      // Handle disconnection
       socket.on("disconnect", () => {
-        console.log("A user disconnected:", socket.id);
+        const disconnectedUser = [...onlineUsers.entries()].find(
+          ([_, id]) => id === socket.id
+        );
+        if (disconnectedUser) {
+          onlineUsers.delete(disconnectedUser[0]);
+          io.emit("update-online-users", Array.from(onlineUsers.keys()));
+        }
+        console.log("❌ A user disconnected:", socket.id);
       });
     });
 
-    // Start the server
     server.listen(port, () => {
-      console.log(`🚀 Server is running at http://localhost:${port}...`);
+      console.log(`🚀 Server is running at http://localhost:${port}`);
     });
 
     // Handle graceful shutdown
     const shutdown = async () => {
       console.log("\n🛑 Shutting down server...");
-      await closeDbConnection(); // Close DB connection if applicable
+      await closeDbConnection();
       server.close(() => {
         console.log("✅ Server shut down successfully.");
         process.exit(0);
       });
     };
 
-    process.on("SIGINT", shutdown); // Ctrl+C
-    process.on("SIGTERM", shutdown); // Termination signal
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
   } catch (error) {
     console.error("❌ Error while starting the server:", error);
     process.exit(1);
   }
 };
-
-// Global error handlers
-process.on("uncaughtException", (err) => {
-  console.error("🔥 Uncaught Exception:", err);
-  process.exit(1);
-});
-
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("⚠️ Unhandled Rejection at:", promise, "reason:", reason);
-  process.exit(1);
-});
 
 initializeServer();

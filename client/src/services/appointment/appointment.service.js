@@ -22,7 +22,7 @@ const bookAppointmentService = async (appointmentData) => {
     return createApiResponse({
       isSuccess: true,
       message: response?.data?.message || "Appointment booked successfully",
-      data: response?.data?.data, // Ensure to return only the required data
+      data: response?.data?.data, 
     });
   } catch (error) {
     console.error("Error in bookAppointmentService:", error?.response);

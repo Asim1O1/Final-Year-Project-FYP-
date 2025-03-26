@@ -101,9 +101,9 @@ export const createCampaign = async (req, res, next) => {
         date: new Date(campaign.date).toLocaleDateString(),
         location: campaign.location,
       };
-
-      const subject = emailTemplates.campaignCreated.subject;
       const template = emailTemplates.campaignCreated;
+      const subject = emailTemplates.campaignCreated.subject;
+     
 
       await sendEmail(user.email, subject, template, data);
     }

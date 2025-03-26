@@ -11,6 +11,7 @@ import campaignRoute from "./api/campaign/campaign.route.js";
 import notificationRoute from "./api/notification/notification.route.js";
 import userRoute from "./api/user/user.route.js"
 import paymentRoute from "./api/payment/payment.route.js"
+import messageRoute from "./api/message/message.route.js"
 
 import globalErrorHandler from "./middlewares/globalErrorHandler.js";
 
@@ -37,6 +38,7 @@ app.use("/api/appointments", appointmentRoute);
 app.use("/api/campaigns", campaignRoute);
 app.use("/api/notifications", notificationRoute);
 app.use("/api/payments", paymentRoute);
+app.use("/api/messages", messageRoute)
 
 // Health check route
 app.get("/", (req, res) => {

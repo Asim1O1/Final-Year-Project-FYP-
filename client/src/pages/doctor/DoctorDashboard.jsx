@@ -1,13 +1,12 @@
 // src/pages/Dashboard.js
 import React from "react";
-import DoctorLayout from "../../layouts/DoctorLayout";
+
 import {
   Calendar,
   MessageSquare,
   FileText,
   User,
-  Bell,
-  Clock,
+
   Check,
   X as XIcon,
   ChevronRight,
@@ -198,53 +197,6 @@ const NotificationsPanel = () => {
   );
 };
 
-//   const actions = [
-//     {
-//       name: "Schedule",
-//       icon: <Calendar size={24} />,
-//       color: "bg-blue-500",
-//       path: "/doctor/schedule",
-//     },
-//     {
-//       name: "Chat",
-//       icon: <MessageSquare size={24} />,
-//       color: "bg-green-500",
-//       path: "/doctor/chat",
-//     },
-//     {
-//       name: "Reports",
-//       icon: <FileText size={24} />,
-//       color: "bg-purple-500",
-//       path: "/doctor/reports",
-//     },
-//     {
-//       name: "Profile",
-//       icon: <User size={24} />,
-//       color: "bg-orange-500",
-//       path: "/doctor/profile",
-//     },
-//   ];
-
-//   return (
-//     <div className="bg-white rounded-lg shadow-md p-6">
-//       <h3 className="text-lg font-semibold text-gray-800 mb-4">
-//         Quick Actions
-//       </h3>
-//       <div className="grid grid-cols-4 gap-4">
-//         {actions.map((action) => (
-//           <div key={action.name} className="flex flex-col items-center">
-//             <button
-//               className={`w-12 h-12 ${action.color} rounded-lg text-white flex items-center justify-center shadow-sm hover:shadow-md transition-all`}
-//             >
-//               {action.icon}
-//             </button>
-//             <span className="mt-2 text-xs text-gray-600">{action.name}</span>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
 
 const StatsSummary = () => {
   const stats = [

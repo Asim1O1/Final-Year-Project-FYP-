@@ -40,6 +40,8 @@ import ConfirmationPage from "./pages/user/ConfirmationPage.jsx";
 import UserProfile from "./pages/user/UserProfile";
 import CampaignDetails from "./component/user/CampaignDetail.jsx";
 import AppointmentDetail from "./component/user/AppointmentDetail.jsx";
+import ChatPage from "./pages/user/ChatPage.jsx";
+import DoctorChatPage from "./component/doctor/chat/DoctorChatPage.jsx";
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -78,6 +80,14 @@ function App() {
             </CheckAuth>
           }
         ></Route>
+         <Route
+          path="/chat/users"
+          element={
+            <MainLayout>
+              <ChatPage />
+            </MainLayout>
+          }
+        />
 
         {/* Appointment Booking Routes */}
         <Route
@@ -221,6 +231,7 @@ function App() {
           <Route index element={<DoctorDashboard />} />
           <Route path="dashboard" element={<DoctorDashboard />} />
           <Route path="appointments" element={<Appointments />} />
+          <Route path="chat" element={<DoctorChatPage />} />
         </Route>
 
         {/* Unauthorized Route */}
