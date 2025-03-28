@@ -176,7 +176,7 @@ export const bookDoctorAppointment = async (req, res, next) => {
     next(error);
   }
 };
-
+  
 export const updateAppointmentStatus = async (req, res, next) => {
   const { appointmentId } = req.params;
   const { status, rejectionReason } = req.body;
