@@ -1,12 +1,15 @@
 import MedicalTest from "../../models/medicalTest.model.js";
 import Hospital from "../../models/hospital.model.js";
 
-import  createResponse  from "../../utils/responseBuilder.js";
+import fs from "fs";
+
+import createResponse from "../../utils/responseBuilder.js";
 import cloudinary from "../../imageUpload/cloudinaryConfig.js";
 import { paginate } from "../../utils/paginationUtil.js";
 
 export const createMedicalTest = async (req, res, next) => {
-  const { testName, timeSlot, testPrice, hospital, testDescription } = req.body;
+  const { testName, testPrice, hospital, testDescription } = req.body;
+  console.log("Request body:", req.body);
 
   try {
     // Check if the hospital exists
@@ -59,10 +62,6 @@ export const createMedicalTest = async (req, res, next) => {
       testDescription,
       testPrice,
       testImage,
-      timeSlot: {
-        time: timeSlot,
-        isBooked: false,
-      },
     });
 
     await newMedicalTest.save();
@@ -129,17 +128,26 @@ export const getMedicalTests = async (req, res, next) => {
       query.hospital = hospital;
     }
     if (search) {
-      query.testName = { $regex: search, $options: "i" }; // Case-insensitive search
+      query.testName = { $regex: search, $options: "i" };
     }
 
     const options = {
       page,
       limit,
       sort: { createdAt: -1 },
-      populate: "hospital",
+      populate: {
+        path: "hospital",
+        select: "name location contactNumber", // Fetch only hospital name and location
+      },
     };
 
-    const result = await paginate(MedicalTest, query, options);
+    let result = await paginate(MedicalTest, query, options);
+
+    // **Manually Remove `timeSlot` and `payment` Before Sending Response**
+    result.data = result.data.map((test) => {
+      const { timeSlot, payment, ...filteredTest } = test.toObject();
+      return filteredTest;
+    });
 
     return res.status(200).json(
       createResponse({
@@ -163,13 +171,9 @@ export const updateMedicalTest = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updates = req.body;
+    const existingTest = await MedicalTest.findById(id);
 
-    const updatedTest = await MedicalTest.findByIdAndUpdate(id, updates, {
-      new: true,
-      runValidators: true,
-    }).populate("hospital");
-
-    if (!updatedTest) {
+    if (!existingTest) {
       return res.status(404).json(
         createResponse({
           isSuccess: false,
@@ -180,6 +184,54 @@ export const updateMedicalTest = async (req, res, next) => {
       );
     }
 
+    let testImage = existingTest.testImage;
+
+    // Handle new image upload
+    if (req.file) {
+      const folderPath = `MedConnect/MedicalTest/Images/${existingTest.testName.replace(/\s+/g, "_")}`;
+
+      try {
+        const result = await cloudinary.v2.uploader.upload(req.file.path, {
+          folder: folderPath,
+        });
+        testImage = result.secure_url;
+
+        // Delete old image if it exists
+        if (existingTest.testImage) {
+          try {
+            const oldImagePublicId = existingTest.testImage
+              .split("/")
+              .pop()
+              .split(".")[0];
+            await cloudinary.v2.uploader.destroy(
+              `MedConnect/MedicalTest/Images/${oldImagePublicId}`
+            );
+          } catch (deleteError) {
+            console.error("Error deleting old image:", deleteError);
+          }
+        }
+      } catch (cloudinaryError) {
+        return res.status(500).json(
+          createResponse({
+            isSuccess: false,
+            statusCode: 500,
+            message: "Failed to upload new image to Cloudinary.",
+            error: cloudinaryError.message,
+          })
+        );
+      } finally {
+        if (fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+      }
+    }
+
+    const updatedTest = await MedicalTest.findByIdAndUpdate(
+      id,
+      { ...updates, testImage },
+      { new: true }
+    );
+
     return res.status(200).json(
       createResponse({
         isSuccess: true,
@@ -189,7 +241,6 @@ export const updateMedicalTest = async (req, res, next) => {
       })
     );
   } catch (error) {
-    console.error("Error updating medical test:", error);
     next(error);
   }
 };
@@ -261,4 +312,3 @@ export const bulkDeleteMedicalTests = async (req, res, next) => {
     next(error);
   }
 };
-

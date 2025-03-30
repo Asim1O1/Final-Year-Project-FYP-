@@ -5,7 +5,7 @@ const medicalTestSchema = new mongoose.Schema(
       patient: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        required: true,
+   
       },
       hospital: {
         type: mongoose.Schema.Types.ObjectId,
@@ -23,22 +23,26 @@ const medicalTestSchema = new mongoose.Schema(
 
       testDate: {
         type: Date,
+       
+      },
+      testPrice:{
+        type: Number,
         required: true,
       },
       timeSlot: {
-        time: String,  // e.g., '10:00 AM'
+        time: String,  
         isBooked: { type: Boolean, default: true },
       },
       status: {
         type: String,
-        enum: ["booked", "confirmed", "completed", "cancelled", "report_available"],
+        enum: ["available","booked", "confirmed", "completed", "cancelled", "report_available"],
         default: "booked",
       },
       payment: {
         method: {
           type: String,
           enum: ["pay_on_site", "pay_now"],
-          required: true,
+     
         },
         status: {
           type: String,
