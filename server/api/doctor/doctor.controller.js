@@ -470,7 +470,7 @@ export const getDoctorById = async (req, res, next) => {
     const { id } = req.params;
     const doctor = await doctorModel
       .findById(id)
-      .populate("hospital", "name location"); 
+      .populate("hospital", "name location");
 
     if (!doctor) {
       return res.status(404).json(

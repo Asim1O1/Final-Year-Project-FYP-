@@ -9,11 +9,12 @@ import hospitalAdminRoute from "./api/hospital_admin/hospital_admin.route.js";
 import appointmentRoute from "./api/appointment/appointment.route.js";
 import campaignRoute from "./api/campaign/campaign.route.js";
 import notificationRoute from "./api/notification/notification.route.js";
-import userRoute from "./api/user/user.route.js"
-import paymentRoute from "./api/payment/payment.route.js"
-import messageRoute from "./api/message/message.route.js"
-import reportRoute from "./api/medical_report/medicalReport.route.js"
-import medicalTestRoute from "./api/medical_test/medical_test.route.js"
+import userRoute from "./api/user/user.route.js";
+import paymentRoute from "./api/payment/payment.route.js";
+import messageRoute from "./api/message/message.route.js";
+import reportRoute from "./api/medical_report/medicalReport.route.js";
+import medicalTestRoute from "./api/medical_test/medical_test.route.js";
+import systemAdminRoute from "./api/system_admin/system_admin.route.js";
 
 import globalErrorHandler from "./middlewares/globalErrorHandler.js";
 
@@ -40,9 +41,10 @@ app.use("/api/appointments", appointmentRoute);
 app.use("/api/campaigns", campaignRoute);
 app.use("/api/notifications", notificationRoute);
 app.use("/api/payments", paymentRoute);
-app.use("/api/messages", messageRoute)
-app.use("/api/report", reportRoute)
-app.use("/api/medicalTest", medicalTestRoute)
+app.use("/api/messages", messageRoute);
+app.use("/api/report", reportRoute);
+app.use("/api/medicalTest", medicalTestRoute);
+app.use("/api/systemAdmin", systemAdminRoute);
 
 // Health check route
 app.get("/", (req, res) => {
