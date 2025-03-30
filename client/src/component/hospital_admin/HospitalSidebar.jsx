@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, VStack, Icon, Text, Flex } from "@chakra-ui/react";
-import { Link, useNavigate } from "react-router-dom"; // Import for navigation
+import {  useNavigate } from "react-router-dom";                                                                                        
 import {
   RiDashboardLine,
   RiStethoscopeLine,
@@ -33,7 +33,7 @@ export const HospitalSidebar = () => {
     {
       icon: RiTestTubeLine,
       label: "Medical Tests",
-      path: "/hospital-admin/tests",
+      path: "/hospital-admin/medicalTests",
     },
     {
       icon: RiCalendarCheckLine,

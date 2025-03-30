@@ -10,6 +10,7 @@ import notificationSlice from "../features/notification/notificationSlice.jsx";
 import userSlice from "../features/user/userSlice.jsx";
 import paymentSlice from "../features/payment/paymentSlice.jsx";
 import messageSlice from "../features/messages/messageSlice.jsx";
+import medicalTestSlice from "../features/medical_test/medicalTestSlice.jsx";
 
 const store = configureStore({
   reducer: {
@@ -23,6 +24,7 @@ const store = configureStore({
     userSlice: userSlice,
     paymentSlice: paymentSlice,
     messageSlice: messageSlice,
+    medicalTestSlice: medicalTestSlice,
   },
 });
 

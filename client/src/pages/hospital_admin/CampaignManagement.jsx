@@ -38,7 +38,7 @@ const CampaignManagement = () => {
   const [locationFilter, setLocationFilter] = useState("");
   const [hospitalFilter, setHospitalFilter] = useState("");
   const [notifications, setNotifications] = useState([]);
-  const [userRole, setUserRole] = useState("hospital_admin"); // For demo, should come from auth context
+  const [userRole, setUserRole] = useState("hospital_admin"); 
 
   // Static campaign data
   const [campaigns, setCampaigns] = useState([
