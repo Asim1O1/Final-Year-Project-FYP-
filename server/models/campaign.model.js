@@ -48,6 +48,25 @@ const campaignSchema = new mongoose.Schema(
           default: "pending",
         },
         requestedAt: { type: Date, default: Date.now },
+        answers: [
+          {
+            question: String,
+            answer: mongoose.Schema.Types.Mixed, 
+            questionType: String,
+          },
+        ],
+      },
+    ],
+    volunteerQuestions: [
+      {
+        question: { type: String, required: [true, "Question is required"] },
+        questionType: {
+          type: String,
+          enum: ["question",  "boolean"],
+          required: [true, "Question type is required"],
+        },
+       
+        isRequired: { type: Boolean, default: false },
       },
     ],
     createdBy: {

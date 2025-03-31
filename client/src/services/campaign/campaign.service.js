@@ -7,6 +7,7 @@ const createCampaignService = async (campaignData) => {
       ...campaignData,
       allowVolunteers: campaignData.allowVolunteers ?? false,
       maxVolunteers: campaignData.maxVolunteers ?? 0,
+      volunteerQuestions: campaignData.volunteerQuestions ?? [],
     });
 
     if (!response?.data?.isSuccess) {
@@ -152,10 +153,13 @@ const getAllCampaignsService = async (
   }
 };
 
-const volunteerForCampaignService = async (campaignId) => {
+const volunteerForCampaignService = async (campaignId, answers) => {
   try {
     const response = await axiosInstance.post(
-      `/api/campaigns/${campaignId}/volunteer`
+      `/api/campaigns/${campaignId}/volunteer`,
+      {
+        answers, // Send answers to required questions
+      }
     );
 
     if (!response?.data?.isSuccess) {
@@ -180,6 +184,67 @@ const volunteerForCampaignService = async (campaignId) => {
   }
 };
 
+const handleVolunteerRequestService = async (campaignId, requestId, status) => {
+  try {
+    const response = await axiosInstance.put(
+      `/api/campaigns/${campaignId}/volunteer/${requestId}`,
+      { status }
+    );
+    if (!response?.data?.isSuccess) {
+      throw createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "Failed to handle volunteer request",
+        error: response?.data?.error || null,
+      });
+    }
+    
+      return createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "Failed to handle volunteer request",
+        error: response?.data?.error || null,
+      });
+  } catch (error) {
+    console.error("Error handling volunteer request:", error);
+    throw createApiResponse({
+      isSuccess: false,
+      message: "Failed to handle volunteer request",
+      error: error.response?.data?.error || error,
+    });
+  }
+  }
+    
+
+
+
+const getVolunteerRequestsService =async  (req, res) => {
+  console.log("Fetching volunteer requests with query:", req.query);
+  try {
+    const response = await axiosInstance.get(`/api/campaigns/volunteerRequests`, {
+      params: req.query,
+    });
+    console.log("The respone is", response);
+    if (!response?.data?.isSuccess) {
+      return createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "Failed to fetch volunteer requests",
+        error: response?.data?.error || null,
+      });
+    }
+    return createApiResponse({
+      isSuccess: true,
+      data: response.data?.data,
+    });
+}
+  catch (error) {
+    console.error("Error fetching volunteer requests:", error);
+    return createApiResponse({
+      isSuccess: false,
+      message: "Failed to fetch volunteer requests",
+      error: error.response?.data?.error || error,
+    });
+  }
+  }
+
 const campaignServices = {
   createCampaignService,
   updateCampaignService,
@@ -187,6 +252,8 @@ const campaignServices = {
   getCampaignByIdService,
   getAllCampaignsService,
   volunteerForCampaignService,
+  handleVolunteerRequestService,
+  getVolunteerRequestsService,
 };
 
 export default campaignServices;

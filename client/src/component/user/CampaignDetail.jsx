@@ -27,6 +27,8 @@ import { Calendar, MapPin, Users, Building, Check, Clock } from "lucide-react";
 import { fetchSingleCampaign } from "../../features/campaign/campaignSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { notification } from "antd";
+import { volunteerForCampaign } from "../../features/campaign/campaignSlice";
+import { VolunteerRequestButton } from "./VolunteerUtil";
 
 const CampaignDetails = () => {
   const { id } = useParams();
@@ -123,7 +125,12 @@ const CampaignDetails = () => {
                 {formattedDate}
               </Text>
             </Box>
-            <HStack>{/* Action buttons could go here */}</HStack>
+            <HStack>
+              {/* Add the VolunteerRequestButton here */}
+              {campaign.allowVolunteers && (
+                <VolunteerRequestButton campaign={campaign} />
+              )}
+            </HStack>
           </Flex>
 
           <Text className="mb-8 text-gray-700">{campaign.description}</Text>

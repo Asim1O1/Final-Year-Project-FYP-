@@ -5,6 +5,8 @@ import {
   deleteCampaign,
   getAllCampaigns,
   getCampaignById,
+  getAllVolunteerRequests,
+  handleVolunteerRequest,
   updateCampaign,
   volunteerForCampaign,
 } from "./campaign.controller.js";
@@ -19,6 +21,8 @@ router.put("/:id", protectRoute, updateCampaign);
 // Delete a campaign by ID
 router.delete("/:id", protectRoute, deleteCampaign);
 
+router.get("/volunteerRequests", protectRoute, getAllVolunteerRequests);
+
 // Get a campaign by ID
 router.get("/:id", protectRoute, getCampaignById);
 
@@ -26,5 +30,9 @@ router.get("/:id", protectRoute, getCampaignById);
 router.get("/", protectRoute, getAllCampaigns);
 
 router.post("/:id/volunteer", protectRoute, volunteerForCampaign);
+
+router.put("/:id/volunteer/:requestId",protectRoute,handleVolunteerRequest);
+
+
 
 export default router;

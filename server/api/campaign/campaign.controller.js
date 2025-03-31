@@ -1,11 +1,11 @@
 import createResponse from "../../utils/responseBuilder.js";
-
 import Campaign from "../../models/campaign.model.js";
 import Hospital from "../../models/hospital.model.js";
 import Notification from "../../models/notification.model.js";
 import userModel from "../../models/user.model.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 import { emailTemplates } from "../../utils/emailTemplates.js";
+import {paginate} from "../../utils/paginationUtil.js";
 
 export const createCampaign = async (req, res, next) => {
   const {
@@ -16,7 +16,10 @@ export const createCampaign = async (req, res, next) => {
     hospital,
     maxVolunteers,
     allowVolunteers,
+    volunteerQuestions, // Questions for volunteers
   } = req.body;
+
+  console.log("Creating campaign with data:", req.body);
 
   // Validate request body
   if (!title || !description || !date || !location || !hospital) {
@@ -60,7 +63,7 @@ export const createCampaign = async (req, res, next) => {
       );
     }
 
-    // Create and save the campaign
+    // Create campaign
     const campaign = new Campaign({
       title,
       description,
@@ -70,21 +73,20 @@ export const createCampaign = async (req, res, next) => {
       createdBy: req.user._id,
       allowVolunteers: allowVolunteers || false,
       maxVolunteers: maxVolunteers || 0,
+      volunteerQuestions: volunteerQuestions || [], // Store questions
     });
 
     await campaign.save();
 
-    // Fetch all users
+    // Notify all users
     const users = await userModel.find({ role: "user" }, "_id email");
-
-    // Create notifications for all users
     const notifications = users.map((user) => ({
       user: user._id,
       message: `New campaign: ${title}. Join us on ${new Date(
         date
       ).toLocaleDateString()} at ${location}.`,
       type: "campaign",
-      relatedId: campaign._id, // Linking the notification to the campaign
+      relatedId: campaign._id,
     }));
 
     await Notification.insertMany(notifications);
@@ -103,12 +105,10 @@ export const createCampaign = async (req, res, next) => {
       };
       const template = emailTemplates.campaignCreated;
       const subject = emailTemplates.campaignCreated.subject;
-     
 
       await sendEmail(user.email, subject, template, data);
     }
 
-    // Return success response
     return res.status(201).json(
       createResponse({
         isSuccess: true,
@@ -123,7 +123,6 @@ export const createCampaign = async (req, res, next) => {
     return next(error);
   }
 };
-
 
 export const updateCampaign = async (req, res, next) => {
   const { id } = req.params;
@@ -269,6 +268,7 @@ export const deleteCampaign = async (req, res, next) => {
 };
 
 export const getCampaignById = async (req, res, next) => {
+  console.log("ENETERDD ENETERD")
   const { id } = req.params;
 
   try {
@@ -372,8 +372,104 @@ export const getAllCampaigns = async (req, res, next) => {
 };
 
 export const volunteerForCampaign = async (req, res, next) => {
-  const { id } = req.params; // Campaign ID
-  const userId = req.user._id; // Logged-in user ID
+  const { id } = req.params;
+  const userId = req.user._id;
+  const { answers } = req.body;
+
+  try {
+    const campaign = await Campaign.findById(id);
+    if (!campaign) {
+      return res.status(404).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 404,
+          message: "Campaign not found",
+          error: null,
+          data: null,
+        })
+      );
+    }
+
+    // Ensure all questions are answered
+    if (
+      !answers ||
+      Object.keys(answers).length !== campaign.volunteerQuestions.length
+    ) {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "All volunteer questions must be answered",
+          error: null,
+          data: null,
+        })
+      );
+    }
+
+    // Check if the user already submitted a request
+    if (
+      campaign.volunteerRequests.some(
+        (req) => req.user.toString() === userId.toString()
+      )
+    ) {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "You have already submitted a request for this campaign",
+          error: null,
+          data: null,
+        })
+      );
+    }
+
+    // Store the volunteer request
+    campaign.volunteerRequests.push({
+      user: userId,
+      status: "pending",
+      requestedAt: new Date(),
+      answers,
+    });
+
+    await campaign.save();
+
+    // Notify the hospital admin
+    const hospitalAdmin = await userModel.findOne({
+      role: "hospital_admin",
+      hospital: campaign.hospital,
+    });
+    if (hospitalAdmin) {
+      const notification = new Notification({
+        user: hospitalAdmin._id,
+        message: `New volunteer request for campaign: ${campaign.title}`,
+        type: "volunteer_request",
+      });
+      await notification.save();
+
+      const io = req.app.get("socketio");
+      io.to(hospitalAdmin._id.toString()).emit("new-notification", {
+        message: `New volunteer request for campaign: ${campaign.title}`,
+      });
+    }
+
+    return res.status(200).json(
+      createResponse({
+        isSuccess: true,
+        statusCode: 200,
+        message: "Volunteer request submitted. Awaiting approval.",
+        error: null,
+        data: null,
+      })
+    );
+  } catch (error) {
+    console.error("Error submitting volunteer request:", error);
+    return next(error);
+  }
+};
+
+export const handleVolunteerRequest = async (req, res, next) => {
+  const { id, requestId } = req.params; // Campaign ID & Volunteer Request ID
+  const { status } = req.body; // "approved" or "rejected"
 
   try {
     // Find the campaign by ID
@@ -390,52 +486,87 @@ export const volunteerForCampaign = async (req, res, next) => {
       );
     }
 
-    // Check if the user is already a volunteer
-    if (campaign.volunteers.includes(userId)) {
-      return res.status(400).json(
+    // Find the volunteer request
+    const volunteerRequest = campaign.volunteerRequests.id(requestId);
+    if (!volunteerRequest) {
+      return res.status(404).json(
         createResponse({
           isSuccess: false,
-          statusCode: 400,
-          message: "You are already a volunteer for this campaign",
+          statusCode: 404,
+          message: "Volunteer request not found",
           error: null,
           data: null,
         })
       );
     }
 
-    // Add the user to the volunteers list
-    campaign.volunteers.push(userId);
+    // Update the request status
+    volunteerRequest.status = status;
+
+    if (status === "approved") {
+      campaign.volunteers.push(volunteerRequest.user);
+    }
+
     await campaign.save();
 
-    // Create a notification for the user
+    // Notify the user about approval/rejection
     const notification = new Notification({
-      user: userId,
-      message: `You have successfully volunteered for the campaign: ${campaign.title}`,
-      type: "volunteer",
+      user: volunteerRequest.user,
+      message: `Your volunteer request for campaign "${campaign.title}" has been ${status}.`,
+      type: "campaign",
     });
     await notification.save();
 
-    // Emit real-time notification using Socket.IO
+    // Emit real-time notification
     const io = req.app.get("socketio");
-    io.to(userId.toString()).emit("new-notification", {
-      message: `You have successfully volunteered for the campaign: ${campaign.title}`,
+    io.to(volunteerRequest.user.toString()).emit("new-notification", {
+      message: `Your volunteer request for campaign "${campaign.title}" has been ${status}.`,
     });
 
-    // Return success response
     return res.status(200).json(
       createResponse({
         isSuccess: true,
         statusCode: 200,
-        message: "Successfully volunteered for the campaign",
+        message: `Volunteer request ${status} successfully.`,
         error: null,
-        data: {
-          campaignId: campaign._id,
-          volunteers: campaign.volunteers,
-        },
+        data: null,
       })
     );
   } catch (error) {
-    console.error("Error volunteering for campaign:", error);
+    console.error("Error handling volunteer request:", error);
     return next(error);
+  }
+};
+
+export const getAllVolunteerRequests = async (req, res, next) => {
+  console.log("entered the get all volynteer requests")
+
+  try {
+    const { page, limit } = req.query;
+
+    const result = await paginate(
+      Campaign,
+      { "volunteerRequests": { $exists: true, $ne: [] } }, // Ensures non-empty volunteer requests
+      {
+        page,
+        limit,
+        sort: { "volunteerRequests.requestedAt": -1 }, // Sort by request date
+        populate: {
+          path: "volunteerRequests.user",
+          model: "User", // Ensure this matches your Mongoose User model
+          select: "name email",
+        },
+      }
+    );
+
+    return res.status(200).json({
+      isSuccess: true,
+      statusCode: 200,
+      message: "Volunteer requests retrieved successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Error fetching volunteer requests:", error);
+    next(error);
   }
 };

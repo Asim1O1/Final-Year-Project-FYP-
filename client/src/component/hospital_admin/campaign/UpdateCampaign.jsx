@@ -18,7 +18,10 @@ import {
 import { Input, DatePicker, Select } from "antd";
 import dayjs from "dayjs";
 
+import { fetchAllCampaigns } from "../../../features/campaign/campaignSlice";
+
 const UpdateCampaignForm = ({ isOpen, onClose, campaignData, hospitals }) => {
+  console.log("hospitals are", hospitals);
   const toast = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -33,12 +36,30 @@ const UpdateCampaignForm = ({ isOpen, onClose, campaignData, hospitals }) => {
   // Update form data when campaign data changes
   useEffect(() => {
     if (campaignData) {
+      console.log("Campaign data:", campaignData);
+
+      // Handle the hospital ID correctly
+      let hospitalValue = "";
+      if (campaignData.hospital) {
+        // If hospital is an object with _id property (common in MongoDB)
+        if (
+          typeof campaignData.hospital === "object" &&
+          campaignData.hospital._id
+        ) {
+          hospitalValue = campaignData.hospital._id;
+        }
+        // If hospital is already a string ID
+        else if (typeof campaignData.hospital === "string") {
+          hospitalValue = campaignData.hospital;
+        }
+      }
+
       setFormData({
         title: campaignData.title || "",
         description: campaignData.description || "",
         date: campaignData.date || "",
         location: campaignData.location || "",
-        hospital: campaignData.hospital || "",
+        hospital: hospitalValue,
       });
     }
   }, [campaignData]);
@@ -138,9 +159,11 @@ const UpdateCampaignForm = ({ isOpen, onClose, campaignData, hospitals }) => {
 
       onClose();
     } catch (error) {
+      console.error("Error updating campaign:", error);
       toast({
         title: "Error",
-        description: "There was an error updating the campaign. Please try again.",
+        description:
+          "There was an error updating the campaign. Please try again.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -202,14 +225,13 @@ const UpdateCampaignForm = ({ isOpen, onClose, campaignData, hospitals }) => {
               />
               <FormErrorMessage>{errors.location}</FormErrorMessage>
             </FormControl>
-
             <FormControl isInvalid={errors.hospital}>
               <FormLabel>Hospital</FormLabel>
               <Select
                 placeholder="Select hospital"
                 style={{ width: "100%" }}
                 options={hospitals}
-                value={formData.hospital || undefined}
+                value={formData.hospital}
                 onChange={handleHospitalChange}
               />
               <FormErrorMessage>{errors.hospital}</FormErrorMessage>

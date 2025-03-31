@@ -29,8 +29,14 @@ const CampaignList = ({ userRole, onEdit, onDelete }) => {
 
   // Fetch campaigns on component mount
   useEffect(() => {
-    dispatch(fetchAllCampaigns());
+    const fetchCampaigns = async () => {
+      const result = await dispatch(fetchAllCampaigns());
+      console.log("Campaigns fetched:", result);
+    };
+  
+    fetchCampaigns();
   }, [dispatch]);
+  
 
   // Handle confirm delete
   const handleDeleteConfirm = (campaignId, campaignTitle) => {
@@ -51,6 +57,7 @@ const CampaignList = ({ userRole, onEdit, onDelete }) => {
     try {
       return new Date(dateString).toLocaleDateString();
     } catch (error) {
+      console.error("Error formatting date:", error);
       return dateString;
     }
   };
@@ -73,12 +80,13 @@ const CampaignList = ({ userRole, onEdit, onDelete }) => {
   }
 
   if (error) {
+    console.log(error);
     return (
       <Box textAlign="center" py={10} px={6}>
         <Heading as="h3" size="lg" mb={2}>
           Error loading campaigns
         </Heading>
-        <Text color="gray.500">{error}</Text>
+        <Text color="gray.500">{error?.error}</Text>
       </Box>
     );
   }
@@ -100,7 +108,7 @@ const CampaignList = ({ userRole, onEdit, onDelete }) => {
     <Stack spacing={4}>
       {campaigns.map((campaign) => (
         <Box
-          key={campaign._id} // Use `_id` instead of `id`
+          key={campaign._id} 
           p={5}
           shadow="sm"
           borderWidth="1px"
@@ -157,7 +165,7 @@ const CampaignList = ({ userRole, onEdit, onDelete }) => {
             </Flex>
             <Flex align="center" color="gray.600">
               <Building size={16} />
-              <Text ml={2}>{campaign.hospital?.name}</Text> {/* Assuming hospital is populated */}
+              <Text ml={2}>{campaign.hospital?.name}</Text> 
             </Flex>
           </Stack>
 

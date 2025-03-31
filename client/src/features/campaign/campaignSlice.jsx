@@ -7,11 +7,11 @@ export const handleCampaignCreation = createAsyncThunk(
   "campaign/createCampaign",
   async (campaignData, { rejectWithValue }) => {
     try {
-      
       const updatedCampaignData = {
         ...campaignData,
-        allowVolunteers: campaignData.allowVolunteers ?? false, 
+        allowVolunteers: campaignData.allowVolunteers ?? false,
         maxVolunteers: campaignData.maxVolunteers ?? 0,
+        volunteerQuestions: campaignData.volunteerQuestions ?? [], // Include volunteer questions
       };
 
       const response = await campaignServices.createCampaignService(
@@ -19,8 +19,6 @@ export const handleCampaignCreation = createAsyncThunk(
       );
 
       if (!response.isSuccess) throw response;
-      console.log("The response in the campaign slice:", response);
-
       return response.data?.data;
     } catch (error) {
       return rejectWithValue(
@@ -102,16 +100,64 @@ export const fetchSingleCampaign = createAsyncThunk(
 // **Volunteer for Campaign**
 export const volunteerForCampaign = createAsyncThunk(
   "campaign/volunteerForCampaign",
-  async (campaignId, { rejectWithValue }) => {
+  async ({ campaignId, answers }, { rejectWithValue }) => {
     try {
       const response = await campaignServices.volunteerForCampaignService(
-        campaignId
+        campaignId,
+        answers // Send user responses
       );
+
       if (!response.isSuccess) throw response;
       return response.data;
     } catch (error) {
       return rejectWithValue(
         createApiResponse(error, "Failed to volunteer for campaign")
+      );
+    }
+  }
+);
+// **Handle Volunteer Request (Approve/Reject)**
+export const handleVolunteerRequest = createAsyncThunk(
+  "campaign/handleVolunteerRequest",
+  async ({ campaignId, requestId, status }, { rejectWithValue }) => {
+    try {
+      const response = await campaignServices.handleVolunteerRequestService(
+        campaignId,
+        requestId,
+        status
+      );
+
+      if (!response.isSuccess) throw response;
+
+      return {
+        campaignId,
+        requestId,
+        status,
+        updatedRequest: response.data?.data,
+      };
+    } catch (error) {
+      return rejectWithValue(
+        createApiResponse(error, "Failed to handle volunteer request")
+      );
+    }
+  }
+);
+
+// **Fetch Volunteer Requests**
+export const fetchVolunteerRequests = createAsyncThunk(
+  "campaign/fetchVolunteerRequests",
+  async (params = {}, { rejectWithValue }) => {
+    console.log("fetching volunteer requests");
+    try {
+      const response = await campaignServices.getVolunteerRequestsService(
+        params
+      );
+
+      if (!response.isSuccess) throw response;
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        createApiResponse(error, "Failed to fetch volunteer requests")
       );
     }
   }
@@ -122,6 +168,7 @@ const campaignSlice = createSlice({
   initialState: {
     campaign: null,
     campaigns: [],
+    volunteerRequests: [],
     isLoading: false,
     error: null,
   },
@@ -198,6 +245,34 @@ const campaignSlice = createSlice({
         state.error = null;
       })
       .addCase(volunteerForCampaign.rejected, handleRejected);
+
+    builder
+      .addCase(handleVolunteerRequest.pending, handlePending)
+      .addCase(handleVolunteerRequest.fulfilled, (state, action) => {
+        state.isLoading = false;
+
+        // Update the specific request in the campaign
+        if (state.campaign && state.campaign.volunteerRequests) {
+          state.campaign.volunteerRequests =
+            state.campaign.volunteerRequests.map((request) =>
+              request._id === action.payload.requestId
+                ? action.payload.updatedRequest
+                : request
+            );
+        }
+
+        state.error = null;
+      })
+      .addCase(handleVolunteerRequest.rejected, handleRejected);
+
+    builder
+      .addCase(fetchVolunteerRequests.pending, handlePending)
+      .addCase(fetchVolunteerRequests.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.volunteerRequests = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchVolunteerRequests.rejected, handleRejected);
   },
 });
 

@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, VStack, Icon, Text, Flex } from "@chakra-ui/react";
-import {  useNavigate } from "react-router-dom";                                                                                        
+import { useNavigate } from "react-router-dom";                                                                                        
 import {
   RiDashboardLine,
   RiStethoscopeLine,
@@ -8,6 +8,7 @@ import {
   RiCalendarCheckLine,
   RiMegaphoneLine,
   RiSettings4Line,
+  RiUserHeartLine, // Added for volunteer requests
 } from "react-icons/ri";
 import { useDispatch } from "react-redux";
 import { logoutUser } from "../../features/auth/authSlice";
@@ -44,6 +45,11 @@ export const HospitalSidebar = () => {
       icon: RiMegaphoneLine,
       label: "Campaigns",
       path: "/hospital-admin/campaign",
+    },
+    {
+      icon: RiUserHeartLine, // Using heart user icon for volunteer requests
+      label: "Volunteer Requests",
+      path: "/hospital-admin/volunteer-requests",
     },
     {
       icon: RiSettings4Line,

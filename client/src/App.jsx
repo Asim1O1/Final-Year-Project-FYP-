@@ -43,6 +43,7 @@ import AppointmentDetail from "./component/user/AppointmentDetail.jsx";
 import ChatPage from "./pages/user/ChatPage.jsx";
 import DoctorChatPage from "./component/doctor/chat/DoctorChatPage.jsx";
 import MedicalTestManagement from "./pages/hospital_admin/MedicalTestManagement.jsx";
+import VolunteerRequestsManager from "./component/hospital_admin/campaign/VolunteerRequestManager.jsx";
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -219,6 +220,7 @@ function App() {
           <Route path="doctors" element={<DoctorManagement />} />
           <Route path="campaign" element={<CampaignManagement />} />
           <Route path="medicalTests" element={<MedicalTestManagement />} />
+          <Route path="volunteer-requests" element={<VolunteerRequestsManager />} />
        
         </Route>
 

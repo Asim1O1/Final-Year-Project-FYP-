@@ -11,17 +11,21 @@ import {
   Badge,
   HStack,
   Icon,
+  useToast,
 } from "@chakra-ui/react";
 import { Plus, Bell, Calendar, Filter } from "lucide-react";
 import { Input, DatePicker, Select } from "antd";
-import { Link } from "react-router-dom";
+
+import { useDispatch, useSelector } from "react-redux";
 import CampaignList from "../../component/hospital_admin/campaign/CampaignList";
 import AddCampaignForm from "../../component/hospital_admin/campaign/AddCampaign";
 import UpdateCampaignForm from "../../component/hospital_admin/campaign/UpdateCampaign";
-
-
+import { fetchAllCampaigns } from "../../features/campaign/campaignSlice";
+import { fetchAllHospitals } from "../../features/hospital/hospitalSlice";
 
 const CampaignManagement = () => {
+  const dispatch = useDispatch();
+  const toast = useToast();
   const {
     isOpen: isAddOpen,
     onOpen: onAddOpen,
@@ -32,71 +36,66 @@ const CampaignManagement = () => {
     onOpen: onUpdateOpen,
     onClose: onUpdateClose,
   } = useDisclosure();
+
+  // Get data from Redux store
+  const {
+    campaigns,
+    loading: campaignsLoading,
+    error: campaignsError,
+  } = useSelector((state) => state?.campaignSlice);
+  const {
+    hospitals,
+    loading: hospitalsLoading,
+    error: hospitalsError,
+  } = useSelector((state) => state?.hospitalSlice?.hospitals);
+
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState(null);
   const [locationFilter, setLocationFilter] = useState("");
   const [hospitalFilter, setHospitalFilter] = useState("");
   const [notifications, setNotifications] = useState([]);
-  const [userRole, setUserRole] = useState("hospital_admin"); 
+  const [userRole, setUserRole] = useState("hospital_admin");
 
-  // Static campaign data
-  const [campaigns, setCampaigns] = useState([
-    {
-      id: 1,
-      title: "Free Health Checkup",
-      description: "Annual free health checkup for senior citizens",
-      date: "2025-03-15",
-      location: "Central Park",
-      hospital: "City General Hospital",
-      createdBy: "admin123",
-    },
-    {
-      id: 2,
-      title: "Blood Donation Drive",
-      description: "Donate blood and save lives",
-      date: "2025-03-20",
-      location: "Community Center",
-      hospital: "Metro Healthcare",
-      createdBy: "admin123",
-    },
-    {
-      id: 3,
-      title: "Diabetes Awareness Workshop",
-      description: "Learn about diabetes prevention and management",
-      date: "2025-04-05",
-      location: "Public Library",
-      hospital: "City General Hospital",
-      createdBy: "admin123",
-    },
-  ]);
-
-  // Static hospitals data for filter dropdown
-  const hospitals = [
-    { value: "City General Hospital", label: "City General Hospital" },
-    { value: "Metro Healthcare", label: "Metro Healthcare" },
-    { value: "Community Medical Center", label: "Community Medical Center" },
-  ];
-
-  // Static notification data
+  // Fetch data on component mount
   useEffect(() => {
-    setNotifications([
-      {
-        id: 1,
-        title: "New Campaign Created",
-        message: "Blood Donation Drive has been created",
-        isRead: false,
-        createdAt: "2025-03-05T10:00:00Z",
-      },
-      {
-        id: 2,
-        title: "Campaign Updated",
-        message: "Free Health Checkup details have been updated",
-        isRead: true,
-        createdAt: "2025-03-04T14:30:00Z",
-      },
-    ]);
-  }, []);
+    dispatch(fetchAllCampaigns());
+    dispatch(fetchAllHospitals());
+  }, [dispatch]);
+
+  // Handle errors
+  useEffect(() => {
+    if (campaignsError) {
+      toast({
+        title: "Error loading campaigns",
+        description: campaignsError,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+
+    if (hospitalsError) {
+      toast({
+        title: "Error loading hospitals",
+        description: hospitalsError,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [campaignsError, hospitalsError, toast]);
+
+  // Format hospitals for filter dropdown
+
+  console.log("the hispitals are", hospitals);
+  const hospitalOptions =
+    hospitals?.map((hospital) => ({
+      value: hospital._id,
+      label: hospital.name,
+    })) || [];
+
+
 
   // Handle opening the form for adding a new campaign
   const handleAddCampaign = () => {
@@ -112,7 +111,15 @@ const CampaignManagement = () => {
 
   // Handle deleting a campaign
   const handleDeleteCampaign = (campaignId) => {
-    setCampaigns(campaigns.filter((campaign) => campaign.id !== campaignId));
+    // This should be replaced with actual delete dispatch
+    // dispatch(deleteCampaign(campaignId));
+    toast({
+      title: "Campaign deleted",
+      description: "The campaign has been deleted successfully.",
+      status: "success",
+      duration: 5000,
+      isClosable: true,
+    });
   };
 
   // Handle search input change
@@ -144,25 +151,30 @@ const CampaignManagement = () => {
   };
 
   // Filter campaigns based on search query and filters
-  const filteredCampaigns = campaigns.filter(
-    (campaign) => {
-      const matchesSearch = 
+  const filteredCampaigns =
+    campaigns?.filter((campaign) => {
+      const matchesSearch =
         campaign.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        campaign.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        campaign.description
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
         campaign.location.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       const matchesDate = dateFilter ? campaign.date === dateFilter : true;
-      const matchesLocation = locationFilter ? 
-        campaign.location.toLowerCase().includes(locationFilter.toLowerCase()) : true;
-      const matchesHospital = hospitalFilter ? 
-        campaign.hospital === hospitalFilter : true;
-      
+      const matchesLocation = locationFilter
+        ? campaign.location.toLowerCase().includes(locationFilter.toLowerCase())
+        : true;
+      const matchesHospital = hospitalFilter
+        ? campaign.hospital === hospitalFilter
+        : true;
+
       return matchesSearch && matchesDate && matchesLocation && matchesHospital;
-    }
-  );
+    }) || [];
 
   // Get unread notifications count
-  const unreadNotificationsCount = notifications.filter(n => !n.isRead).length;
+  const unreadNotificationsCount = notifications.filter(
+    (n) => !n.isRead
+  ).length;
 
   return (
     <Container maxW="container.xl" py={6}>
@@ -170,7 +182,9 @@ const CampaignManagement = () => {
       <Flex justify="space-between" align="center" mb={6}>
         <Stack spacing={1}>
           <Heading size="lg">Campaign Management</Heading>
-          <Text color="gray.600">{campaigns.length} campaigns registered</Text>
+          <Text color="gray.600">
+            {filteredCampaigns.length} campaigns found
+          </Text>
         </Stack>
         <HStack spacing={4}>
           <Box position="relative">
@@ -215,10 +229,10 @@ const CampaignManagement = () => {
               />
               <Flex gap={4} flexWrap="wrap">
                 <Box flex={{ base: "1 0 100%", md: "1" }}>
-                  <DatePicker 
+                  <DatePicker
                     placeholder="Filter by date"
                     onChange={handleDateFilterChange}
-                    style={{ width: '100%' }}
+                    style={{ width: "100%" }}
                   />
                 </Box>
                 <Box flex={{ base: "1 0 100%", md: "1" }}>
@@ -232,16 +246,17 @@ const CampaignManagement = () => {
                 <Box flex={{ base: "1 0 100%", md: "1" }}>
                   <Select
                     placeholder="Filter by hospital"
-                    style={{ width: '100%' }}
-                    options={hospitals}
+                    style={{ width: "100%" }}
+                    options={hospitalOptions}
                     value={hospitalFilter || undefined}
                     onChange={handleHospitalFilterChange}
                     allowClear
+                    loading={hospitalsLoading}
                   />
                 </Box>
               </Flex>
               <Flex justify="flex-end">
-                <Button 
+                <Button
                   leftIcon={<Filter size={16} />}
                   variant="outline"
                   onClick={handleResetFilters}
@@ -255,7 +270,7 @@ const CampaignManagement = () => {
           {/* Campaign List */}
           <CampaignList
             campaigns={filteredCampaigns}
-            isLoading={false}
+            isLoading={campaignsLoading}
             userRole={userRole}
             onEdit={handleEditCampaign}
             onDelete={handleDeleteCampaign}
@@ -263,14 +278,11 @@ const CampaignManagement = () => {
         </Box>
 
         {/* Upcoming Events Sidebar */}
-        <Box 
-          width={{ base: "100%", lg: "300px" }} 
-          flexShrink={0}
-        >
-          <Box 
-            p={4} 
-            borderWidth="1px" 
-            borderRadius="md" 
+        <Box width={{ base: "100%", lg: "300px" }} flexShrink={0}>
+          <Box
+            p={4}
+            borderWidth="1px"
+            borderRadius="md"
             bg="white"
             position={{ lg: "sticky" }}
             top={{ lg: "20px" }}
@@ -285,10 +297,10 @@ const CampaignManagement = () => {
       </Flex>
 
       {/* Add Campaign Modal */}
-      <AddCampaignForm 
-        isOpen={isAddOpen} 
-        onClose={onAddClose} 
-        hospitals={hospitals}
+      <AddCampaignForm
+        isOpen={isAddOpen}
+        onClose={onAddClose}
+        hospitals={hospitalOptions}
       />
 
       {/* Update Campaign Modal */}
@@ -296,7 +308,7 @@ const CampaignManagement = () => {
         isOpen={isUpdateOpen}
         onClose={onUpdateClose}
         campaignData={selectedCampaign}
-        hospitals={hospitals}
+        hospitals={hospitalOptions}
       />
     </Container>
   );
