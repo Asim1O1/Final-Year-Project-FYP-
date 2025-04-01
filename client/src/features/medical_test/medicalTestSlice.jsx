@@ -109,10 +109,109 @@ export const bulkDeleteMedicalTests = createAsyncThunk(
   }
 );
 
+export const bookMedicalTest = createAsyncThunk(
+  "testBooking/bookMedicalTest",
+  async (bookingData, { rejectWithValue }) => {
+    console.log("entered the book test slice thunk func");
+    console.log("The booking data is", bookingData);
+    try {
+      const response = await medicalTestService.bookMedicalTestService(
+        bookingData
+      );
+      if (!response.isSuccess) throw response;
+      return response.data;
+    } catch (error) {
+      console.log("The error is", error);
+      return rejectWithValue(
+        createApiResponse({
+          isSuccess: false,
+          message:
+            error?.message || "Failed to book medical test. Please try again.",
+          error: error?.error || null,
+        })
+      );
+    }
+  }
+);
+
+export const fetchHospitalTestBookings = createAsyncThunk(
+  "testBooking/fetchHospitalTestBookings",
+  async ({ hospitalId, filters = {} }, { rejectWithValue }) => {
+    console.log("entered the fetch hospital test bookings slice thunk func", hospitalId, filters);
+    try {
+      const response = await medicalTestService.getHospitalTestBookingsService(
+        hospitalId,
+        filters
+      );
+      if (!response.isSuccess) throw response;
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        createApiResponse({
+          isSuccess: false,
+          message: error?.message || "Failed to fetch hospital test bookings",
+          error: error?.error || null,
+        })
+      );
+    }
+  }
+);
+
+// Update test booking status (admin action)
+export const updateTestBookingStatus = createAsyncThunk(
+  "testBooking/updateTestBookingStatus",
+  async ({ bookingId, status }, { rejectWithValue }) => {
+    console.log("entered the update test booking status slice thunk func", bookingId, status);
+    try {
+      const response = await medicalTestService.updateTestBookingStatusService(
+        bookingId,
+        status
+      );
+
+      if (!response.isSuccess) throw response;
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        createApiResponse({
+          isSuccess: false,
+          message: error?.message || "Failed to update booking status",
+          error: error?.error || null,
+        })
+      );
+    }
+  }
+);
+
+// Fetch user test bookings
+export const fetchUserTestBookings = createAsyncThunk(
+  "testBooking/fetchUserTestBookings",
+  async ({ userId, filters = {} }, { rejectWithValue }) => {
+    try {
+      const response = await medicalTestService.getUserTestBookingsService(
+        userId,
+        filters
+      );
+      if (!response.isSuccess) throw response;
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        createApiResponse({
+          isSuccess: false,
+          message: error?.message || "Failed to fetch user test bookings",
+          error: error?.error || null,
+        })
+      );
+    }
+  }
+);
+
 const medicalTestSlice = createSlice({
   name: "medicalTestSlice",
   initialState: {
     medicalTest: null,
+    booking: null,
+    userBookings: [],
+    hospitalBookings: [],
     medicalTests: [],
     isLoading: false,
     error: null,
@@ -145,11 +244,22 @@ const medicalTestSlice = createSlice({
       .addCase(createMedicalTest.rejected, handleRejected);
 
     builder
+      .addCase(bookMedicalTest.pending, handlePending)
+      .addCase(bookMedicalTest.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.booking = action.payload;
+        state.error = null;
+      })
+      .addCase(bookMedicalTest.rejected, handleRejected);
+
+    builder
       .addCase(fetchAllMedicalTests.pending, handlePending)
       .addCase(fetchAllMedicalTests.fulfilled, (state, action) => {
         state.isLoading = false;
         console.log("The action.payload is", action.payload);
-        state.medicalTests = Array.isArray(action?.payload?.data) ? action?.payload : [];
+        state.medicalTests = Array.isArray(action?.payload?.data)
+          ? action?.payload
+          : [];
         state.error = null;
       })
       .addCase(fetchAllMedicalTests.rejected, handleRejected);
@@ -178,19 +288,19 @@ const medicalTestSlice = createSlice({
         state.isLoading = false;
         console.log("state.medicalTests before update:", state?.medicalTests);
         console.log("The action.payload while deleting is", action.payload);
-      
+
         // Ensure medicalTests is an array before calling filter
         if (!Array.isArray(state.medicalTests)) {
           state.medicalTests = [];
         }
-      
+
         state.medicalTests = state.medicalTests.filter(
           (test) => test.id !== action?.payload?.testId
         );
-      
+
         state.error = null;
       })
-      
+
       .addCase(deleteMedicalTest.rejected, handleRejected);
 
     builder
@@ -200,6 +310,43 @@ const medicalTestSlice = createSlice({
         state.error = null;
       })
       .addCase(bulkDeleteMedicalTests.rejected, handleRejected);
+
+    // Hospital bookings
+    builder
+      .addCase(fetchHospitalTestBookings.pending, handlePending)
+      .addCase(fetchHospitalTestBookings.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.hospitalBookings = action.payload || [];
+        state.error = null;
+      })
+      .addCase(fetchHospitalTestBookings.rejected, handleRejected);
+
+    // Update booking status
+    builder
+      .addCase(updateTestBookingStatus.pending, handlePending)
+      .addCase(updateTestBookingStatus.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // Update the specific booking in hospitalBookings if it exists
+        state.hospitalBookings = state.hospitalBookings.map((booking) =>
+          booking._id === action.payload._id ? action.payload : booking
+        );
+        // Also update in userBookings if it exists
+        state.userBookings = state.userBookings.map((booking) =>
+          booking._id === action.payload._id ? action.payload : booking
+        );
+        state.error = null;
+      })
+      .addCase(updateTestBookingStatus.rejected, handleRejected);
+
+    // User bookings
+    builder
+      .addCase(fetchUserTestBookings.pending, handlePending)
+      .addCase(fetchUserTestBookings.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.userBookings = action.payload || [];
+        state.error = null;
+      })
+      .addCase(fetchUserTestBookings.rejected, handleRejected);
   },
 });
 

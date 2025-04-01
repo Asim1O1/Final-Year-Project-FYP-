@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const testBookingSchema = new mongoose.Schema({
-  patientId: {
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
@@ -10,6 +10,11 @@ const testBookingSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "MedicalTest",
     required: true,
+  },
+  tokenNumber: {
+    type: String,
+    default: null,
+    index: true,
   },
 
   hospitalId: {
@@ -27,7 +32,7 @@ const testBookingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "approved", "rejected"],
+    enum: ["pending", "Completed", "cancelled"],
     default: "pending",
   },
   paymentStatus: {
@@ -36,8 +41,11 @@ const testBookingSchema = new mongoose.Schema({
     default: "Pending",
   },
   transactionId: { type: String, default: null },
+  notes: {
+    type: String,
+    default: null,
+  },
 });
-
 
 const TestBooking = mongoose.model("TestBooking", testBookingSchema);
 

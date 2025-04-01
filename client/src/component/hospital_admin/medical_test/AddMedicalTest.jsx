@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Box,
@@ -26,21 +26,17 @@ import {
   IconButton,
   Image,
 } from "@chakra-ui/react";
-
-import { Clock, DollarSign, FileText, Building2 } from "lucide-react";
+import { DollarSign, FileText, Building2 } from "lucide-react";
 import { notification } from "antd";
-
 import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
 import { createMedicalTest } from "../../../features/medical_test/medicalTestSlice";
 import { SmallCloseIcon } from "@chakra-ui/icons";
 
 const AddMedicalTest = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
-  const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const initialFormData = {
     testName: "",
-
     testPrice: "",
     hospital: "",
     testDescription: "",

@@ -39,7 +39,7 @@ export const HospitalSidebar = () => {
     {
       icon: RiCalendarCheckLine,
       label: "Appointments",
-      path: "/hospital-admin/appointments",
+      path: "/hospital-admin/bookings",
     },
     {
       icon: RiMegaphoneLine,

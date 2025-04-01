@@ -358,4 +358,89 @@ appointmentConfirmed: {
         </div>
       `,
   },
+  testBooking: {
+    subject: "Your Medical Test Booking Confirmation",
+    body: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #f8f9fa; padding: 20px; text-align: center; }
+              .content { padding: 20px; }
+              .footer { margin-top: 20px; padding: 10px; text-align: center; font-size: 12px; color: #6c757d; }
+              .highlight { background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; }
+          </style>
+      </head>
+      <body>
+          <div class="container">
+              <div class="header">
+                  <h2>Medical Test Booking Confirmation</h2>
+              </div>
+              <div class="content">
+                  <p>Dear {{fullName}},</p>
+                  <p>Your medical test has been successfully booked. Here are the details:</p>
+                  
+                  <div class="highlight">
+                      <p><strong>Test Name:</strong> {{testName}}</p>
+                      <p><strong>Hospital:</strong> {{hospitalName}}</p>
+                      <p><strong>Date:</strong> {{date}}</p>
+                      <p><strong>Time:</strong> {{time}}</p>
+                      <p><strong>Payment Method:</strong> {{paymentMethod}}</p>
+                      {{#if tokenNumber}}
+                      <p><strong>Token Number:</strong> <span style="font-weight: bold; color: #dc3545;">{{tokenNumber}}</span></p>
+                      {{/if}}
+                  </div>
+                  
+                  <p><strong>Important Instructions:</strong></p>
+                  <ul>
+                      {{#if tokenNumber}}
+                      <li>Please arrive <strong>10 minutes early</strong> with this email or your token number</li>
+                      <li>Present your token number at the billing counter to complete payment</li>
+                      {{else}}
+                      <li>You can proceed directly to the test center as you've already paid online</li>
+                      {{/if}}
+                      <li>Bring any required identification documents</li>
+                      <li>Follow any pre-test instructions provided by your doctor</li>
+                  </ul>
+                  
+                  <p>If you need to reschedule or cancel your appointment, please contact us at least 24 hours in advance.</p>
+              </div>
+              <div class="footer">
+                  <p>Thank you for choosing our services.</p>
+                  <p>© {{year}} Your Hospital Name. All rights reserved.</p>
+              </div>
+          </div>
+      </body>
+      </html>
+    `,
+    text: `Dear {{fullName}},
+
+Your medical test has been successfully booked. Here are the details:
+
+Test Name: {{testName}}
+Hospital: {{hospitalName}}
+Date: {{date}}
+Time: {{time}}
+Payment Method: {{paymentMethod}}
+{{#if tokenNumber}}Token Number: {{tokenNumber}}{{/if}}
+
+Important Instructions:
+{{#if tokenNumber}}
+- Please arrive 10 minutes early with this email or your token number
+- Present your token number at the billing counter to complete payment
+{{else}}
+- You can proceed directly to the test center as you've already paid online
+{{/if}}
+- Bring any required identification documents
+- Follow any pre-test instructions provided by your doctor
+
+If you need to reschedule or cancel your appointment, please contact us at least 24 hours in advance.
+
+Thank you for choosing our services.
+© {{year}} Your Hospital Name. All rights reserved.`
+  }
+
 };
+

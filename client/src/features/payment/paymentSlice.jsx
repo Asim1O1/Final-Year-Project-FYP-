@@ -13,6 +13,7 @@ export const initiatePayment = createAsyncThunk(
         amount,
         bookingType,
       });
+      console.log("The response from initiate payment slice is", response);
       if (!response.isSuccess) throw response;
       return response.data;
     } catch (error) {
@@ -38,6 +39,7 @@ export const completePayment = createAsyncThunk(
         amount,
         purchase_order_id,
       });
+      console.log("The response from complete  payment slice is", response);
 
       // If the response is not successful, throw an error with response data
       if (!response.isSuccess) {
@@ -61,8 +63,8 @@ export const completePayment = createAsyncThunk(
 const paymentSlice = createSlice({
   name: "payment",
   initialState: {
-    payment: null, // Stores payment initiation response
-    transactionDetails: null, // Stores transaction details after successful payment
+    payment: null, 
+    transactionDetails: null,
     isLoading: false,
     error: null,
   },
@@ -74,7 +76,7 @@ const paymentSlice = createSlice({
       state.error = null;
     },
     setTransactionDetails: (state, action) => {
-      state.transactionDetails = action.payload; // Manually set transaction details
+      state.transactionDetails = action.payload; 
     },
   },
   extraReducers: (builder) => {

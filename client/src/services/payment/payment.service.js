@@ -33,7 +33,7 @@ const initiatePaymentService = async ({
 
     return createApiResponse({
       isSuccess: true,
-      data: response.data?.payment,
+      data: response.data,
     });
   } catch (error) {
     console.error("Error initiating payment:", error);

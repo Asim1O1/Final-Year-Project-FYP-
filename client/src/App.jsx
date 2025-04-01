@@ -44,6 +44,9 @@ import ChatPage from "./pages/user/ChatPage.jsx";
 import DoctorChatPage from "./component/doctor/chat/DoctorChatPage.jsx";
 import MedicalTestManagement from "./pages/hospital_admin/MedicalTestManagement.jsx";
 import VolunteerRequestsManager from "./component/hospital_admin/campaign/VolunteerRequestManager.jsx";
+import MedicalTests from "./pages/public/MedicalTests.jsx";
+import { TestDetail } from "./pages/public/TestDetail.jsx";
+import TestBookingList from "./component/hospital_admin/test_booking/test_bookingList.jsx";
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -59,6 +62,24 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/hospitals" element={<HospitalsPage />} />
+        <Route
+          path="/medicalTests"
+          element={
+            <MainLayout>
+              <MedicalTests />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/tests/:testId"
+          element={
+            <MainLayout>
+              {" "}
+              <TestDetail />
+            </MainLayout>
+          }
+        />
+
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/paymentFailed" element={<PaymentFailed />} />
 
@@ -82,7 +103,7 @@ function App() {
             </CheckAuth>
           }
         ></Route>
-         <Route
+        <Route
           path="/chat/users"
           element={
             <MainLayout>
@@ -220,8 +241,11 @@ function App() {
           <Route path="doctors" element={<DoctorManagement />} />
           <Route path="campaign" element={<CampaignManagement />} />
           <Route path="medicalTests" element={<MedicalTestManagement />} />
-          <Route path="volunteer-requests" element={<VolunteerRequestsManager />} />
-       
+          <Route path="bookings" element={<TestBookingList />} />
+          <Route
+            path="volunteer-requests"
+            element={<VolunteerRequestsManager />}
+          />
         </Route>
 
         {/* Doctor Protected Routes */}
