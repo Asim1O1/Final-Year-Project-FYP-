@@ -35,8 +35,8 @@ const medicalTestSchema = new mongoose.Schema(
       },
       status: {
         type: String,
-        enum: ["available","booked", "confirmed", "completed", "cancelled", "report_available"],
-        default: "booked",
+        enum: ["available","booked",  "completed", "cancelled", "report_available"],
+        default: "available",
       },
       payment: {
         method: {

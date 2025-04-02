@@ -8,15 +8,15 @@ import {
   Edit,
   Save,
   X,
-  Clock,
   AlertCircle,
+  Eye,
+  FileText,
 } from "lucide-react";
 import {
   Box,
   Flex,
   Text,
   Avatar,
-  Badge,
   Button,
   Tabs,
   TabList,
@@ -47,11 +47,17 @@ import {
   TableContainer,
   Skeleton,
   Tag,
+  Center,
+  Spinner,
 } from "@chakra-ui/react";
+import { Download } from "lucide-react";
 
 import { fetchUserById } from "../../features/user/userSlice";
 import { fetchUserAppointments } from "../../features/appointment/appointmentSlice";
-import { Navigate, useNavigate } from "react-router-dom";
+
+import { fetchUserMedicalReports } from "../../features/test_report/testReportSlice";
+import { handleDownloadMedicalReport } from "../../features/test_report/testReportSlice";
+import { useNavigate } from "react-router-dom";
 
 const UserProfile = () => {
   const dispatch = useDispatch();
@@ -59,6 +65,10 @@ const UserProfile = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector((state) => state?.auth);
   const userData = user?.data;
+
+  const { reports, isLoading: reportsLoading } = useSelector(
+    (state) => state?.testReportSlice || { reports: [], loading: false }
+  );
 
   // Get appointments from Redux store
   const { appointments, loading: appointmentsLoading } = useSelector(
@@ -85,8 +95,16 @@ const UserProfile = () => {
       dispatch(fetchUserById(userData._id));
     }
   }, [dispatch, userData?._id]);
+  useEffect(() => {
+    if (userData?._id && activeTab === "reports") {
+      dispatch(fetchUserMedicalReports(userData._id));
+    }
+  }, [dispatch, userData?._id, activeTab]);
 
-  // Fetch user appointments when the appointments tab is selected or on initial load
+  const handleDownloadReport = (reportId) => {
+    dispatch(handleDownloadMedicalReport(reportId));
+  };
+
   useEffect(() => {
     if (
       userData?._id &&
@@ -160,45 +178,68 @@ const UserProfile = () => {
     });
   };
 
-  // Get status color for appointments
-  const getStatusColor = (status) => {
-    const statusColors = {
-      scheduled: "blue",
-      completed: "green",
-      cancelled: "red",
-      pending: "orange",
-      default: "gray",
-    };
-    return statusColors[status?.toLowerCase()] || statusColors.default;
+ // Get status color for appointments
+const getStatusColor = (status) => {
+  const statusColors = {
+    scheduled: "blue",
+    completed: "green",
+    cancelled: "red",
+    pending: "orange",
+    default: "gray",
   };
+  return statusColors[status?.toLowerCase()] || statusColors.default;
+};
 
-  // UI Colors
-  const bgGradient = useColorModeValue(
-    "linear(to-r, blue.400, teal.400)",
-    "linear(to-r, blue.600, teal.600)"
-  );
-  const cardBg = useColorModeValue("white", "gray.800");
-  const textColor = useColorModeValue("gray.700", "white");
-  const mutedText = useColorModeValue("gray.600", "gray.400");
-  const fieldBg = useColorModeValue("gray.50", "gray.700");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
+// UI Colors
+const bgGradient = useColorModeValue(
+  "linear(to-r, blue.500, teal.500)",
+  "linear(to-r, blue.600, teal.600)"
+);
 
-  if (!isAuthenticated) {
-    return (
+if (!isAuthenticated) {
+  return (
+    <Flex
+      direction="column"
+      align="center"
+      justify="center"
+      minH="100vh"
+      bg={useColorModeValue("gray.50", "gray.900")}
+      p={6}
+      backgroundImage="url('https://via.placeholder.com/1800x1200')"
+      backgroundSize="cover"
+      backgroundPosition="center"
+      position="relative"
+    >
+      <Box
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        bg="blackAlpha.700"
+        backdropFilter="blur(10px)"
+        zIndex={0}
+      />
+      
       <Flex
         direction="column"
         align="center"
         justify="center"
-        minH="100vh"
-        bg={useColorModeValue("gray.50", "gray.900")}
-        p={6}
+        bg="white"
+        p={12}
+        borderRadius="xl"
+        boxShadow="2xl"
+        maxW="md"
+        w="full"
+        zIndex={1}
+        position="relative"
       >
-        <Icon as={AlertCircle} boxSize={16} color="red.500" mb={4} />
-        <Heading mb={2} size="xl" textAlign="center">
-          Not Authorized
+        <Icon as={AlertCircle} boxSize={16} color="red.500" mb={6} />
+        <Heading mb={4} size="xl" textAlign="center" fontWeight="bold">
+          Authentication Required
         </Heading>
-        <Text fontSize="lg" color={mutedText} mb={8} textAlign="center">
-          Please log in to view your profile
+        <Text fontSize="lg" color="gray.600" mb={10} textAlign="center">
+          Please sign in to access your profile dashboard
         </Text>
         <Button
           as="a"
@@ -209,516 +250,499 @@ const UserProfile = () => {
           px={12}
           py={6}
           borderRadius="full"
+          fontWeight="bold"
           _hover={{
             transform: "translateY(-2px)",
             boxShadow: "xl",
+            bgGradient: "linear(to-r, blue.600, teal.600)",
           }}
           _active={{
             transform: "translateY(0)",
           }}
-          transition="all 0.2s"
+          transition="all 0.3s"
+          w="full"
         >
-          Go to Login
+          Sign In
         </Button>
       </Flex>
-    );
-  }
+    </Flex>
+  );
+}
 
-  return (
-    <Container maxW="container.xl" py={8}>
+return (
+  <Box
+    bg={useColorModeValue("gray.50", "gray.900")}
+    minH="100vh"
+    pt={8}
+    pb={16}
+  >
+    <Container maxW="container.xl">
       {/* Profile Header */}
       <Box
-        bgGradient={bgGradient}
-        borderRadius="xl"
+        bg="white"
+        borderRadius="2xl"
         boxShadow="lg"
-        p={{ base: 4, md: 6 }}
+        overflow="hidden"
         mb={8}
         position="relative"
-        overflow="hidden"
       >
+        {/* Header Background */}
         <Box
-          position="absolute"
-          top={0}
-          right={0}
-          bottom={0}
-          left={0}
-          bgImage="url('data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E')"
-          opacity={0.7}
-        />
-
-        <Flex
-          direction={{ base: "column", md: "row" }}
-          align={{ base: "center", md: "flex-start" }}
-          gap={6}
+          height="160px"
+          bgGradient={bgGradient}
           position="relative"
-          zIndex={1}
-        >
-          <Box
-            bg="white"
-            p={2}
-            borderRadius="full"
-            boxShadow="lg"
-            animation={{ base: "none", md: "pulse 2s infinite" }}
+        />
+        
+        <Box px={{ base: 6, md: 10 }} pb={8} pt={0} position="relative">
+          <Flex
+            direction={{ base: "column", md: "row" }}
+            align={{ base: "center", md: "flex-end" }}
+            justify="space-between"
+            mb={8}
           >
-            <Avatar
-              size={{ base: "xl", md: "2xl" }}
-              icon={<Icon as={User} boxSize={{ base: 12, md: 16 }} />}
-              bg="blue.50"
-              color="blue.500"
-            />
-          </Box>
-
-          <VStack
-            spacing={2}
-            flex="1"
-            align={{ base: "center", md: "flex-start" }}
-          >
-            <Heading
-              color="white"
-              fontSize={{ base: "2xl", md: "3xl", lg: "4xl" }}
-            >
-              {userData?.fullName}
-            </Heading>
-            <HStack spacing={2}>
-              <Text color="blue.100" fontSize={{ base: "md", md: "lg" }}>
-                @{userData?.userName}
-              </Text>
-            </HStack>
-
-            <HStack spacing={4} mt={2} display={{ base: "none", md: "flex" }}>
-              <HStack color="white" opacity={0.9}>
-                <Icon as={Mail} size={16} />
-                <Text fontSize="sm">{userData?.email}</Text>
-              </HStack>
-              {userData?.phone && (
-                <HStack color="white" opacity={0.9}>
-                  <Icon as={Phone} size={16} />
-                  <Text fontSize="sm">{userData?.phone}</Text>
-                </HStack>
-              )}
-            </HStack>
-          </VStack>
-
-          <Box mt={{ base: 4, md: 0 }}>
-            {!isEditing ? (
-              <Button
-                onClick={() => setIsEditing(true)}
-                leftIcon={<Icon as={Edit} size={16} />}
+            <Flex align="center" direction={{ base: "column", md: "row" }}>
+              <Avatar
+                size={{ base: "xl", md: "2xl" }}
+                icon={<Icon as={User} boxSize={{ base: 12, md: 16 }} />}
                 bg="white"
                 color="blue.500"
-                size={{ base: "md", md: "lg" }}
-                px={6}
-                _hover={{
-                  bg: "blue.50",
-                  transform: "translateY(-2px)",
-                  boxShadow: "md",
-                }}
-                borderRadius="full"
-                transition="all 0.2s"
+                borderWidth="4px"
+                borderColor="white"
+                boxShadow="lg"
+                mt={{ base: "-40px", md: "-70px" }}
+                mr={{ base: 0, md: 6 }}
+                mb={{ base: 4, md: 0 }}
+              />
+              
+              <VStack
+                spacing={1}
+                align={{ base: "center", md: "flex-start" }}
+                mt={{ base: 0, md: "-25px" }}
               >
-                Edit Profile
-              </Button>
-            ) : (
-              <Button
-                onClick={cancelEdit}
-                leftIcon={<Icon as={X} size={16} />}
-                variant="outline"
-                bg="whiteAlpha.200"
-                color="white"
-                borderColor="whiteAlpha.400"
-                _hover={{ bg: "whiteAlpha.300" }}
-                borderRadius="full"
-              >
-                Cancel
-              </Button>
-            )}
-          </Box>
-        </Flex>
+                <Heading
+                  color="gray.800"
+                  fontSize={{ base: "2xl", md: "3xl" }}
+                  fontWeight="700"
+                >
+                  {userData?.fullName}
+                </Heading>
+                <Text color="gray.500" fontSize="md" fontWeight="medium">
+                  @{userData?.userName}
+                </Text>
+
+                <HStack spacing={6} mt={2}>
+                  <HStack color="gray.600" spacing={2}>
+                    <Icon as={Mail} boxSize={4} />
+                    <Text fontSize="sm" fontWeight="medium">{userData?.email}</Text>
+                  </HStack>
+                  {userData?.phone && (
+                    <HStack color="gray.600" spacing={2}>
+                      <Icon as={Phone} boxSize={4} />
+                      <Text fontSize="sm" fontWeight="medium">{userData?.phone}</Text>
+                    </HStack>
+                  )}
+                </HStack>
+              </VStack>
+            </Flex>
+
+            <Box mt={{ base: 6, md: "-25px" }}>
+              {!isEditing ? (
+                <Button
+                  onClick={() => setIsEditing(true)}
+                  leftIcon={<Icon as={Edit} boxSize={4} />}
+                  bgGradient={bgGradient}
+                  color="white"
+                  size="md"
+                  px={6}
+                  py={5}
+                  _hover={{
+                    bgGradient: "linear(to-r, blue.600, teal.600)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "md",
+                  }}
+                  _active={{
+                    transform: "translateY(0)",
+                  }}
+                  transition="all 0.2s"
+                  borderRadius="lg"
+                  fontWeight="medium"
+                >
+                  Edit Profile
+                </Button>
+              ) : (
+                <Button
+                  onClick={cancelEdit}
+                  leftIcon={<Icon as={X} boxSize={4} />}
+                  variant="outline"
+                  color="gray.500"
+                  borderColor="gray.300"
+                  _hover={{ bg: "gray.50" }}
+                  borderRadius="lg"
+                  size="md"
+                  px={6}
+                  py={5}
+                  fontWeight="medium"
+                >
+                  Cancel
+                </Button>
+              )}
+            </Box>
+          </Flex>
+        </Box>
       </Box>
 
       {/* Tabs & Content */}
       <Tabs
-        variant="line"
+        variant="unstyled"
         colorScheme="blue"
-        size="lg"
         isLazy
         onChange={(index) => {
-          const tabs = ["personal", "appointments", "reports", "settings"];
+          const tabs = ["personal", "appointments", "reports"];
           setActiveTab(tabs[index]);
         }}
       >
         <TabList
-          overflowX="auto"
-          css={{
-            scrollbarWidth: "none",
-            "&::-webkit-scrollbar": { display: "none" },
-          }}
-          borderBottomWidth="1px"
-          borderBottomColor={useColorModeValue("gray.200", "gray.700")}
+          mb={8}
+          gap={1}
+          bg="white"
+          p={1}
+          borderRadius="xl"
+          boxShadow="sm"
+          position="sticky"
+          top="20px"
+          zIndex={10}
         >
-          {["Personal Info", "Appointments", "Reports", "Settings"].map(
-            (tab, index) => (
-              <Tab
-                key={tab}
-                fontWeight="medium"
-                _selected={{
-                  color: "blue.500",
-                  borderBottomWidth: "3px",
-                  borderBottomColor: "blue.500",
-                }}
-                px={{ base: 3, md: 6 }}
-                py={4}
-                fontSize={{ base: "sm", md: "md" }}
-                whiteSpace="nowrap"
-              >
-                {tab}
-              </Tab>
-            )
-          )}
+          {["Personal Info", "Appointments", "Reports"].map((tab, index) => (
+            <Tab
+              key={tab}
+              fontWeight="medium"
+              px={6}
+              py={4}
+              borderRadius="lg"
+              flex="1"
+              color="gray.500"
+              _selected={{
+                color: "white",
+                bg: "blue.500",
+                fontWeight: "600",
+              }}
+              _hover={{
+                bg: "gray.50",
+                color: "blue.500",
+              }}
+              transition="all 0.2s"
+            >
+              {tab}
+            </Tab>
+          ))}
         </TabList>
 
-        <TabPanels mt={6}>
+        <TabPanels>
           {/* Personal Info Tab */}
           <TabPanel px={0}>
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8}>
-              {/* Profile Info Card */}
-              <Card
-                bg={cardBg}
-                borderRadius="xl"
-                boxShadow="md"
-                gridColumn={{ base: "span 1", md: "span 2" }}
-                overflow="hidden"
-              >
-                <Box h={3} bgGradient={bgGradient} w="full" />
-                <CardBody p={6}>
-                  <Heading size="md" mb={6} color={textColor}>
-                    Profile Information
-                  </Heading>
-                  <form onSubmit={handleSubmit}>
-                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                      <FormControl>
-                        <FormLabel
-                          fontSize="sm"
-                          fontWeight="medium"
-                          color={mutedText}
-                        >
-                          Full Name
-                        </FormLabel>
-                        {isEditing ? (
-                          <Input
-                            name="fullName"
-                            value={formData.fullName}
-                            onChange={handleChange}
-                            focusBorderColor="blue.400"
-                          />
-                        ) : (
-                          <Box
-                            p={3}
-                            bg={fieldBg}
-                            borderRadius="md"
-                            fontWeight="medium"
-                            color={textColor}
-                          >
-                            {userData?.fullName || "Not specified"}
-                          </Box>
-                        )}
-                      </FormControl>
-
-                      <FormControl>
-                        <FormLabel
-                          fontSize="sm"
-                          fontWeight="medium"
-                          color={mutedText}
-                        >
-                          Username
-                        </FormLabel>
-                        {isEditing ? (
-                          <Input
-                            name="userName"
-                            value={formData.userName}
-                            onChange={handleChange}
-                            focusBorderColor="blue.400"
-                          />
-                        ) : (
-                          <Box
-                            p={3}
-                            bg={fieldBg}
-                            borderRadius="md"
-                            fontWeight="medium"
-                            color={textColor}
-                          >
-                            {userData?.userName || "Not specified"}
-                          </Box>
-                        )}
-                      </FormControl>
-
-                      <FormControl>
-                        <FormLabel
-                          fontSize="sm"
-                          fontWeight="medium"
-                          color={mutedText}
-                        >
-                          Email
-                        </FormLabel>
-                        {isEditing ? (
-                          <Input
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            focusBorderColor="blue.400"
-                            type="email"
-                          />
-                        ) : (
-                          <Box
-                            p={3}
-                            bg={fieldBg}
-                            borderRadius="md"
-                            fontWeight="medium"
-                            color={textColor}
-                          >
-                            {userData?.email || "Not specified"}
-                          </Box>
-                        )}
-                      </FormControl>
-
-                      <FormControl>
-                        <FormLabel
-                          fontSize="sm"
-                          fontWeight="medium"
-                          color={mutedText}
-                        >
-                          Phone
-                        </FormLabel>
-                        {isEditing ? (
-                          <Input
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            focusBorderColor="blue.400"
-                          />
-                        ) : (
-                          <Box
-                            p={3}
-                            bg={fieldBg}
-                            borderRadius="md"
-                            fontWeight="medium"
-                            color={textColor}
-                          >
-                            {userData?.phone || "Not specified"}
-                          </Box>
-                        )}
-                      </FormControl>
-
-                      <FormControl>
-                        <FormLabel
-                          fontSize="sm"
-                          fontWeight="medium"
-                          color={mutedText}
-                        >
-                          Address
-                        </FormLabel>
-                        {isEditing ? (
-                          <Input
-                            name="address"
-                            value={formData.address}
-                            onChange={handleChange}
-                            focusBorderColor="blue.400"
-                          />
-                        ) : (
-                          <Box
-                            p={3}
-                            bg={fieldBg}
-                            borderRadius="md"
-                            fontWeight="medium"
-                            color={textColor}
-                          >
-                            {userData?.address || "Not specified"}
-                          </Box>
-                        )}
-                      </FormControl>
-
-                      <FormControl>
-                        <FormLabel
-                          fontSize="sm"
-                          fontWeight="medium"
-                          color={mutedText}
-                        >
-                          Gender
-                        </FormLabel>
-                        {isEditing ? (
-                          <Select
-                            name="gender"
-                            value={formData.gender}
-                            onChange={handleChange}
-                            focusBorderColor="blue.400"
-                          >
-                            <option value="">Select gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other</option>
-                            <option value="prefer-not-to-say">
-                              Prefer not to say
-                            </option>
-                          </Select>
-                        ) : (
-                          <Box
-                            p={3}
-                            bg={fieldBg}
-                            borderRadius="md"
-                            fontWeight="medium"
-                            color={textColor}
-                          >
-                            {userData?.gender || "Not specified"}
-                          </Box>
-                        )}
-                      </FormControl>
-                    </SimpleGrid>
-
-                    {isEditing && (
-                      <Button
-                        mt={8}
-                        type="submit"
-                        colorScheme="green"
-                        size="lg"
-                        leftIcon={<Icon as={Save} />}
-                        px={8}
-                        borderRadius="lg"
-                        _hover={{
-                          transform: "translateY(-2px)",
-                          boxShadow: "md",
-                        }}
-                        transition="all 0.2s"
+            <Card
+              bg="white"
+              borderRadius="xl"
+              boxShadow="lg"
+              overflow="hidden"
+            >
+              <CardBody p={{ base: 6, md: 10 }}>
+                <Heading size="md" mb={8} color="gray.800" fontWeight="700">
+                  Profile Information
+                </Heading>
+                <form onSubmit={handleSubmit}>
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8}>
+                    <FormControl
+                      bg={isEditing ? "white" : "gray.50"}
+                      p={4}
+                      borderRadius="lg"
+                      transition="all 0.2s"
+                    >
+                      <FormLabel
+                        fontSize="sm"
+                        fontWeight="bold"
+                        color="gray.700"
+                        mb={3}
                       >
-                        Save Changes
-                      </Button>
-                    )}
-                  </form>
-                </CardBody>
-              </Card>
+                        Full Name
+                      </FormLabel>
+                      {isEditing ? (
+                        <Input
+                          name="fullName"
+                          value={formData.fullName}
+                          onChange={handleChange}
+                          focusBorderColor="blue.400"
+                          borderRadius="lg"
+                          borderColor="gray.200"
+                          bg="white"
+                          size="lg"
+                        />
+                      ) : (
+                        <Text color="gray.800" fontWeight="medium" fontSize="md">
+                          {userData?.fullName || "Not specified"}
+                        </Text>
+                      )}
+                    </FormControl>
 
-              {/* Activity Card */}
-              <Card
-                bg={cardBg}
-                borderRadius="xl"
-                boxShadow="md"
-                overflow="hidden"
-              >
-                <Box
-                  h={3}
-                  bgGradient="linear(to-r, purple.400, pink.400)"
-                  w="full"
-                />
-                <CardBody p={6}>
-                  <Heading size="md" mb={6} color={textColor}>
-                    Recent Activity
-                  </Heading>
+                    <FormControl
+                      bg={isEditing ? "white" : "gray.50"}
+                      p={4}
+                      borderRadius="lg"
+                      transition="all 0.2s"
+                    >
+                      <FormLabel
+                        fontSize="sm"
+                        fontWeight="bold"
+                        color="gray.700"
+                        mb={3}
+                      >
+                        Username
+                      </FormLabel>
+                      {isEditing ? (
+                        <Input
+                          name="userName"
+                          value={formData.userName}
+                          onChange={handleChange}
+                          focusBorderColor="blue.400"
+                          borderRadius="lg"
+                          borderColor="gray.200"
+                          bg="white"
+                          size="lg"
+                        />
+                      ) : (
+                        <Text color="gray.800" fontWeight="medium" fontSize="md">
+                          {userData?.userName || "Not specified"}
+                        </Text>
+                      )}
+                    </FormControl>
 
-                  <VStack spacing={4} align="stretch">
-                    {[
-                      {
-                        text: "Profile updated",
-                        icon: Edit,
-                        time: "2 hours ago",
-                      },
-                      {
-                        text: "New appointment scheduled",
-                        icon: Calendar,
-                        time: "Yesterday",
-                      },
-                      {
-                        text: "Report downloaded",
-                        icon: Clock,
-                        time: "3 days ago",
-                      },
-                    ].map((activity, index) => (
-                      <HStack key={index} spacing={3}>
-                        <Flex
-                          p={2}
-                          bg="blue.50"
-                          color="blue.500"
-                          borderRadius="md"
-                          align="center"
-                          justify="center"
+                    <FormControl
+                      bg={isEditing ? "white" : "gray.50"}
+                      p={4}
+                      borderRadius="lg"
+                      transition="all 0.2s"
+                    >
+                      <FormLabel
+                        fontSize="sm"
+                        fontWeight="bold"
+                        color="gray.700"
+                        mb={3}
+                      >
+                        Email
+                      </FormLabel>
+                      {isEditing ? (
+                        <Input
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          focusBorderColor="blue.400"
+                          type="email"
+                          borderRadius="lg"
+                          borderColor="gray.200"
+                          bg="white"
+                          size="lg"
+                        />
+                      ) : (
+                        <Text color="gray.800" fontWeight="medium" fontSize="md">
+                          {userData?.email || "Not specified"}
+                        </Text>
+                      )}
+                    </FormControl>
+
+                    <FormControl
+                      bg={isEditing ? "white" : "gray.50"}
+                      p={4}
+                      borderRadius="lg"
+                      transition="all 0.2s"
+                    >
+                      <FormLabel
+                        fontSize="sm"
+                        fontWeight="bold"
+                        color="gray.700"
+                        mb={3}
+                      >
+                        Phone
+                      </FormLabel>
+                      {isEditing ? (
+                        <Input
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          focusBorderColor="blue.400"
+                          borderRadius="lg"
+                          borderColor="gray.200"
+                          bg="white"
+                          size="lg"
+                        />
+                      ) : (
+                        <Text color="gray.800" fontWeight="medium" fontSize="md">
+                          {userData?.phone || "Not specified"}
+                        </Text>
+                      )}
+                    </FormControl>
+
+                    <FormControl
+                      bg={isEditing ? "white" : "gray.50"}
+                      p={4}
+                      borderRadius="lg"
+                      transition="all 0.2s"
+                    >
+                      <FormLabel
+                        fontSize="sm"
+                        fontWeight="bold"
+                        color="gray.700"
+                        mb={3}
+                      >
+                        Address
+                      </FormLabel>
+                      {isEditing ? (
+                        <Input
+                          name="address"
+                          value={formData.address}
+                          onChange={handleChange}
+                          focusBorderColor="blue.400"
+                          borderRadius="lg"
+                          borderColor="gray.200"
+                          bg="white"
+                          size="lg"
+                        />
+                      ) : (
+                        <Text color="gray.800" fontWeight="medium" fontSize="md">
+                          {userData?.address || "Not specified"}
+                        </Text>
+                      )}
+                    </FormControl>
+
+                    <FormControl
+                      bg={isEditing ? "white" : "gray.50"}
+                      p={4}
+                      borderRadius="lg"
+                      transition="all 0.2s"
+                    >
+                      <FormLabel
+                        fontSize="sm"
+                        fontWeight="bold"
+                        color="gray.700"
+                        mb={3}
+                      >
+                        Gender
+                      </FormLabel>
+                      {isEditing ? (
+                        <Select
+                          name="gender"
+                          value={formData.gender}
+                          onChange={handleChange}
+                          focusBorderColor="blue.400"
+                          borderRadius="lg"
+                          borderColor="gray.200"
+                          bg="white"
+                          size="lg"
                         >
-                          <Icon as={activity.icon} boxSize={5} />
-                        </Flex>
-                        <Box flex="1">
-                          <Text fontWeight="medium" color={textColor}>
-                            {activity.text}
-                          </Text>
-                          <Text fontSize="sm" color={mutedText}>
-                            {activity.time}
-                          </Text>
-                        </Box>
-                      </HStack>
-                    ))}
-                  </VStack>
+                          <option value="">Select gender</option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="other">Other</option>
+                          <option value="prefer-not-to-say">
+                            Prefer not to say
+                          </option>
+                        </Select>
+                      ) : (
+                        <Text color="gray.800" fontWeight="medium" fontSize="md">
+                          {userData?.gender || "Not specified"}
+                        </Text>
+                      )}
+                    </FormControl>
+                  </SimpleGrid>
 
-                  <Button
-                    variant="outline"
-                    colorScheme="blue"
-                    size="sm"
-                    width="full"
-                    mt={6}
-                  >
-                    View All Activity
-                  </Button>
-                </CardBody>
-              </Card>
-            </SimpleGrid>
+                  {isEditing && (
+                    <Button
+                      mt={10}
+                      type="submit"
+                      bgGradient={bgGradient}
+                      color="white"
+                      size="lg"
+                      leftIcon={<Icon as={Save} boxSize={5} />}
+                      px={10}
+                      py={6}
+                      borderRadius="lg"
+                      _hover={{
+                        bgGradient: "linear(to-r, blue.600, teal.600)",
+                        transform: "translateY(-2px)",
+                        boxShadow: "md",
+                      }}
+                      _active={{
+                        transform: "translateY(0)",
+                      }}
+                      transition="all 0.2s"
+                      fontWeight="bold"
+                    >
+                      Save Changes
+                    </Button>
+                  )}
+                </form>
+              </CardBody>
+            </Card>
           </TabPanel>
 
           {/* Appointments Tab */}
           <TabPanel px={0}>
             <Card
-              bg={cardBg}
+              bg="white"
               borderRadius="xl"
-              boxShadow="md"
+              boxShadow="lg"
               overflow="hidden"
             >
-              <Box
-                h={3}
-                bgGradient="linear(to-r, orange.400, red.400)"
-                w="full"
-              />
-              <CardBody p={6}>
-                <Flex justify="space-between" align="center" mb={6}>
-                  <Heading size="md" color={textColor}>
+              <CardBody p={{ base: 6, md: 10 }}>
+                <Flex justify="space-between" align="center" mb={8}>
+                  <Heading size="md" color="gray.800" fontWeight="700">
                     Your Appointments
                   </Heading>
                   <Button
-                    onClick={() => navigate("/book-appointment")} // Wrapped in an arrow function
-                    colorScheme="blue"
-                    size="sm"
-                    leftIcon={<Icon as={Calendar} boxSize={4} />} // Use 'boxSize' for proper icon sizing
+                    onClick={() => navigate("/book-appointment")}
+                    bgGradient={bgGradient}
+                    color="white"
+                    size="md"
+                    leftIcon={<Icon as={Calendar} boxSize={4} />}
+                    px={6}
+                    _hover={{
+                      bgGradient: "linear(to-r, blue.600, teal.600)",
+                      transform: "translateY(-2px)",
+                      boxShadow: "md",
+                    }}
+                    _active={{
+                      transform: "translateY(0)",
+                    }}
+                    transition="all 0.2s"
+                    borderRadius="lg"
+                    fontWeight="medium"
                   >
                     Schedule New
                   </Button>
                 </Flex>
 
                 {appointmentsLoading ? (
-                  // Loading skeleton
-                  <VStack spacing={4} align="stretch">
+                  <VStack spacing={6} align="stretch">
                     {[1, 2, 3].map((i) => (
-                      <Skeleton key={i} height="60px" borderRadius="md" />
+                      <Skeleton key={i} height="80px" borderRadius="lg" />
                     ))}
                   </VStack>
                 ) : (
-                  <TableContainer>
-                    <Table
-                      variant="simple"
-                      borderWidth="1px"
-                      borderColor={borderColor}
-                      borderRadius="md"
-                    >
-                      <Thead bg={fieldBg}>
+                  <TableContainer 
+                    borderRadius="xl" 
+                    borderWidth="1px"
+                    borderColor="gray.200"
+                    boxShadow="sm"
+                    overflow="hidden"
+                  >
+                    <Table variant="simple">
+                      <Thead bg="gray.50">
                         <Tr>
-                          <Th>Title</Th>
-                          <Th>Hospital</Th> {/* New column */}
-                          <Th>Date & Time</Th>
-                          <Th>Status</Th>
-                          <Th>Payment Status</Th> {/* New column */}
-                          <Th>Actions</Th>
+                          <Th py={4} borderColor="gray.100">Title</Th>
+                          <Th py={4} borderColor="gray.100">Hospital</Th>
+                          <Th py={4} borderColor="gray.100">Date & Time</Th>
+                          <Th py={4} borderColor="gray.100">Status</Th>
+                          <Th py={4} borderColor="gray.100">Payment Status</Th>
+                          <Th py={4} borderColor="gray.100">Actions</Th>
                         </Tr>
                       </Thead>
 
@@ -726,23 +750,30 @@ const UserProfile = () => {
                         {appointments && appointments.length > 0 ? (
                           appointments.map((appointment) => (
                             <Tr key={appointment._id}>
-                              <Td fontWeight="medium">Doctor Appointment</Td>{" "}
-                              {/* Static title */}
-                              <Td>{formatDate(appointment.date)}</Td>{" "}
-                              {/* Updated to `date` */}
-                              <Td>{appointment.hospital.name}</Td>{" "}
-                              {/* Show hospital name */}
-                              <Td>
+                              <Td py={4} borderColor="gray.100" fontWeight="medium">
+                                Doctor Appointment
+                              </Td>
+                              <Td py={4} borderColor="gray.100">
+                                {formatDate(appointment.date)}
+                              </Td>
+                              <Td py={4} borderColor="gray.100">
+                                {appointment.hospital.name}
+                              </Td>
+                              <Td py={4} borderColor="gray.100">
                                 <Tag
                                   colorScheme={getStatusColor(
                                     appointment.status
                                   )}
                                   borderRadius="full"
+                                  size="md"
+                                  py={1}
+                                  px={3}
+                                  fontWeight="medium"
                                 >
                                   {appointment.status}
                                 </Tag>
                               </Td>
-                              <Td>
+                              <Td py={4} borderColor="gray.100">
                                 <Tag
                                   colorScheme={
                                     appointment.paymentStatus === "paid"
@@ -750,16 +781,22 @@ const UserProfile = () => {
                                       : "gray"
                                   }
                                   borderRadius="full"
+                                  size="md"
+                                  py={1}
+                                  px={3}
+                                  fontWeight="medium"
                                 >
                                   {appointment.paymentStatus}
                                 </Tag>
                               </Td>
-                              <Td>
+                              <Td py={4} borderColor="gray.100">
                                 <HStack spacing={2}>
                                   <Button
                                     size="sm"
                                     colorScheme="blue"
-                                    variant="outline"
+                                    variant="solid"
+                                    borderRadius="md"
+                                    fontWeight="medium"
                                   >
                                     View
                                   </Button>
@@ -769,6 +806,8 @@ const UserProfile = () => {
                                         size="sm"
                                         colorScheme="red"
                                         variant="ghost"
+                                        borderRadius="md"
+                                        fontWeight="medium"
                                       >
                                         Cancel
                                       </Button>
@@ -779,20 +818,39 @@ const UserProfile = () => {
                           ))
                         ) : (
                           <Tr>
-                            <Td colSpan={6} textAlign="center" py={6}>
-                              <VStack spacing={3}>
+                            <Td
+                              colSpan={6}
+                              textAlign="center"
+                              py={16}
+                              borderColor="gray.100"
+                            >
+                              <VStack spacing={6}>
                                 <Icon
                                   as={Calendar}
-                                  boxSize={8}
-                                  color="gray.400"
+                                  boxSize={16}
+                                  color="gray.300"
                                 />
-                                <Text color={mutedText}>
+                                <Heading size="md" color="gray.600" fontWeight="medium">
                                   No appointments found
+                                </Heading>
+                                <Text color="gray.500" maxW="md" textAlign="center" mb={2}>
+                                  You don't have any appointments scheduled yet. Book your first appointment.
                                 </Text>
                                 <Button
-                                  size="sm"
-                                  colorScheme="blue"
+                                  size="md"
+                                  bgGradient={bgGradient}
+                                  color="white"
+                                  px={8}
+                                  py={6}
                                   onClick={() => navigate("/book-appointment")}
+                                  borderRadius="lg"
+                                  _hover={{
+                                    bgGradient: "linear(to-r, blue.600, teal.600)",
+                                    transform: "translateY(-2px)",
+                                    boxShadow: "md",
+                                  }}
+                                  transition="all 0.2s"
+                                  fontWeight="medium"
                                 >
                                   Schedule your first appointment
                                 </Button>
@@ -806,11 +864,17 @@ const UserProfile = () => {
                 )}
 
                 {appointments && appointments.length > 0 && (
-                  <Flex justify="space-between" align="center" mt={6}>
-                    <Text color={mutedText} fontSize="sm">
+                  <Flex justify="space-between" align="center" mt={8} px={2}>
+                    <Text color="gray.500" fontSize="sm" fontWeight="medium">
                       Showing {appointments.length} appointments
                     </Text>
-                    <Button variant="link" colorScheme="blue" size="sm">
+                    <Button
+                      variant="link"
+                      colorScheme="blue"
+                      size="sm"
+                      rightIcon={<Icon as={ArrowRight} boxSize={4} />}
+                      fontWeight="medium"
+                    >
                       View All Appointments
                     </Button>
                   </Flex>
@@ -821,31 +885,150 @@ const UserProfile = () => {
 
           {/* Reports Tab */}
           <TabPanel px={0}>
-            <Card bg={cardBg} borderRadius="xl" boxShadow="md" p={6}>
-              <Heading size="md" mb={4}>
-                Reports
-              </Heading>
-              <Text color={mutedText}>
-                Your reports and analytics will appear here.
-              </Text>
-            </Card>
-          </TabPanel>
+            <Card
+              bg="white"
+              borderRadius="xl"
+              boxShadow="lg"
+              overflow="hidden"
+            >
+              <CardBody p={{ base: 6, md: 10 }}>
+                <Flex justify="space-between" align="center" mb={8}>
+                  <Heading size="md" color="gray.800" fontWeight="700">
+                    Your Medical Reports
+                  </Heading>
+                </Flex>
 
-          {/* Settings Tab */}
-          <TabPanel px={0}>
-            <Card bg={cardBg} borderRadius="xl" boxShadow="md" p={6}>
-              <Heading size="md" mb={4}>
-                Settings
-              </Heading>
-              <Text color={mutedText}>
-                Account settings and preferences will appear here.
-              </Text>
+                {/* Medical Reports Table */}
+                <TableContainer 
+                  borderRadius="xl" 
+                  borderWidth="1px"
+                  borderColor="gray.200"
+                  boxShadow="sm"
+                  overflow="hidden"
+                >
+                  <Table variant="simple">
+                    <Thead bg="gray.50">
+                      <Tr>
+                        <Th py={4} borderColor="gray.100">Report Title</Th>
+                        <Th py={4} borderColor="gray.100">Hospital</Th>
+                        <Th py={4} borderColor="gray.100">Doctor</Th>
+                        <Th py={4} borderColor="gray.100">Date</Th>
+                        <Th py={4} borderColor="gray.100">Actions</Th>
+                      </Tr>
+                    </Thead>
+
+                    <Tbody>
+                      {reports && reports.length > 0 ? (
+                        reports.map((report) => (
+                          <Tr key={report._id}>
+                            <Td py={4} borderColor="gray.100" fontWeight="medium">
+                              {report.reportTitle}
+                            </Td>
+                            <Td py={4} borderColor="gray.100">
+                              {report.hospital?.name || "N/A"}
+                            </Td>
+                            <Td py={4} borderColor="gray.100">
+                              {report.doctorName || "N/A"}
+                            </Td>
+                            <Td py={4} borderColor="gray.100">
+                              {formatDate(report.createdAt)}
+                            </Td>
+                            <Td py={4} borderColor="gray.100">
+                              <HStack spacing={3}>
+                                <Button
+                                  size="sm"
+                                  bgGradient={bgGradient}
+                                  color="white"
+                                  leftIcon={<Icon as={Download} boxSize={4} />}
+                                  onClick={() =>
+                                    handleDownloadReport(report._id)
+                                  }
+                                  borderRadius="md"
+                                  _hover={{
+                                    bgGradient: "linear(to-r, blue.600, teal.600)",
+                                  }}
+                                  fontWeight="medium"
+                                >
+                                  Download
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  colorScheme="gray"
+                                  variant="outline"
+                                  leftIcon={<Icon as={Eye} boxSize={4} />}
+                                  as="a"
+                                  href={report.reportFile}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  borderRadius="md"
+                                  fontWeight="medium"
+                                >
+                                  View
+                                </Button>
+                              </HStack>
+                            </Td>
+                          </Tr>
+                        ))
+                      ) : (
+                        <Tr>
+                          <Td
+                            colSpan={5}
+                            textAlign="center"
+                            py={16}
+                            borderColor="gray.100"
+                          >
+                            <VStack spacing={6}>
+                              <Icon
+                                as={FileText}
+                                boxSize={16}
+                                color="gray.300"
+                              />
+                              <Heading size="md" color="gray.600" fontWeight="medium">
+                                No medical reports found
+                              </Heading>
+                              <Text color="gray.500" maxW="md" textAlign="center">
+                                Your medical reports and test results will
+                                appear here when available from your healthcare provider
+                              </Text>
+                            </VStack>
+                          </Td>
+                        </Tr>
+                      )}
+                    </Tbody>
+                  </Table>
+                </TableContainer>
+
+                {reportsLoading && (
+                  <Flex
+                    justify="center"
+                    align="center"
+                    py={10}
+                    bg="gray.50"
+                    borderRadius="xl"
+                    mt={8}
+                  >
+                    <Spinner size="md" color="blue.500" thickness="3px" />
+                    <Text ml={4} color="gray.600" fontWeight="medium">
+                      Loading your medical reports...
+                    </Text>
+                  </Flex>
+                )}
+
+                {reports && reports.length > 0 && (
+                  <Flex justify="space-between" align="center" mt={8} px={2}>
+                    <Text color="gray.500" fontSize="sm" fontWeight="medium">
+                      Showing {reports.length} reports
+                    </Text>
+                  </Flex>
+                )}
+              </CardBody>
             </Card>
           </TabPanel>
         </TabPanels>
       </Tabs>
     </Container>
-  );
+  </Box>
+);
 };
 
 export default UserProfile;

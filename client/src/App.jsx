@@ -47,6 +47,7 @@ import VolunteerRequestsManager from "./component/hospital_admin/campaign/Volunt
 import MedicalTests from "./pages/public/MedicalTests.jsx";
 import { TestDetail } from "./pages/public/TestDetail.jsx";
 import TestBookingList from "./component/hospital_admin/test_booking/test_bookingList.jsx";
+import MedicalReportUpload from "./component/hospital_admin/test_report/UploadReport.jsx";
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -242,6 +243,12 @@ function App() {
           <Route path="campaign" element={<CampaignManagement />} />
           <Route path="medicalTests" element={<MedicalTestManagement />} />
           <Route path="bookings" element={<TestBookingList />} />
+          {/* <Route path="medical-reports" element={<HospitalMedicalReportsPage />} /> */}
+          <Route
+            path="medical-reports/upload"
+            element={<MedicalReportUpload />}
+          />
+          {/* <Route path="medical-reports/:reportId" element={<MedicalReportDetails />} /> */}
           <Route
             path="volunteer-requests"
             element={<VolunteerRequestsManager />}

@@ -422,7 +422,7 @@ export const bookMedicalTest = async (req, res, next) => {
       hospitalId,
       bookingDate: new Date(bookingDate),
       bookingTime,
-      status: { $in: ["pending", "approved"] },
+      status: { $in: ["pending", "approved", "booked", "confirmed"] }, // Added new statuses
     });
 
     if (existingBooking) {
@@ -448,7 +448,12 @@ export const bookMedicalTest = async (req, res, next) => {
       console.log("Generated token number for pay_on_site:", tokenNumber);
     }
 
-    console.log("Creating new test booking...");
+    // Determine status based on payment method
+    const status = paymentMethod === "pay_on_site" ? "booked" : "confirmed";
+    const paymentStatus =
+      paymentMethod === "pay_now" ? "Pending" : "To be paid on site";
+
+    console.log(`Creating new test booking with status: ${status}...`);
     // Create new test booking
     const newTestBooking = new TestBooking({
       userId,
@@ -456,8 +461,9 @@ export const bookMedicalTest = async (req, res, next) => {
       hospitalId,
       bookingDate: new Date(bookingDate),
       bookingTime,
-      status: "pending",
-      paymentStatus: paymentMethod === "pay_now" ? "Pending" : "Pending",
+      status: status, // Set based on payment method
+      paymentStatus: paymentStatus,
+      paymentMethod: paymentMethod, // Store the payment method
       transactionId: null,
       tokenNumber: paymentMethod === "pay_on_site" ? tokenNumber : null,
     });
@@ -465,13 +471,19 @@ export const bookMedicalTest = async (req, res, next) => {
     await newTestBooking.save();
     console.log("Test booking created successfully:", newTestBooking._id);
 
+    // Update the MedicalTest status
+    await MedicalTest.findByIdAndUpdate(testId, { status: status });
+    console.log(`MedicalTest ${testId} status updated to ${status}`);
+
     // Send In-App Notification
     console.log("Creating notification...");
     const notification = new Notification({
       user: userId,
       message: `Your ${test.name} test at ${hospital.name} on ${new Date(
         bookingDate
-      ).toLocaleDateString()} at ${bookingTime} has been booked successfully.${
+      ).toLocaleDateString()} at ${bookingTime} has been ${
+        status === "confirmed" ? "confirmed" : "booked"
+      } successfully.${
         tokenNumber
           ? ` Your token number is ${tokenNumber}. Please arrive 10 minutes early.`
           : ""
@@ -487,7 +499,9 @@ export const bookMedicalTest = async (req, res, next) => {
     console.log("Emitting socket notification...");
     const io = req.app.get("socketio");
     io.to(userId.toString()).emit("new-notification", {
-      message: `Your ${test.name} test has been booked.`,
+      message: `Your ${test.name} test has been ${
+        status === "confirmed" ? "confirmed" : "booked"
+      }.`,
     });
     console.log("Socket notification emitted");
 
@@ -505,6 +519,7 @@ export const bookMedicalTest = async (req, res, next) => {
       paymentMethod:
         paymentMethod === "pay_now" ? "Online Payment" : "Pay at Hospital",
       tokenNumber: tokenNumber,
+      bookingStatus: status === "confirmed" ? "Confirmed" : "Booked",
       instructions: tokenNumber
         ? "Please arrive 10 minutes early with your token number to complete payment and take your test."
         : "You can proceed directly to the test center as you've already paid online.",
@@ -518,11 +533,14 @@ export const bookMedicalTest = async (req, res, next) => {
       createResponse({
         isSuccess: true,
         statusCode: 201,
-        message: "Test booked successfully",
+        message: `Test ${
+          status === "confirmed" ? "confirmed" : "booked"
+        } successfully`,
         data: {
           bookingId: newTestBooking._id,
           paymentRequired: paymentMethod === "pay_now",
           tokenNumber: tokenNumber,
+          status: status,
         },
         error: null,
       })
@@ -640,7 +658,7 @@ export const updateTestBookingStatus = async (req, res, next) => {
     }
 
     // Validate status transition
-    const validStatuses = ["pending", "completed", "cancelled"];
+    const validStatuses = ["pending", "completed", "cancelled", "report_available"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json(
         createResponse({

@@ -35,7 +35,7 @@ import {
 
 const TestBookingList = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
+
   const toast = useToast();
 
   const { hospitalBookings, isLoading, error } = useSelector(
@@ -131,6 +131,7 @@ const TestBookingList = () => {
         return "blue";
       case "cancelled":
         return "red";
+
       default:
         return "gray";
     }
@@ -167,6 +168,7 @@ const TestBookingList = () => {
               <option value="pending">Pending</option>
               <option value="confirmed">Confirmed</option>
               <option value="completed">Completed</option>
+
               <option value="cancelled">Cancelled</option>
             </Select>
           </Box>
@@ -245,6 +247,7 @@ const TestBookingList = () => {
                         <option value="pending">Pending</option>
 
                         <option value="completed">Completed</option>
+
                         <option value="cancelled">Cancelled</option>
                       </Select>
                       {updatingId === booking._id && (

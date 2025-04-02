@@ -12,6 +12,7 @@ import paymentSlice from "../features/payment/paymentSlice.jsx";
 import messageSlice from "../features/messages/messageSlice.jsx";
 import medicalTestSlice from "../features/medical_test/medicalTestSlice.jsx";
 import systemAdminSlice from "../features/system_admin/systemadminslice.jsx";
+import testReportSlice from "../features/test_report/testReportSlice.jsx"
 
 const store = configureStore({
   reducer: {
@@ -27,6 +28,7 @@ const store = configureStore({
     messageSlice: messageSlice,
     medicalTestSlice: medicalTestSlice,
     systemAdminSlice: systemAdminSlice,
+    testReportSlice: testReportSlice,
   },
 });
 
