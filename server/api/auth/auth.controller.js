@@ -13,6 +13,7 @@ import createResponse from "../../utils/responseBuilder.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 import crypto from "crypto";
 import doctorModel from "../../models/doctor.model.js";
+import { emailTemplates } from "../../utils/emailTemplates.js";
 
 /**
  * Handles user registration.
@@ -68,6 +69,17 @@ export const handleUserRegistration = async (req, res, next) => {
 
     const userObject = newUser.toObject();
     delete userObject.password;
+    const subject = emailTemplates.registration.subject.replace(
+      "{{firstName}}",
+      fullName.split(" ")[0]
+    );
+    const template = emailTemplates.registration;
+
+    const emailData = {
+      fullName: newUser.fullName,
+    };
+
+    await sendEmail(newUser.email, subject, template, emailData);
 
     // Send success response
     return res.status(201).json(
@@ -101,8 +113,6 @@ export const handleUserRegistration = async (req, res, next) => {
 export const handleUserLogin = async (req, res, next) => {
   try {
     await validateLoginInput.validateAsync(req.body);
-    console.log("ENTERED THE LOGIN FUNCTION IN BACKEND");
-    console.log("The req.body is", req.body);
 
     const { email, password } = req.body;
     if (!req.body || typeof req.body !== "object") {
@@ -118,14 +128,12 @@ export const handleUserLogin = async (req, res, next) => {
 
     // Check both User and Doctor models
     const user = await userModel.findOne({ email });
-    console.log("The user is", user);
     const doctor = await doctorModel.findOne({ email });
-    console.log("The doctor is", doctor);
 
     const account = user || doctor;
-    console.log("The account is", account);
+
     if (!account) {
-      console.log("Account not found");
+      console.log("Account not found for email:", email);
       return res.status(401).json(
         createResponse({
           isSuccess: false,
@@ -137,9 +145,23 @@ export const handleUserLogin = async (req, res, next) => {
       );
     }
 
+    // Check if the account is active
+    if (!account.isActive) {
+      console.log(`Login attempt for deactivated account: ${email}`);
+      return res.status(403).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 403,
+          message:
+            "Your account has been deactivated. Please contact support for assistance.",
+          error: null,
+        })
+      );
+    }
+
     const isPasswordValid = await bcryptjs.compare(password, account.password);
     if (!isPasswordValid) {
-      console.log("Invalid password");
+      console.log("Invalid password attempt for:", email);
       return res.status(401).json(
         createResponse({
           isSuccess: false,
@@ -160,10 +182,6 @@ export const handleUserLogin = async (req, res, next) => {
     const accountObject = account.toObject();
     delete accountObject.password;
 
-    console.log("Setting cookies for accessToken and refreshToken");
-    console.log("generated Access Token:", accessToken);
-    console.log("generated Refresh Token:", refreshToken);
-
     // Set cookies for tokens
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
@@ -178,8 +196,6 @@ export const handleUserLogin = async (req, res, next) => {
       sameSite: "strict",
       maxAge: 24 * 60 * 60 * 1000,
     });
-
-    console.log("Cookies set successfully");
 
     return res.status(200).json(
       createResponse({
@@ -208,6 +224,7 @@ export const handleUserLogin = async (req, res, next) => {
     next(error);
   }
 };
+
 /**
  * Checks if a user is authenticated.
  */
@@ -215,7 +232,7 @@ export const handleUserLogin = async (req, res, next) => {
 // Updated authentication check handler
 export const verifyUserAuthentication = async (req, res, next) => {
   try {
-    const { user } = req; // Assuming user data is stored in req.user after authentication middleware
+    const { user } = req;
 
     if (!user) {
       return res.status(401).json(

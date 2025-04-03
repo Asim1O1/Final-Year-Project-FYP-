@@ -18,6 +18,7 @@ import PaymentFailed from "./component/payment/PaymentFailed.jsx";
 
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { Users } from "./pages/admin/Users";
+import { Doctors } from "./pages/admin/Doctors.jsx";
 import HospitalManagement from "./pages/admin/HospitalManagement";
 import HospitalAdminManagement from "./pages/admin/HospitalAdminManagement.jsx";
 import { AdminLayout } from "./layouts/AdminLayout";
@@ -225,6 +226,7 @@ function App() {
         >
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<Users />} />
+          <Route path="doctors" element={<Doctors />} />
           <Route path="hospitals" element={<HospitalManagement />} />
           <Route path="hospital-admin" element={<HospitalAdminManagement />} />
         </Route>

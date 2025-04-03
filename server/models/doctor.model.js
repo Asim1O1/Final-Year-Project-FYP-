@@ -78,6 +78,7 @@ const doctorSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isActive: { type: Boolean, default: true },
     doctorProfileImage: {
       type: String,
       required: true,

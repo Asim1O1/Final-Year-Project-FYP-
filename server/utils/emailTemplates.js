@@ -37,6 +37,80 @@ export const emailTemplates = {
         </div>
       `,
   },
+  accountDeactivated: {
+    subject: "⚠️ Your MedConnect Account Has Been Deactivated",
+    body: `
+      <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+        <div style="text-align: center; margin-bottom: 25px;">
+          <h1 style="color: #e74c3c; margin-bottom: 5px;">Account Deactivated</h1>
+          <div style="height: 3px; background: linear-gradient(to right, #e74c3c, #ff9b93); width: 100px; margin: 0 auto;"></div>
+        </div>
+        
+        <p style="font-size: 16px; line-height: 1.5;">Dear <strong>{{fullName}}</strong>,</p>
+        
+        <p style="font-size: 16px; line-height: 1.5;">We're writing to inform you that your MedConnect account has been deactivated by the system administrator. This action was taken in accordance with our platform policies.</p>
+        
+        <div style="background-color: #fff5f5; border-left: 4px solid #e74c3c; padding: 15px; margin: 25px 0;">
+          <p style="margin: 0; font-size: 15px;"><strong>Important Information:</strong></p>
+          <ul style="margin-top: 10px; padding-left: 20px;">
+            <li>Your account access has been suspended</li>
+            <li>Any scheduled appointments have been canceled</li>
+            <li>Patients will no longer be able to book appointments with you</li>
+          </ul>
+        </div>
+        
+        <p style="font-size: 16px; line-height: 1.5;">If you believe this action was taken in error or would like to discuss the reason for deactivation, please contact our administrative team directly at <a href="mailto:admin@medconnect.com" style="color: #e74c3c; text-decoration: none;">admin@medconnect.com</a>.</p>
+        
+        <p style="font-size: 16px; line-height: 1.5; margin-top: 25px;">Regards,<br><strong style="color: #e74c3c;">MedConnect Administration Team</strong></p>
+        
+        <div style="border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px; font-size: 12px; color: #777; text-align: center;">
+          <p>© 2025 MedConnect. All rights reserved.</p>
+          <p>
+            <a href="#" style="color: #e74c3c; text-decoration: none;">Privacy Policy</a> • 
+            <a href="#" style="color: #e74c3c; text-decoration: none;">Terms of Service</a> • 
+            <a href="#" style="color: #e74c3c; text-decoration: none;">Contact Us</a>
+          </p>
+        </div>
+      </div>
+    `,
+  },
+  accountActivated: {
+    subject: "🎉 Your MedConnect Account Has Been Activated",
+    body: `
+      <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+        <div style="text-align: center; margin-bottom: 25px;">
+          <h1 style="color: #2ecc71; margin-bottom: 5px;">Account Activated</h1>
+          <div style="height: 3px; background: linear-gradient(to right, #2ecc71, #a3e1c4); width: 100px; margin: 0 auto;"></div>
+        </div>
+        
+        <p style="font-size: 16px; line-height: 1.5;">Dear <strong>{{fullName}}</strong>,</p>
+        
+        <p style="font-size: 16px; line-height: 1.5;">We're excited to inform you that your MedConnect account has been successfully activated by the system administrator. You can now enjoy full access to all the services offered on our platform.</p>
+        
+        <div style="background-color: #eaf8f0; border-left: 4px solid #2ecc71; padding: 15px; margin: 25px 0;">
+          <p style="margin: 0; font-size: 15px;"><strong>What You Can Do Now:</strong></p>
+          <ul style="margin-top: 10px; padding-left: 20px;">
+            <li>Schedule and manage appointments with patients</li>
+            <li>Update your profile and contact information</li>
+            <li>Access and manage your medical records</li>
+          </ul>
+        </div>
+        
+        <p style="font-size: 16px; line-height: 1.5;">We are thrilled to have you back on board! If you need any assistance or have any questions, don't hesitate to reach out to us at <a href="mailto:support@medconnect.com" style="color: #2ecc71; text-decoration: none;">support@medconnect.com</a>.</p>
+        
+        <p style="font-size: 16px; line-height: 1.5; margin-top: 25px;">Best regards,<br><strong style="color: #2ecc71;">MedConnect Administration Team</strong></p>
+        
+        <div style="border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px; font-size: 12px; color: #777; text-align: center;">
+          <p>© 2025 MedConnect. All rights reserved.</p>
+          <p>
+            <a href="#" style="color: #2ecc71; text-decoration: none;">Privacy Policy</a> • 
+            <a href="#" style="color: #2ecc71; text-decoration: none;">Terms of Service</a> • 
+            <a href="#" style="color: #2ecc71; text-decoration: none;">Contact Us</a>
+          </p>
+        </div>
+      </div>
+    `,
+  },
 
   appointmentBooking: {
     subject: "📅 Your Appointment Request with Dr. {{doctorName}} - Next Steps",
@@ -167,7 +241,7 @@ export const emailTemplates = {
         </div>
       `,
   },
-  
+
   appointmentCancelled: {
     subject: "❌ Your Appointment with Dr. {{doctorName}} Has Been Cancelled",
     body: `
@@ -227,11 +301,10 @@ export const emailTemplates = {
           </div>
         </div>
       `,
-  }
-,
-appointmentConfirmed: {
-  subject: "✅ Your Appointment with Dr. {{doctorName}} is Confirmed",
-  body: `
+  },
+  appointmentConfirmed: {
+    subject: "✅ Your Appointment with Dr. {{doctorName}} is Confirmed",
+    body: `
       <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
         <div style="text-align: center; margin-bottom: 25px;">
           <h1 style="color: #2e9e7a; margin-bottom: 5px;">Appointment Confirmed</h1>
@@ -297,7 +370,7 @@ appointmentConfirmed: {
         </div>
       </div>
     `,
-},
+  },
 
   campaignCreated: {
     subject: "🏥 Join Us: {{hospitalName}}'s New Campaign on {{campaignDate}}",
@@ -439,8 +512,6 @@ Important Instructions:
 If you need to reschedule or cancel your appointment, please contact us at least 24 hours in advance.
 
 Thank you for choosing our services.
-© {{year}} Your Hospital Name. All rights reserved.`
-  }
-
+© {{year}} Your Hospital Name. All rights reserved.`,
+  },
 };
-

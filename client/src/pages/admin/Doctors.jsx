@@ -10,13 +10,11 @@ import {
   Th,
   Td,
   Button,
-  HStack,
   Spinner,
   Alert,
   AlertIcon,
   Flex,
   Text,
-  MenuDivider,
   MenuItem,
   MenuList,
   MenuButton,
@@ -40,7 +38,7 @@ import {
   Modal,
 } from "@chakra-ui/react";
 import {
-  handleGetUsers,
+  handleGetDoctors,
   handleAccountStatus,
 } from "../../features/system_admin/systemadminslice";
 import Pagination from "../../utils/Pagination";
@@ -50,90 +48,102 @@ import {
   LockIcon,
   SearchIcon,
   UnlockIcon,
+  ViewIcon,
   WarningTwoIcon,
 } from "@chakra-ui/icons";
 import { notification } from "antd";
 
-export const Users = () => {
+export const Doctors = () => {
+  console.log("Doctors component rendered");
   const dispatch = useDispatch();
-  const { users, isLoading, error } = useSelector(
+  const { doctors, isLoading, error } = useSelector(
     (state) => state?.systemAdminSlice
   );
 
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
   const { currentPage, totalPages } = useSelector(
-    (state) => state?.systemAdminSlice?.pagination?.users
+    (state) => state?.systemAdminSlice.pagination.doctors
   );
 
   const handlePageChange = (page) => {
-    dispatch(handleGetUsers({ page, limit: 10 }));
+    dispatch(handleGetDoctors({ page, limit: 10 }));
   };
 
   useEffect(() => {
-    console.log("Fetching users for page:", currentPage);
-    dispatch(handleGetUsers({ page: currentPage, limit: 10 }))
+    console.log("Fetching doctors for page:", currentPage);
+    dispatch(handleGetDoctors({ page: currentPage, limit: 10 }))
       .unwrap()
       .then((data) => {
-        console.log("Users fetched successfully:", data);
+        console.log("Doctors fetched successfully:", data);
       })
       .catch((error) => {
-        console.error("Error fetching users:", error);
+        console.error("Error fetching doctors:", error);
       });
   }, [dispatch, currentPage]);
-  const openDeactivateModal = (user) => {
-    setSelectedUser(user);
+
+  const openDeactivateModal = (doctor) => {
+    setSelectedDoctor(doctor);
     setIsDeactivateModalOpen(true);
   };
 
-  // Close modal and reset selected user
   const closeDeactivateModal = () => {
     setIsDeactivateModalOpen(false);
-    setSelectedUser(null);
+    setSelectedDoctor(null);
   };
 
-  // Enhanced deactivate function
   const handleDeactivate = async () => {
-    if (!selectedUser) return;
+    if (!selectedDoctor) return;
 
     setIsProcessing(true);
 
     try {
       const result = await dispatch(
-        handleAccountStatus({ accountId: selectedUser._id, role: "user" })
+        handleAccountStatus({
+          accountId: selectedDoctor._id,
+          role: "doctor",
+        })
       ).unwrap();
 
-      if (result.isSuccess) {
-        // Show success notification
-        notification.success({
-          title: "Account updated",
-          description: result?.message,
-          duration: 2,
-          isClosable: true,
-          position: "top-right",
-        });
-
-        await dispatch(
-          handleGetUsers({ page: currentPage, limit: 10 })
-        ).unwrap();
-        closeDeactivateModal();
-      } else {
-        // Handle API success=false case
+      if (!result.isSuccess) {
         notification.error({
           title: "Operation failed",
           description: result.message || "Failed to update account status",
-          duration: 2,
+          status: "error",
+          duration: 5000,
           isClosable: true,
           position: "top-right",
         });
+        return;
       }
+
+      // Use the updated doctor state from the response
+      const updatedStatus = result.data.isActive ? "activated" : "deactivated";
+
+      // Show success notification
+      notification.success({
+        title: "Account updated",
+        description: `Doctor ${selectedDoctor.fullName} has been ${updatedStatus}.`,
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+        position: "top-right",
+      });
+
+      // Refresh doctors list after update
+      await dispatch(
+        handleGetDoctors({ page: currentPage, limit: 10 })
+      ).unwrap();
+      closeDeactivateModal();
     } catch (error) {
       console.error("Status change failed:", error);
       notification.error({
         title: "Operation failed",
         description: error.message || "Failed to update account status",
-        duration: 2,
+        status: "error",
+        duration: 5000,
         isClosable: true,
         position: "top-right",
       });
@@ -160,7 +170,7 @@ export const Users = () => {
           color="blue.500"
         />
         <Box mt={4} fontWeight="medium" color="gray.600">
-          Loading users...
+          Loading doctors...
         </Box>
       </Box>
     );
@@ -173,7 +183,7 @@ export const Users = () => {
         <Box flex="1">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
-            {error.message || "Failed to load users"}
+            {error.message || "Failed to load doctors"}
           </AlertDescription>
         </Box>
         <CloseButton position="absolute" right="8px" top="8px" />
@@ -190,7 +200,7 @@ export const Users = () => {
         className="border-b border-gray-200 pb-4"
       >
         <Heading size="lg" fontWeight="bold" className="text-gray-800">
-          User Management
+          Doctor Management
         </Heading>
 
         <InputGroup size="md" width="300px" className="shadow-sm">
@@ -198,7 +208,7 @@ export const Users = () => {
             <SearchIcon color="gray.400" />
           </InputLeftElement>
           <Input
-            placeholder="Search users..."
+            placeholder="Search doctors..."
             borderRadius="lg"
             borderColor="gray.300"
             _hover={{ borderColor: "gray.400" }}
@@ -225,47 +235,62 @@ export const Users = () => {
               <Tr>
                 <Th className="px-6 py-4 text-gray-500 font-medium">Name</Th>
                 <Th className="px-6 py-4 text-gray-500 font-medium">Email</Th>
-                <Th className="px-6 py-4 text-gray-500 font-medium">Role</Th>
+                <Th className="px-6 py-4 text-gray-500 font-medium">
+                  Specialization
+                </Th>
+                <Th className="px-6 py-4 text-gray-500 font-medium">
+                  Experience
+                </Th>
                 <Th className="px-6 py-4 text-gray-500 font-medium">Status</Th>
                 <Th className="px-6 py-4 text-gray-500 font-medium">Actions</Th>
               </Tr>
             </Thead>
             <Tbody>
-              {users?.map((user) => (
+              {doctors?.map((doctor) => (
                 <Tr
-                  key={user.id}
+                  key={doctor._id}
                   className="hover:bg-gray-50 transition-colors duration-150"
                 >
                   <Td className="px-6 py-4">
                     <Flex align="center">
                       <Avatar
                         size="sm"
-                        name={user.fullName}
-                        bg="blue.500"
+                        name={doctor.fullName}
+                        src={doctor.profilePicture}
+                        bg="teal.500"
                         color="white"
                         mr={3}
                       />
                       <Box>
-                        <Text fontWeight="medium">{user.fullName}</Text>
+                        <Text fontWeight="medium">{doctor.fullName}</Text>
+                        <Text fontSize="sm" color="gray.500">
+                          {doctor.qualification}
+                        </Text>
                       </Box>
                     </Flex>
                   </Td>
                   <Td className="px-6 py-4">
-                    <Text color="gray.700">{user.email}</Text>
+                    <Text color="gray.700">{doctor.email}</Text>
                   </Td>
                   <Td className="px-6 py-4">
                     <Badge
-                      colorScheme={user.role === "admin" ? "purple" : "blue"}
+                      colorScheme="purple"
                       borderRadius="full"
                       px={2}
                       py={1}
                     >
-                      {user.role}
+                      {doctor.specialization}
                     </Badge>
                   </Td>
                   <Td className="px-6 py-4">
+                    <Text>
+                      {doctor.yearsOfExperience}{" "}
+                      {doctor.yearsOfExperience === 1 ? "year" : "years"}
+                    </Text>
+                  </Td>
+                  <Td className="px-6 py-4">
                     <Badge
-                      colorScheme={user.isActive ? "green" : "red"}
+                      colorScheme={doctor.isActive ? "green" : "red"}
                       borderRadius="full"
                       px={2}
                       py={1}
@@ -274,10 +299,10 @@ export const Users = () => {
                       <Flex align="center">
                         <Box
                           className={`w-2 h-2 rounded-full mr-2 ${
-                            user.isActive ? "bg-green-500" : "bg-red-500"
+                            doctor.isActive ? "bg-green-500" : "bg-red-500"
                           }`}
                         />
-                        {user.isActive ? "Active" : "Inactive"}
+                        {doctor.isActive ? "Active" : "Inactive"}
                       </Flex>
                     </Badge>
                   </Td>
@@ -294,13 +319,12 @@ export const Users = () => {
                       </MenuButton>
                       <MenuList className="shadow-lg">
                         <MenuItem
-                          icon={user.isActive ? <LockIcon /> : <UnlockIcon />}
-                          color={user.isActive ? "red.500" : "green.500"}
-                          onClick={() => openDeactivateModal(user)}
+                          icon={doctor.isActive ? <LockIcon /> : <UnlockIcon />}
+                          color={doctor.isActive ? "red.500" : "green.500"}
+                          onClick={() => openDeactivateModal(doctor)}
                         >
-                          {user.isActive ? "Deactivate" : "Activate"}
+                          {doctor.isActive ? "Deactivate" : "Activate"}
                         </MenuItem>
-                        <MenuDivider />
                       </MenuList>
                     </Menu>
                   </Td>
@@ -326,12 +350,12 @@ export const Users = () => {
                 {(currentPage - 1) * 10 + 1}-
                 {Math.min(
                   currentPage * 10,
-                  (users?.length || 0) + (currentPage - 1) * 10
+                  (doctors?.length || 0) + (currentPage - 1) * 10
                 )}
               </Text>{" "}
               of{" "}
               <Text as="span" fontWeight="medium">
-                total users
+                {selectedDoctor?.pagination?.totalCount || 0} doctors
               </Text>
             </Text>
 
@@ -345,7 +369,7 @@ export const Users = () => {
         )}
       </Box>
 
-      {/* Enhanced Deactivation Modal */}
+      {/* Deactivation Modal */}
       <Modal
         isOpen={isDeactivateModalOpen}
         onClose={closeDeactivateModal}
@@ -372,7 +396,7 @@ export const Users = () => {
 
           <Box
             className={`w-full h-1 rounded-t-xl ${
-              selectedUser?.isActive ? "bg-red-500" : "bg-green-500"
+              selectedDoctor?.isActive ? "bg-red-500" : "bg-green-500"
             }`}
           />
 
@@ -383,9 +407,9 @@ export const Users = () => {
             borderColor="gray.100"
           >
             <Text fontWeight="bold" fontSize="xl">
-              {selectedUser?.isActive
-                ? "Deactivate Account"
-                : "Activate Account"}
+              {selectedDoctor?.isActive
+                ? "Deactivate Doctor"
+                : "Activate Doctor"}
             </Text>
           </ModalHeader>
 
@@ -395,60 +419,58 @@ export const Users = () => {
                 justify="center"
                 align="center"
                 className={`w-16 h-16 rounded-full mb-5 ${
-                  selectedUser?.isActive ? "bg-red-50" : "bg-green-50"
+                  selectedDoctor?.isActive ? "bg-red-50" : "bg-green-50"
                 }`}
               >
                 <Icon
-                  as={selectedUser?.isActive ? WarningTwoIcon : CheckCircleIcon}
+                  as={
+                    selectedDoctor?.isActive ? WarningTwoIcon : CheckCircleIcon
+                  }
                   w={8}
                   h={8}
-                  color={selectedUser?.isActive ? "red.500" : "green.500"}
+                  color={selectedDoctor?.isActive ? "red.500" : "green.500"}
                 />
               </Flex>
 
               <Text align="center" fontSize="md" className="mb-6">
-                {selectedUser?.isActive
-                  ? "Are you sure you want to deactivate this user's account? This action will prevent them from accessing the system."
-                  : "This action will restore the user's access to the system. Are you sure you want to proceed?"}
+                {selectedDoctor?.isActive
+                  ? "Deactivating this doctor will remove their access to the system and hide their profile from patients."
+                  : "Activating will restore this doctor's access and make their profile visible to patients."}
               </Text>
 
-              {selectedUser && (
+              {selectedDoctor && (
                 <Box className="w-full p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <Flex align="center" className="mb-3">
                     <Avatar
                       size="md"
-                      name={selectedUser.fullName}
-                      bg="blue.500"
+                      name={selectedDoctor.fullName}
+                      src={selectedDoctor.profilePicture}
+                      bg="teal.500"
                       mr={3}
                     />
                     <Box>
-                      <Text fontWeight="bold">{selectedUser.fullName}</Text>
+                      <Text fontWeight="bold">{selectedDoctor.fullName}</Text>
                       <Text fontSize="sm" color="gray.500">
-                        {selectedUser.email}
+                        {selectedDoctor.specialization}
                       </Text>
                     </Box>
                   </Flex>
 
                   <Flex className="justify-between text-sm">
                     <Box>
-                      <Text color="gray.500">Role</Text>
-                      <Badge
-                        colorScheme={
-                          selectedUser.role === "admin" ? "purple" : "blue"
-                        }
-                        mt={1}
-                      >
-                        {selectedUser.role}
-                      </Badge>
+                      <Text color="gray.500">Experience</Text>
+                      <Text mt={1} fontWeight="medium">
+                        {selectedDoctor.yearsOfExperience} years
+                      </Text>
                     </Box>
 
                     <Box>
                       <Text color="gray.500">Current Status</Text>
                       <Badge
-                        colorScheme={selectedUser.isActive ? "green" : "red"}
+                        colorScheme={selectedDoctor.isActive ? "green" : "red"}
                         mt={1}
                       >
-                        {selectedUser.isActive ? "Active" : "Inactive"}
+                        {selectedDoctor.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </Box>
                   </Flex>
@@ -471,16 +493,18 @@ export const Users = () => {
               Cancel
             </Button>
             <Button
-              colorScheme={selectedUser?.isActive ? "red" : "green"}
+              colorScheme={selectedDoctor?.isActive ? "red" : "green"}
               onClick={handleDeactivate}
               isLoading={isProcessing}
               loadingText={
-                selectedUser?.isActive ? "Deactivating..." : "Activating..."
+                selectedDoctor?.isActive ? "Deactivating..." : "Activating..."
               }
               className="flex-1"
-              leftIcon={selectedUser?.isActive ? <LockIcon /> : <UnlockIcon />}
+              leftIcon={
+                selectedDoctor?.isActive ? <LockIcon /> : <UnlockIcon />
+              }
             >
-              {selectedUser?.isActive ? "Deactivate" : "Activate"}
+              {selectedDoctor?.isActive ? "Deactivate" : "Activate"}
             </Button>
           </ModalFooter>
         </ModalContent>

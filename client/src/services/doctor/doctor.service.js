@@ -40,7 +40,7 @@ const createDoctorService = async (doctorData) => {
     console.error("Error in createDoctorService function:", error?.response);
 
     // Handle the error response
-    const errorMessage =
+    const errorMessage = error?.response?.data?.error ||
       error?.response?.data?.error?.[0] ||
       error?.response?.data?.message ||
       "An error occurred during registration.";

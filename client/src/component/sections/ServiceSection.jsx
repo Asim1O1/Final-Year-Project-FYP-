@@ -1,5 +1,11 @@
-import React from "react";
-import { Box, Container, Heading, Text, SimpleGrid, VStack } from "@chakra-ui/react";
+import {
+  Box,
+  Container,
+  Heading,
+  Text,
+  SimpleGrid,
+  VStack,
+} from "@chakra-ui/react";
 import ServiceCard from "../common/ServiceCard";
 import { motion } from "framer-motion";
 
@@ -9,31 +15,35 @@ const ServiceSection = () => {
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.2
-      }
-    }
+        staggerChildren: 0.2,
+      },
+    },
   };
 
   const services = [
     {
       icon: "🏥",
-      title: "Primary Care",
-      description: "Comprehensive primary healthcare services for your family's wellbeing.",
+      title: "Hospitals",
+      description:
+        "Access to our network of modern healthcare facilities and specialized centers.",
+    },
+    {
+      icon: "🔬",
+      title: "Medical Tests",
+      description:
+        "Comprehensive diagnostic services with cutting-edge laboratory equipment.",
     },
     {
       icon: "👨‍⚕️",
-      title: "Qualified Doctor",
-      description: "Expert medical professionals with years of specialized experience.",
+      title: "Doctor Appointment",
+      description:
+        "Easy scheduling with specialists and physicians across all medical fields.",
     },
     {
-      icon: "🚑",
-      title: "Emergency Care",
-      description: "24/7 emergency medical services with rapid response times.",
-    },
-    {
-      icon: "🏥",
-      title: "Operation Theater",
-      description: "State-of-the-art surgical facilities with modern equipment.",
+      icon: "❤️",
+      title: "Volunteering for Health Campaigns",
+      description:
+        "Join community health initiatives to promote wellness and education.",
     },
   ];
 
@@ -47,15 +57,13 @@ const ServiceSection = () => {
             transition={{ duration: 0.6 }}
           >
             <Box textAlign="center" className="max-w-2xl mx-auto">
-              <Heading 
-                mb={4} 
+              <Heading
+                mb={4}
                 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent"
               >
                 Our Services
               </Heading>
-              <Text 
-                className="text-gray-600 text-lg"
-              >
+              <Text className="text-gray-600 text-lg">
                 We are always fully focused on helping your child and you
               </Text>
             </Box>
@@ -67,8 +75,8 @@ const ServiceSection = () => {
             animate="show"
             className="w-full cursor-pointer"
           >
-            <SimpleGrid 
-              columns={{ base: 1, md: 2, lg: 4 }} 
+            <SimpleGrid
+              columns={{ base: 1, md: 2, lg: 4 }}
               spacing={8}
               className="w-full"
             >

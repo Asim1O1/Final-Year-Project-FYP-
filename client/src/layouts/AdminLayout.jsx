@@ -4,7 +4,7 @@ import { Sidebar } from "../component/admin/Sidebar";
 import { TopNav } from "../component/admin/TopNav";
 import { Outlet } from "react-router-dom";
 
-export const AdminLayout = ({ children }) => {
+export const AdminLayout = () => {
   return (
     <Flex minH="100vh">
       <Box
@@ -25,7 +25,9 @@ export const AdminLayout = ({ children }) => {
       {/* Content Area */}
       <Box flex="1" ml="64" bg="gray.50">
         <TopNav />
-        <Box p={8}>{children || <Outlet />}</Box>
+        <Box p={8}>
+          <Outlet />
+        </Box>
       </Box>
     </Flex>
   );

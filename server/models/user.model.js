@@ -45,6 +45,7 @@ const userSchema = new mongoose.Schema(
     appointments: [
       { type: mongoose.Schema.Types.ObjectId, ref: "Appointment" },
     ],
+    isActive: { type: Boolean, default: true },
 
     resetPasswordOTP: {
       type: String,
