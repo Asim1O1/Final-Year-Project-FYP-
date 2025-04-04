@@ -19,7 +19,6 @@ import {
   Flex,
   Icon,
   Box,
-  Spinner,
   useColorModeValue,
   InputLeftElement,
 } from "@chakra-ui/react";
@@ -33,6 +32,7 @@ import {
   handleHospitalAdminUpdate,
 } from "../../../features/hospital_admin/hospitalAdminSlice";
 import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
+import CustomLoader from "../../common/CustomSpinner";
 
 const UpdateHospitalAdminForm = ({
   isOpen,
@@ -183,7 +183,7 @@ const UpdateHospitalAdminForm = ({
           alignItems="center"
           justifyContent="center"
         >
-          <Spinner
+          <CustomLoader
             thickness="4px"
             speed="0.65s"
             emptyColor="gray.200"

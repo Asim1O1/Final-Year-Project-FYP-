@@ -32,6 +32,7 @@ import { handleHospitalAdminCreation } from "../../../features/hospital_admin/ho
 import PasswordToggle from "../../auth/PasswordToggle";
 import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
 import { PhoneIcon } from "@chakra-ui/icons";
+import CustomLoader from "../../common/CustomSpinner";
 
 const AddHospitalAdmin = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
@@ -169,7 +170,7 @@ const AddHospitalAdmin = ({ isOpen, onClose }) => {
           alignItems="center"
           justifyContent="center"
         >
-          <Spinner
+          <CustomLoader
             thickness="4px"
             speed="0.65s"
             emptyColor="gray.200"

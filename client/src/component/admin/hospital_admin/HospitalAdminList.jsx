@@ -19,7 +19,7 @@ import {
   CardHeader,
   CardBody,
   Badge,
-  Spinner,
+  
 } from "@chakra-ui/react";
 import { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -30,6 +30,7 @@ import { DeleteIcon, EditIcon } from "@chakra-ui/icons";
 import UpdateHospitalAdmin from "./UpdateHospitalAdminForm";
 import { handleHospitalAdminDeletion } from "../../../features/hospital_admin/hospitalAdminSlice";
 import { notification } from "antd";
+import CustomLoader from "../../common/CustomSpinner";
 
 const HospitalAdminList = ({ onEdit, onDelete, searchQuery }) => {
   const dispatch = useDispatch();
@@ -141,7 +142,7 @@ const HospitalAdminList = ({ onEdit, onDelete, searchQuery }) => {
       <CardBody p={4}>
         {isLoading ? (
           <Flex justify="center" py={8}>
-            <Spinner size="xl" color="blue.500" />
+            <CustomLoader size="xl" color="blue.500" />
           </Flex>
         ) : (
           <Flex direction="column" gap={4}>

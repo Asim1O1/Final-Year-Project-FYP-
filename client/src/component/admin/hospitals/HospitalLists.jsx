@@ -32,6 +32,7 @@ import {
 
 import UpdateHospitalForm from "./UpdateHospitalForm";
 import { notification } from "antd";
+import CustomLoader from "../../common/CustomSpinner";
 
 const HospitalList = () => {
   const dispatch = useDispatch();
@@ -110,7 +111,12 @@ const HospitalList = () => {
 
       {isLoading ? (
         <Flex justifyContent="center" mt={4} p={8}>
-          <Spinner size="xl" color="blue.500" thickness="4px" speed="0.65s" />
+          <CustomLoader
+            size="xl"
+            color="blue.500"
+            thickness="4px"
+            speed="0.65s"
+          />
         </Flex>
       ) : error ? (
         <Flex justifyContent="center" mt={4} p={6}>

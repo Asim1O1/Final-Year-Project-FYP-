@@ -94,7 +94,7 @@ const PatientDetails = () => {
             });
             navigate("/payment-success", {
               state: { transactionDetails: result },
-            }); // Pass transaction details
+            });
           } else {
             throw new Error("Payment verification failed.");
           }
@@ -202,13 +202,12 @@ const PatientDetails = () => {
         const paymentResponse = await dispatch(
           initiatePayment({
             userId,
-            bookingId: appointmentId, 
+            bookingId: appointmentId,
             amount: doctor.consultationFee,
             bookingType: "appointment",
           })
         ).unwrap();
 
-        
         window.location.href = paymentResponse.payment_url;
       } else {
         // For pay_on_site, just show success and redirect

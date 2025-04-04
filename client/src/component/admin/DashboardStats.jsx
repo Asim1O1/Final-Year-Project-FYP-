@@ -5,11 +5,13 @@ import {
   Stat,
   StatLabel,
   StatNumber,
-  Spinner,
   Text,
+  Center,
+  Flex,
 } from "@chakra-ui/react";
 import { useDispatch, useSelector } from "react-redux";
 import { handleGetDashboardStats } from "../../features/system_admin/systemadminslice";
+import CustomLoader from "../../component/common/CustomSpinner";
 
 export const DashboardStats = () => {
   const dispatch = useDispatch();
@@ -23,10 +25,18 @@ export const DashboardStats = () => {
 
   if (isLoading) {
     return (
-      <Box textAlign="center" mt={10}>
-        <Spinner size="xl" />
-        <Text mt={4}>Loading dashboard stats...</Text>
-      </Box>
+      <Flex minH="50vh" align="center" justify="center">
+        <Center>
+          <CustomLoader
+            size="lg"
+            primaryColor="indigo"
+            secondaryColor="teal"
+            text="Loading dashboard stats"
+            variant="orbital"
+            glassmorphism={true}
+          />
+        </Center>
+      </Flex>
     );
   }
 

@@ -1,5 +1,5 @@
 // pages/admin/Dashboard.jsx
-import React from "react";
+
 import { Box, Grid, Heading } from "@chakra-ui/react";
 import { DashboardStats } from "../../component/admin/DashboardStats";
 import { RecentActivity } from "../../component/admin/RecentActivity";

@@ -11,7 +11,6 @@ import {
   Td,
   Button,
   HStack,
-  Spinner,
   Alert,
   AlertIcon,
   Flex,
@@ -29,7 +28,6 @@ import {
   CloseButton,
   AlertDescription,
   AlertTitle,
-  Toast,
   ModalFooter,
   Icon,
   ModalBody,
@@ -53,6 +51,7 @@ import {
   WarningTwoIcon,
 } from "@chakra-ui/icons";
 import { notification } from "antd";
+import CustomLoader from "../../component/common/CustomSpinner";
 
 export const Users = () => {
   const dispatch = useDispatch();
@@ -152,7 +151,7 @@ export const Users = () => {
         minHeight="300px"
         className="bg-gray-50 rounded-lg shadow-sm p-8"
       >
-        <Spinner
+        <CustomLoader
           size="xl"
           thickness="4px"
           speed="0.65s"

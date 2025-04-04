@@ -13,7 +13,6 @@ import {
   Button,
   Grid,
   Box,
-  Spinner,
   Tabs,
   Tab,
   TabList,
@@ -45,8 +44,6 @@ const UpdateHospitalForm = ({ isOpen, onClose, hospital }) => {
     hospitalImage: "",
     hospitalImageFile: null,
     specialties: [],
-    medicalTests: [],
-    campaigns: "",
   });
 
   useEffect(() => {
@@ -61,10 +58,6 @@ const UpdateHospitalForm = ({ isOpen, onClose, hospital }) => {
         specialties: Array.isArray(hospital.specialties)
           ? hospital.specialties
           : [],
-        medicalTests: Array.isArray(hospital.medicalTests)
-          ? hospital.medicalTests
-          : [],
-        campaigns: hospital.campaigns || "",
       });
     }
   }, [hospital, hospitals]);
@@ -81,7 +74,7 @@ const UpdateHospitalForm = ({ isOpen, onClose, hospital }) => {
       setFormData((prev) => ({
         ...prev,
         hospitalImageFile: file,
-        hospitalImagePreview: previewUrl, 
+        hospitalImagePreview: previewUrl,
       }));
     }
   };
@@ -129,21 +122,11 @@ const UpdateHospitalForm = ({ isOpen, onClose, hospital }) => {
     formDataToSend.append("contactNumber", formData.contactNumber);
     formDataToSend.append("email", formData.email);
 
-    formData.campaigns.forEach((campaign) => {
-      formDataToSend.append("campaigns[]", campaign);
-    });
-
     // Append specialties as individual fields
     formData.specialties.forEach((specialty) => {
-      formDataToSend.append("specialties[]", specialty); 
+      formDataToSend.append("specialties[]", specialty);
     });
 
-    // Append medicalTests as an array of objects (do not stringify)
-    formData.medicalTests.forEach((test, index) => {
-      
-      formDataToSend.append(`medicalTests[${index}][name]`, test.name); 
-      formDataToSend.append(`medicalTests[${index}][price]`, test.price);
-    });
     // Append image file or existing URL
     if (formData.hospitalImageFile) {
       formDataToSend.append("hospitalImage", formData.hospitalImageFile);
@@ -171,10 +154,10 @@ const UpdateHospitalForm = ({ isOpen, onClose, hospital }) => {
           email: "",
           hospitalImage: "",
           specialties: [],
-          medicalTests: [],
-          campaigns: "",
         });
-        await dispatch(fetchAllHospitals({ page: currentPage, limit: 10 })).unwrap();
+        await dispatch(
+          fetchAllHospitals({ page: currentPage, limit: 10 })
+        ).unwrap();
         notification.success({
           message: "Update Successful",
           description:
@@ -207,26 +190,6 @@ const UpdateHospitalForm = ({ isOpen, onClose, hospital }) => {
 
   return (
     <>
-      {isLoading && (
-        <Box
-          position="fixed"
-          inset="0"
-          bg="blackAlpha.500"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          zIndex="overlay"
-        >
-          <Spinner
-            thickness="4px"
-            speed="0.65s"
-            emptyColor="gray.200"
-            color="blue.500"
-            size="xl"
-          />
-        </Box>
-      )}
-
       <Modal isOpen={isOpen} onClose={onClose} size="4xl">
         <ModalOverlay />
         <ModalContent>
@@ -238,8 +201,7 @@ const UpdateHospitalForm = ({ isOpen, onClose, hospital }) => {
               <Tabs>
                 <TabList className="mb-4">
                   <Tab>Basic Info</Tab>
-                  <Tab>Specialties & Tests</Tab>
-                  <Tab>Campaigns</Tab>
+                  <Tab>Specialties</Tab>
                 </TabList>
 
                 <TabPanels>
@@ -352,31 +314,6 @@ const UpdateHospitalForm = ({ isOpen, onClose, hospital }) => {
                         setFormData={setFormData}
                       />
                     </Box>
-
-                    <Box>
-                      <Text fontSize="lg" fontWeight="medium" mb={4}>
-                        Medical Tests
-                      </Text>
-                      <MedicalTestsEditor
-                        items={formData.medicalTests}
-                        setFormData={setFormData}
-                      />
-                    </Box>
-                  </TabPanel>
-
-                  {/* Campaigns Tab */}
-                  <TabPanel>
-                    <FormControl>
-                      <FormLabel>Campaigns</FormLabel>
-                      <Textarea
-                        placeholder="Enter campaigns details"
-                        name="campaigns"
-                        value={formData.campaigns}
-                        onChange={handleChange}
-                        rows={6}
-                        className="hover:border-blue-500 focus:border-blue-500"
-                      />
-                    </FormControl>
                   </TabPanel>
                 </TabPanels>
               </Tabs>

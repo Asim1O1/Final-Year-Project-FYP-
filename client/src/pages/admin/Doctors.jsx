@@ -52,6 +52,7 @@ import {
   WarningTwoIcon,
 } from "@chakra-ui/icons";
 import { notification } from "antd";
+import CustomLoader from "../../component/common/CustomSpinner";
 
 export const Doctors = () => {
   console.log("Doctors component rendered");
@@ -162,7 +163,7 @@ export const Doctors = () => {
         minHeight="300px"
         className="bg-gray-50 rounded-lg shadow-sm p-8"
       >
-        <Spinner
+        <CustomLoader
           size="xl"
           thickness="4px"
           speed="0.65s"

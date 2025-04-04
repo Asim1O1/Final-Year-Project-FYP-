@@ -3,8 +3,6 @@ import {
   Box,
   Button,
   Input,
-  Card,
-  CardBody,
   Heading,
   Modal,
   ModalOverlay,
@@ -22,11 +20,7 @@ import {
   TabPanel,
   VStack,
   HStack,
-  Spinner,
   IconButton,
-  Textarea,
-  InputGroup,
-  InputLeftAddon,
   Select,
 } from "@chakra-ui/react";
 import { X } from "lucide-react";
@@ -49,8 +43,6 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
     email: "",
     hospitalImage: "",
     specialties: [],
-    medicalTests: [],
-    campaigns: [],
   });
 
   const handleChange = (e) => {
@@ -156,8 +148,6 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
           email: "",
           hospitalImage: "",
           specialties: [],
-          medicalTests: [],
-          campaigns: [],
         });
 
         await dispatch(
@@ -185,28 +175,6 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {isLoading && (
-        <Box
-          position="fixed"
-          top="0" // Position loader at the top
-          left="0"
-          right="0"
-          bottom="0"
-          zIndex="9999"
-          bg="rgba(0, 0, 0, 0.5)"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <Spinner
-            thickness="4px"
-            speed="0.65s"
-            emptyColor="gray.200"
-            color="blue.500"
-            size="xl"
-          />
-        </Box>
-      )}
       <Modal isOpen={isOpen} onClose={onClose} size="4xl">
         <ModalOverlay />
         <ModalOverlay />
@@ -216,8 +184,7 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
             <Tabs>
               <TabList>
                 <Tab>Basic Info</Tab>
-                <Tab>Specialties & Tests</Tab>
-                <Tab>Campaigns</Tab>
+                <Tab>Specialties</Tab>
               </TabList>
 
               <TabPanels>
@@ -329,87 +296,6 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
                         </Box>
                       )}
                     </Box>
-                  </VStack>
-                </TabPanel>
-                <TabPanel>
-                  <VStack align="stretch" spacing={4}>
-                    {formData.campaigns.map((campaign, index) => (
-                      <Card key={index}>
-                        <CardBody>
-                          <VStack spacing={4}>
-                            <FormControl>
-                              <FormLabel>Campaign Title</FormLabel>
-                              <Input
-                                placeholder="Enter campaign title"
-                                value={campaign.title}
-                                onChange={(e) => {
-                                  const newCampaigns = [...formData.campaigns];
-                                  newCampaigns[index] = {
-                                    ...campaign,
-                                    title: e.target.value,
-                                  };
-                                  setFormData({
-                                    ...formData,
-                                    campaigns: newCampaigns,
-                                  });
-                                }}
-                              />
-                            </FormControl>
-                            <FormControl>
-                              <FormLabel>Description</FormLabel>
-                              <Textarea
-                                placeholder="Enter campaign description"
-                                value={campaign.description}
-                                onChange={(e) => {
-                                  const newCampaigns = [...formData.campaigns];
-                                  newCampaigns[index] = {
-                                    ...campaign,
-                                    description: e.target.value,
-                                  };
-                                  setFormData({
-                                    ...formData,
-                                    campaigns: newCampaigns,
-                                  });
-                                }}
-                              />
-                            </FormControl>
-                            <FormControl>
-                              <FormLabel>Date</FormLabel>
-                              <Input
-                                type="date"
-                                value={campaign.date}
-                                onChange={(e) => {
-                                  const newCampaigns = [...formData.campaigns];
-                                  newCampaigns[index] = {
-                                    ...campaign,
-                                    date: e.target.value,
-                                  };
-                                  setFormData({
-                                    ...formData,
-                                    campaigns: newCampaigns,
-                                  });
-                                }}
-                              />
-                            </FormControl>
-                          </VStack>
-                          u
-                        </CardBody>
-                      </Card>
-                    ))}
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          campaigns: [
-                            ...formData.campaigns,
-                            { title: "", description: "", date: "" },
-                          ],
-                        })
-                      }
-                    >
-                      Add Campaign
-                    </Button>
                   </VStack>
                 </TabPanel>
               </TabPanels>

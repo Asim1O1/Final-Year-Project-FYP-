@@ -23,9 +23,7 @@ const HospitalManagement = () => {
   const [selectedHospital, setSelectedHospital] = useState(null);
 
   // Fetch hospitals from Redux state
-  const { hospitals, isLoading, error } = useSelector(
-    (state) => state.hospitalSlice
-  );
+  const { hospitals } = useSelector((state) => state.hospitalSlice);
 
   // Handle opening the form for adding a new hospital
   const handleAddHospital = () => {
@@ -35,8 +33,7 @@ const HospitalManagement = () => {
 
   // Handle opening the form for editing an existing hospital
   const handleEditHospital = (hospital) => {
-    console.log("ENTERED THE HANDLE EDIT HOSPITAL");
-    console.log("teh hospital is", hospital);
+
 
     setSelectedHospital(hospital);
 
@@ -75,8 +72,8 @@ const HospitalManagement = () => {
       {/* Hospital List */}
       <HospitalList
         hospitals={hospitals}
-        onEdit={handleEditHospital} 
-        onDelete={handleDeleteHospital} 
+        onEdit={handleEditHospital}
+        onDelete={handleDeleteHospital}
       />
 
       {/* Add/Edit Hospital Modal */}
