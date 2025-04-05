@@ -4,6 +4,7 @@ import createResponse from "../../utils/responseBuilder.js";
 import fs from "fs";
 import cloudinary from "../../imageUpload/cloudinaryConfig.js";
 import { paginate } from "../../utils/paginationUtil.js";
+import { logActivity } from "../activity/activity.controller.js";
 
 /**
  * Handles adding a new hospital.
@@ -58,6 +59,17 @@ export const addHospital = async (req, res, next) => {
     });
 
     await newHospital.save();
+    await logActivity("hospital_registration", {
+      name: newHospital.name,
+      userId: req?.user?._id, // assuming you're using authentication middleware
+      role: req?.user?.role || "system_admin", // fallback
+      nameOfActor: req?.user?.fullName || "System",
+      targetType: "Hospital",
+      targetId: newHospital._id,
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+      visibleTo: ["system_admin"],
+    });
 
     return res.status(201).json(
       createResponse({
@@ -83,19 +95,36 @@ export const fetchHospitals = async (req, res, next) => {
   try {
     const { page, limit, sort = "createdAt" } = req.query;
 
-    // Convert sort query parameter to a sort object
     const sortOrder = sort.startsWith("-") ? -1 : 1;
     const sortField = sort.replace("-", "");
     const sortOptions = { [sortField]: sortOrder };
 
-    // If page and limit are not provided, fetch all hospitals
+    console.log("Fetching hospitals. Pagination:", { page, limit });
+
+    // No pagination
     if (!page && !limit) {
-      const hospitals = await hospitalModel.find().sort(sortOptions);
+      const hospitals = await hospitalModel.find()
+        .sort(sortOptions)
+        .populate({
+          path: "medicalTests",
+          select: "testName testDescription testPrice status testDate",
+          match: { status: { $ne: "cancelled" } },
+          options: { sort: { testName: 1 } }
+        });
+
+      console.log("Hospitals fetched (no pagination):", hospitals.length);
+      hospitals.forEach((hospital, index) => {
+        console.log(`Hospital ${index + 1}:`, {
+          name: hospital.name,
+          testCount: hospital.medicalTests?.length || 0,
+        });
+      });
+
       return res.status(200).json(
         createResponse({
           isSuccess: true,
           statusCode: 200,
-          message: "Hospitals fetched successfully.",
+          message: "Hospitals with medical tests fetched successfully.",
           data: {
             hospitals,
             pagination: null,
@@ -104,7 +133,7 @@ export const fetchHospitals = async (req, res, next) => {
       );
     }
 
-    // If pagination params are provided, use the paginate function
+    // With pagination
     const result = await paginate(
       hospitalModel,
       {},
@@ -112,15 +141,28 @@ export const fetchHospitals = async (req, res, next) => {
         page: page || 1,
         limit: limit || 10,
         sort: sortOptions,
+        populate: {
+          path: "medicalTests",
+          select: "testName testDescription testPrice status testDate",
+          match: { status: { $ne: "cancelled" } },
+          options: { sort: { testName: 1 } }
+        }
       }
     );
 
-    // Send success response with pagination
+    console.log("Hospitals fetched (paginated):", result.data.length);
+    result.data.forEach((hospital, index) => {
+      console.log(`Hospital ${index + 1}:`, {
+        name: hospital.name,
+        testCount: hospital.medicalTests?.length || 0,
+      });
+    });
+
     return res.status(200).json(
       createResponse({
         isSuccess: true,
         statusCode: 200,
-        message: "Hospitals fetched successfully.",
+        message: "Hospitals with medical tests fetched successfully.",
         data: {
           hospitals: result.data,
           pagination: {
@@ -132,9 +174,11 @@ export const fetchHospitals = async (req, res, next) => {
       })
     );
   } catch (error) {
-    next(error); // Pass the error to the globalErrorHandler
+    console.error("Error in fetchHospitals:", error);
+    next(error);
   }
 };
+
 /**
  * Handles fetching a specific hospital by ID.
  */

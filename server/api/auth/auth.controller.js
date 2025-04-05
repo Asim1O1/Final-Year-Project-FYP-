@@ -14,6 +14,7 @@ import { sendEmail } from "../../utils/sendEmail.js";
 import crypto from "crypto";
 import doctorModel from "../../models/doctor.model.js";
 import { emailTemplates } from "../../utils/emailTemplates.js";
+import { logActivity } from "../activity/activity.controller.js";
 
 /**
  * Handles user registration.
@@ -80,6 +81,21 @@ export const handleUserRegistration = async (req, res, next) => {
     };
 
     await sendEmail(newUser.email, subject, template, emailData);
+    await logActivity("new_user", {
+      fullName: newUser.fullName,
+      email: newUser.email,
+      role: newUser.role,
+      userId: newUser._id,
+      name: newUser.fullName,
+
+      targetType: "User",
+      targetId: newUser._id,
+
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+
+      visibleTo: ["system_admin"],
+    });
 
     // Send success response
     return res.status(201).json(

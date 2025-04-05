@@ -1,65 +1,130 @@
-import React from "react";
-import { VStack, HStack, Text, Icon, Box, Avatar } from "@chakra-ui/react";
+import { useEffect } from "react";
+import {
+  VStack,
+  HStack,
+  Text,
+  Icon,
+  Box,
+  Spinner,
+  Center,
+  Button,
+  Flex,
+} from "@chakra-ui/react";
 import {
   RiHospitalLine,
   RiUserAddLine,
   RiFileTextLine,
   RiStethoscopeLine,
+  RiUserForbidLine,
+  RiCalendarEventLine,
 } from "react-icons/ri";
+import { useDispatch, useSelector } from "react-redux";
+import { handleGetRecentActivities } from "../../features/system_admin/systemadminslice";
+import CustomLoader from "../common/CustomSpinner";
+
+
+// Icon mapping for different activity types
+const activityIcons = {
+  hospital_registration: RiHospitalLine,
+  new_user: RiUserAddLine,
+  report: RiFileTextLine,
+  doctor_approval: RiStethoscopeLine,
+  account_deactivated: RiUserForbidLine,
+  appointment_completed: RiCalendarEventLine,
+  // Add more mappings as needed
+};
+
+// Color mapping for different activity types
+const activityColors = {
+  hospital_registration: "blue.500",
+  new_user: "green.500",
+  report: "purple.500",
+  doctor_approval: "teal.500",
+  account_deactivated: "red.500",
+  appointment_completed: "orange.500",
+};
 
 export const RecentActivity = () => {
-  const activities = [
-    {
-      id: 1,
-      type: "hospital_registration",
-      icon: RiHospitalLine,
-      title: "New Hospital Registration",
-      description: "Central Medical Center submitted registration",
-      time: "5 minutes ago",
-      color: "blue.500",
-    },
-    {
-      id: 2,
-      type: "new_user",
-      icon: RiUserAddLine,
-      title: "New User Registration",
-      description: "Dr. Sarah Wilson created an account",
-      time: "15 minutes ago",
-      color: "green.500",
-    },
-    {
-      id: 3,
-      type: "report",
-      icon: RiFileTextLine,
-      title: "Monthly Report Generated",
-      description: "December 2024 analytics report is ready",
-      time: "1 hour ago",
-      color: "purple.500",
-    },
-    {
-      id: 4,
-      type: "doctor_approval",
-      icon: RiStethoscopeLine,
-      title: "Doctor Profile Approved",
-      description: "Dr. Michael Chen profile verified",
-      time: "2 hours ago",
-      color: "teal.500",
-    },
-  ];
+  const dispatch = useDispatch();
+  const {
+    activities = [],
+    isLoading,
+    error,
+  } = useSelector((state) => state.systemAdminSlice || {});
+  console.log("Activities:", activities);
+
+  const { currentPage = 1, totalPages = 1 } = useSelector(
+    (state) => state.systemAdminSlice?.pagination?.activities || {}
+  );
+
+  useEffect(() => {
+    dispatch(handleGetRecentActivities({ page: currentPage, limit: 10 }));
+  }, [dispatch, currentPage]);
+
+  const handlePageChange = (newPage) => {
+    dispatch(handleGetRecentActivities({ page: newPage, limit: 10 }));
+  };
+
+  if (isLoading) {
+    return (
+      <Center p={8}>
+        <CustomLoader size="xl" />
+      </Center>
+    );
+  }
+
+  if (error) {
+    return (
+      <Center p={8} color="red.500">
+        <Text>Failed to load activities: {error}</Text>
+      </Center>
+    );
+  }
+
+  if (!activities || activities.length === 0) {
+    return (
+      <Center p={8}>
+        <Text color="gray.500">No recent activities found</Text>
+      </Center>
+    );
+  }
+
+  // Format time to relative (e.g., "5 minutes ago")
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+
+    if (diffInSeconds < 60) return "Just now";
+    if (diffInSeconds < 3600)
+      return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400)
+      return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    return `${Math.floor(diffInSeconds / 86400)} days ago`;
+  };
 
   return (
     <VStack spacing={4} align="stretch">
+      {/* Activities List */}
       {activities.map((activity) => (
         <HStack
-          key={activity.id}
+          key={activity._id}
           p={4}
           bg="gray.50"
           rounded="md"
           spacing={4}
           _hover={{ bg: "gray.100" }}
         >
-          <Box p={2} bg={activity.color} color="white" rounded="lg">
-            <Icon as={activity.icon} boxSize={5} />
+          <Box
+            p={2}
+            bg={activityColors[activity.type] || "gray.500"}
+            color="white"
+            rounded="lg"
+          >
+            <Icon
+              as={activityIcons[activity.type] || RiFileTextLine}
+              boxSize={5}
+            />
           </Box>
 
           <Box flex={1}>
@@ -67,13 +132,39 @@ export const RecentActivity = () => {
             <Text fontSize="sm" color="gray.600">
               {activity.description}
             </Text>
+            <Text fontSize="xs" color="gray.500">
+              Performed by: {activity.performedBy?.name || "System"}
+            </Text>
           </Box>
 
           <Text fontSize="sm" color="gray.500">
-            {activity.time}
+            {formatTime(activity.createdAt)}
           </Text>
         </HStack>
       ))}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <Flex justify="center" mt={4}>
+          <HStack spacing={2}>
+            <Button
+              onClick={() => handlePageChange(currentPage - 1)}
+              isDisabled={currentPage <= 1}
+            >
+              Previous
+            </Button>
+            <Text>
+              Page {currentPage} of {totalPages}
+            </Text>
+            <Button
+              onClick={() => handlePageChange(currentPage + 1)}
+              isDisabled={currentPage >= totalPages}
+            >
+              Next
+            </Button>
+          </HStack>
+        </Flex>
+      )}
     </VStack>
   );
 };

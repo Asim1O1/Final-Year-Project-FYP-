@@ -71,11 +71,15 @@ export const createMedicalTest = async (req, res, next) => {
 
     await newMedicalTest.save();
 
+    // Link the new medical test to the hospital
+    existingHospital.medicalTests.push(newMedicalTest._id);
+    await existingHospital.save();
+
     return res.status(201).json(
       createResponse({
         isSuccess: true,
         statusCode: 201,
-        message: "Medical test created successfully",
+        message: "Medical test created and linked to hospital successfully",
         data: newMedicalTest,
         error: null,
       })
@@ -658,7 +662,12 @@ export const updateTestBookingStatus = async (req, res, next) => {
     }
 
     // Validate status transition
-    const validStatuses = ["pending", "completed", "cancelled", "report_available"];
+    const validStatuses = [
+      "pending",
+      "completed",
+      "cancelled",
+      "report_available",
+    ];
     if (!validStatuses.includes(status)) {
       return res.status(400).json(
         createResponse({

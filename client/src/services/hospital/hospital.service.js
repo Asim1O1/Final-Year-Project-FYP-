@@ -98,6 +98,7 @@ const deleteHospitalService = async (hospitalId) => {
     });
   }
 };
+
 const fetchHospitalsService = async (params = {}) => {
   try {
     const response = await axios.get(`${BASE_BACKEND_URL}/api/hospitals`, {

@@ -119,7 +119,7 @@ export const bookDoctorAppointment = async (req, res, next) => {
       reason,
       hospital: hospitalId,
       endTime: allSlots[allSlots.indexOf(startTime) + 1],
-      status: "pending", // Default status
+      status: "pending", 
       paymentMethod: paymentMethod,
       paymentStatus: paymentMethod === "pay_now" ? "pending" : "not_required",
       paymentId: paymentMethod === "pay_now" ? null : undefined,

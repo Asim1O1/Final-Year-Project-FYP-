@@ -137,40 +137,63 @@ export const getHospitalAdminByIdService = async (adminId) => {
   }
 };
 
-// Get All Hospital Admins
 export const getAllHospitalAdminsService = async (queryParams = {}) => {
   try {
-    const { page = 1, limit = 10, sort = "createdAt" } = queryParams;
+    const {
+      page = 1,
+      limit = 10,
+      sort = "createdAt",
+      search = "",
+    } = queryParams;
+
+    // Build query parameters
+    const params = new URLSearchParams();
+    params.append("page", page);
+    params.append("limit", limit);
+    params.append("sort", sort);
+    if (search) params.append("search", search);
+
     const response = await axiosInstance.get(
-      `/api/hospitalAdmin?page=${page}&limit=${limit}&sort=${sort}`
+      `/api/hospitalAdmin?${params.toString()}`
     );
 
-    console.log("The response while fetching all hospital admins is", response);
+    console.log("📦 Hospital Admins Response:", response?.data);
 
-    if (!response?.data?.isSuccess) {
+    if (!response.data?.isSuccess) {
       return createApiResponse({
         isSuccess: false,
-        message: response.data.message || "Failed to retrieve hospital admins",
-        data: response.data.error || null,
+        statusCode: response.status,
+        message: response.data?.message || "Failed to retrieve hospital admins",
+        data: null,
       });
     }
 
-
-
     return createApiResponse({
       isSuccess: true,
-      message: response.data.message || "Hospital admins retrieved successfully",
-    data: response.data
+      statusCode: response.status,
+      message:
+        response.data?.message || "Hospital admins retrieved successfully",
+      data: {
+        hospitalAdmins:
+          response.data?.data?.hospitalAdmins || response.data?.data || [],
+        pagination: response.data?.data?.pagination || null,
+      },
     });
   } catch (error) {
+    console.error("❌ Error fetching hospital admins:", error);
+
+    // Extract error message from different possible locations
     const errorMessage =
-      error?.response?.data?.error?.[0]?.message ||
-      error?.response?.data?.message ||
-      "An error occurred during fetching hospital admins.";
+      error.response?.data?.error?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      "An unknown error occurred while fetching hospital admins";
 
     return createApiResponse({
       isSuccess: false,
+      statusCode: error.response?.status || 500,
       message: errorMessage,
+      data: null,
     });
   }
 };

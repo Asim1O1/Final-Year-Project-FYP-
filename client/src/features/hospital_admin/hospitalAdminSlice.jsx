@@ -116,7 +116,7 @@ export const handleGetAllHospitalAdmins = createAsyncThunk(
   async (queryParams, { rejectWithValue }) => {
     try {
       const response = await getAllHospitalAdminsService(queryParams);
-      console.log("The response in the get all hospital slice is", response);
+      console.log("📦 Redux Thunk - Hospital Admins Response:", response);
 
       // Check if the service response is successful
       if (!response.isSuccess) {
@@ -124,18 +124,25 @@ export const handleGetAllHospitalAdmins = createAsyncThunk(
           createApiResponse({
             isSuccess: false,
             message: response.message || "Failed to fetch hospital admins",
+            data: response.data || null,
           })
         );
       }
 
-      // Return the data from the service response
-      return response.data;
+      // Return only necessary parts for Redux state
+      return {
+        hospitalAdmins: response.data.hospitalAdmins,
+        pagination: response.data.pagination,
+      };
     } catch (error) {
       const errorMessage = error?.message || "Failed to fetch hospital admins.";
+      console.error("❌ Redux Thunk Error:", errorMessage);
+
       return rejectWithValue(
         createApiResponse({
           isSuccess: false,
           message: errorMessage,
+          data: null,
         })
       );
     }
@@ -225,7 +232,7 @@ const hospitalAdminSlice = createSlice({
       .addCase(handleGetAllHospitalAdmins.pending, handlePending)
       .addCase(handleGetAllHospitalAdmins.fulfilled, (state, action) => {
         handleFulfilled(state, action);
-        state.hospitalAdmins = action.payload?.data || [];
+        state.hospitalAdmins = action.payload?.hospitalAdmins || [];
         state.pagination = action.payload?.pagination || null;
       })
       .addCase(handleGetAllHospitalAdmins.rejected, handleRejected);

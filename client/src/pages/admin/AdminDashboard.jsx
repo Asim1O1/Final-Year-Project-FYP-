@@ -8,9 +8,6 @@ import { Notifications } from "../../component/admin/Notifications";
 export const AdminDashboard = () => {
   return (
     <Box>
-      <Heading mb={6} size="lg">
-        Dashboard
-      </Heading>
       <DashboardStats />
 
       <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={6} mt={8}>

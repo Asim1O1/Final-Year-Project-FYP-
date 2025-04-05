@@ -32,10 +32,11 @@ const hospitalSchema = new mongoose.Schema(
 
     medicalTests: [
       {
-        name: { type: String, required: true },
-        price: { type: String, required: true },
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "MedicalTest",
       },
     ],
+    
     notifications: [
       {
         message: { type: String, required: true },

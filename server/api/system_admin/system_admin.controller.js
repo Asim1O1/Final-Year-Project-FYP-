@@ -2,6 +2,8 @@ import Hospital from "../../models/hospital.model.js";
 import Doctor from "../../models/doctor.model.js";
 import User from "../../models/user.model.js";
 
+import { logActivity } from "../activity/activity.controller.js";
+
 import createResponse from "../../utils/responseBuilder.js";
 import { paginate } from "../../utils/paginationUtil.js";
 import { emailTemplates } from "../../utils/emailTemplates.js";
@@ -37,9 +39,25 @@ export const getAdminDashboardStats = async (req, res, next) => {
 
 export const getUsersForAdmin = async (req, res, next) => {
   try {
-    const { page, limit } = req.query;
+    const { page = 1, limit = 10, search = "" } = req.query;
 
-    const result = await paginate(User, { role: "user" }, { page, limit });
+    // Build the base query
+    const query = { role: "user" };
+
+    // Add search functionality if search term exists
+    if (search) {
+      query.$or = [
+        { fullName: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        // Add other fields you want to search by
+      ];
+    }
+
+    const result = await paginate(User, query, {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { createdAt: -1 }, // Optional: sort by newest first
+    });
 
     return res.status(200).json(
       createResponse({
@@ -57,9 +75,25 @@ export const getUsersForAdmin = async (req, res, next) => {
 
 export const getDoctorsForAdmin = async (req, res, next) => {
   try {
-    const { page, limit } = req.query;
+    const { page = 1, limit = 10, search = "" } = req.query;
 
-    const result = await paginate(Doctor, {}, { page, limit });
+    const query = {};
+
+    if (search) {
+      query.$or = [
+        { fullName: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { specialization: { $regex: search, $options: "i" } },
+        { "hospital.name": { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const result = await paginate(Doctor, query, {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { createdAt: -1 },
+      populate: ["hospital"],
+    });
 
     return res.status(200).json(
       createResponse({
@@ -74,6 +108,7 @@ export const getDoctorsForAdmin = async (req, res, next) => {
     next(error);
   }
 };
+
 export const handleAccountStatus = async (req, res, next) => {
   try {
     const { accountId, role } = req.params;
@@ -84,6 +119,7 @@ export const handleAccountStatus = async (req, res, next) => {
     } else if (role === "user" || role === "hospital_admin") {
       Model = User;
     } else {
+      console.warn("Invalid role provided:", role);
       return res.status(400).json(
         createResponse({
           isSuccess: false,
@@ -93,10 +129,10 @@ export const handleAccountStatus = async (req, res, next) => {
       );
     }
 
-    // Fetch the account to check its current status
     const account = await Model.findById(accountId);
 
     if (!account) {
+      console.warn(`${role} not found with ID:`, accountId);
       return res.status(404).json(
         createResponse({
           isSuccess: false,
@@ -106,14 +142,34 @@ export const handleAccountStatus = async (req, res, next) => {
       );
     }
 
-    // Toggle the isActive status (Activate if currently inactive, Deactivate if active)
+    // Check if the action is redundant
+    if (account.isActive && req.body.action === "activate") {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: `${role} account is already active`,
+        })
+      );
+    }
+
+    if (!account.isActive && req.body.action === "deactivate") {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: `${role} account is already inactive`,
+        })
+      );
+    }
+
+    // Toggle status
     const updatedAccount = await Model.findByIdAndUpdate(
       accountId,
-      { isActive: !account.isActive }, // Toggle status
+      { isActive: !account.isActive },
       { new: true }
     );
 
-    // Send appropriate email notification based on activation/deactivation
     const subject = updatedAccount.isActive
       ? emailTemplates.accountActivated.subject
       : emailTemplates.accountDeactivated.subject;
@@ -127,6 +183,16 @@ export const handleAccountStatus = async (req, res, next) => {
     };
 
     await sendEmail(updatedAccount.email, subject, template, data);
+
+    await logActivity("account_status_change", {
+      fullName: updatedAccount.fullName,
+      isActive: updatedAccount.isActive,
+      userId: updatedAccount._id,
+      name: updatedAccount.fullName,
+      role: "system_admin",
+      nameOfActor: req.user?.fullName,
+      actorId: req.user?._id,
+    });
 
     return res.status(200).json(
       createResponse({

@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import {
-  getUserNotificationsService,
+  getNotificationsService,
   markNotificationAsReadService,
   markAllNotificationsAsReadService,
   clearAllNotificationsService,
@@ -10,11 +10,11 @@ import createApiResponse from "../../utils/createApiResponse";
 /**
  * Fetch user notifications
  */
-export const handleGetUserNotifications = createAsyncThunk(
+export const handleGetNotifications = createAsyncThunk(
   "notification/getUserNotifications",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await getUserNotificationsService();
+      const response = await getNotificationsService();
       if (!response.isSuccess) {
         throw createApiResponse({
           isSuccess: false,
@@ -121,13 +121,13 @@ const notificationSlice = createSlice({
 
     builder
       // Fetch Notifications
-      .addCase(handleGetUserNotifications.pending, handlePending)
-      .addCase(handleGetUserNotifications.fulfilled, (state, action) => {
+      .addCase(handleGetNotifications.pending, handlePending)
+      .addCase(handleGetNotifications.fulfilled, (state, action) => {
         handleFulfilled(state);
         console.log("The action payload is", action.payload);
         state.notifications = action.payload;
       })
-      .addCase(handleGetUserNotifications.rejected, handleRejected)
+      .addCase(handleGetNotifications.rejected, handleRejected)
 
       // Mark Single Notification as Read
       .addCase(handleMarkNotificationAsRead.fulfilled, (state, action) => {

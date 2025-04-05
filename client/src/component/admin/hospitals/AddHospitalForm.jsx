@@ -30,6 +30,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
 
 import PREDEFINED_SPECIALTIES from "../../../../../constants/Specialties";
+import { SpinnerIcon } from "@chakra-ui/icons";
 const AddHospitalForm = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
   const [currentPage, setCurrentPage] = useState(1);
@@ -305,7 +306,13 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
             <Button variant="ghost" mr={3} onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" colorScheme="blue">
+            <Button
+              type="submit"
+              colorScheme="blue"
+              isLoading={isLoading}
+              loadingText="Saving..."
+              spinner={<SpinnerIcon size="sm" />}
+            >
               Save Hospital
             </Button>
           </ModalFooter>

@@ -20,7 +20,6 @@ import {
   Icon,
   Box,
   InputRightElement,
-  Spinner,
   useColorModeValue,
   InputLeftElement,
 } from "@chakra-ui/react";
@@ -28,13 +27,16 @@ import { notification } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { Building2, Lock, Mail, MapPin, User } from "lucide-react";
 
-import { handleHospitalAdminCreation } from "../../../features/hospital_admin/hospitalAdminSlice";
+import {
+  handleGetAllHospitalAdmins,
+  handleHospitalAdminCreation,
+} from "../../../features/hospital_admin/hospitalAdminSlice";
 import PasswordToggle from "../../auth/PasswordToggle";
 import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
 import { PhoneIcon } from "@chakra-ui/icons";
 import CustomLoader from "../../common/CustomSpinner";
 
-const AddHospitalAdmin = ({ isOpen, onClose }) => {
+const AddHospitalAdmin = ({ isOpen, onClose, searchQuery }) => {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -45,6 +47,7 @@ const AddHospitalAdmin = ({ isOpen, onClose }) => {
   const hospitals = useSelector(
     (state) => state?.hospitalSlice?.hospitals?.hospitals
   );
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -116,7 +119,7 @@ const AddHospitalAdmin = ({ isOpen, onClose }) => {
       notification.error({
         message: "Form Error",
         description: "Please check all fields and try again",
-        duration: 3,
+        duration: 2,
       });
       return;
     }
@@ -133,6 +136,13 @@ const AddHospitalAdmin = ({ isOpen, onClose }) => {
         description: result?.message || "Hospital admin created successfully",
         duration: 3,
       });
+      await dispatch(
+        handleGetAllHospitalAdmins({
+          page: currentPage,
+          limit: 10,
+          search: searchQuery,
+        })
+      ).unwrap();
 
       onClose();
       setFormData({
@@ -149,7 +159,7 @@ const AddHospitalAdmin = ({ isOpen, onClose }) => {
       notification.error({
         message: "Error",
         description: error.message || "Failed to create hospital admin",
-        duration: 3,
+        duration: 2,
       });
     } finally {
       setIsLoading(false);
@@ -162,6 +172,7 @@ const AddHospitalAdmin = ({ isOpen, onClose }) => {
         <Box
           position="fixed"
           top="0"
+          left="0"
           right="0"
           bottom="0"
           zIndex="9999"
@@ -193,7 +204,7 @@ const AddHospitalAdmin = ({ isOpen, onClose }) => {
             py={4}
             px={6}
           >
-            <Flex align="center" gap={3}>
+            <Flex align="center" gap={2}>
               <Box bg="blue.500" p={2} borderRadius="lg" color="white">
                 <User size={20} />
               </Box>
@@ -362,7 +373,7 @@ const AddHospitalAdmin = ({ isOpen, onClose }) => {
                       onChange={handleChange}
                       bg={inputBg}
                       fontSize="sm"
-                      pl="3"
+                      pl="2"
                     >
                       <option value="male">Male</option>
                       <option value="female">Female</option>
@@ -418,20 +429,14 @@ const AddHospitalAdmin = ({ isOpen, onClose }) => {
             >
               <Button
                 variant="ghost"
-                mr={3}
+                mr={2}
                 onClick={onClose}
                 size="md"
                 isDisabled={isLoading}
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                colorScheme="blue"
-                size="md"
-                isLoading={isLoading}
-                loadingText="Creating..."
-              >
+              <Button type="submit" colorScheme="blue" size="md">
                 Create Administrator
               </Button>
             </ModalFooter>

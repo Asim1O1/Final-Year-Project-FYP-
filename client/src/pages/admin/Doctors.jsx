@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Box,
@@ -36,6 +36,8 @@ import {
   ModalOverlay,
   ModalContent,
   Modal,
+  InputRightElement,
+  IconButton,
 } from "@chakra-ui/react";
 import {
   handleGetDoctors,
@@ -45,6 +47,7 @@ import Pagination from "../../utils/Pagination";
 import {
   CheckCircleIcon,
   ChevronDownIcon,
+  CloseIcon,
   LockIcon,
   SearchIcon,
   UnlockIcon,
@@ -60,30 +63,76 @@ export const Doctors = () => {
   const { doctors, isLoading, error } = useSelector(
     (state) => state?.systemAdminSlice
   );
+  console.log("The dcotros are", doctors);
 
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const searchInputRef = useRef(null);
 
   const { currentPage, totalPages } = useSelector(
     (state) => state?.systemAdminSlice.pagination.doctors
   );
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
 
-  const handlePageChange = (page) => {
-    dispatch(handleGetDoctors({ page, limit: 10 }));
-  };
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
+  // Fetch doctors when page or search term changes
   useEffect(() => {
     console.log("Fetching doctors for page:", currentPage);
-    dispatch(handleGetDoctors({ page: currentPage, limit: 10 }))
+    dispatch(
+      handleGetDoctors({
+        page: currentPage,
+        limit: 10,
+        search: debouncedSearchTerm,
+      })
+    )
       .unwrap()
       .then((data) => {
         console.log("Doctors fetched successfully:", data);
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
       })
       .catch((error) => {
         console.error("Error fetching doctors:", error);
       });
-  }, [dispatch, currentPage]);
+  }, [dispatch, currentPage, debouncedSearchTerm]);
+
+  const handlePageChange = (page) => {
+    dispatch(
+      handleGetDoctors({
+        page,
+        limit: 10,
+        search: debouncedSearchTerm,
+      })
+    );
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      setDebouncedSearchTerm(searchTerm);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchTerm("");
+    setDebouncedSearchTerm("");
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  };
 
   const openDeactivateModal = (doctor) => {
     setSelectedDoctor(doctor);
@@ -209,6 +258,7 @@ export const Doctors = () => {
             <SearchIcon color="gray.400" />
           </InputLeftElement>
           <Input
+            ref={searchInputRef}
             placeholder="Search doctors..."
             borderRadius="lg"
             borderColor="gray.300"
@@ -217,7 +267,21 @@ export const Doctors = () => {
               borderColor: "blue.500",
               boxShadow: "0 0 0 1px blue.500",
             }}
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onKeyDown={handleSearchKeyDown}
           />
+          {searchTerm && (
+            <InputRightElement>
+              <IconButton
+                aria-label="Clear search"
+                icon={<CloseIcon />}
+                size="sm"
+                variant="ghost"
+                onClick={clearSearch}
+              />
+            </InputRightElement>
+          )}
         </InputGroup>
       </Flex>
 
@@ -230,110 +294,135 @@ export const Doctors = () => {
         borderColor="gray.200"
         className="hover:shadow-lg transition-shadow duration-300"
       >
-        <Box className="overflow-x-auto">
-          <Table variant="simple" colorScheme="gray">
-            <Thead className="bg-gray-50">
-              <Tr>
-                <Th className="px-6 py-4 text-gray-500 font-medium">Name</Th>
-                <Th className="px-6 py-4 text-gray-500 font-medium">Email</Th>
-                <Th className="px-6 py-4 text-gray-500 font-medium">
-                  Specialization
-                </Th>
-                <Th className="px-6 py-4 text-gray-500 font-medium">
-                  Experience
-                </Th>
-                <Th className="px-6 py-4 text-gray-500 font-medium">Status</Th>
-                <Th className="px-6 py-4 text-gray-500 font-medium">Actions</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {doctors?.map((doctor) => (
-                <Tr
-                  key={doctor._id}
-                  className="hover:bg-gray-50 transition-colors duration-150"
-                >
-                  <Td className="px-6 py-4">
-                    <Flex align="center">
-                      <Avatar
-                        size="sm"
-                        name={doctor.fullName}
-                        src={doctor.profilePicture}
-                        bg="teal.500"
-                        color="white"
-                        mr={3}
-                      />
-                      <Box>
-                        <Text fontWeight="medium">{doctor.fullName}</Text>
-                        <Text fontSize="sm" color="gray.500">
-                          {doctor.qualification}
-                        </Text>
-                      </Box>
-                    </Flex>
-                  </Td>
-                  <Td className="px-6 py-4">
-                    <Text color="gray.700">{doctor.email}</Text>
-                  </Td>
-                  <Td className="px-6 py-4">
-                    <Badge
-                      colorScheme="purple"
-                      borderRadius="full"
-                      px={2}
-                      py={1}
-                    >
-                      {doctor.specialization}
-                    </Badge>
-                  </Td>
-                  <Td className="px-6 py-4">
-                    <Text>
-                      {doctor.yearsOfExperience}{" "}
-                      {doctor.yearsOfExperience === 1 ? "year" : "years"}
-                    </Text>
-                  </Td>
-                  <Td className="px-6 py-4">
-                    <Badge
-                      colorScheme={doctor.isActive ? "green" : "red"}
-                      borderRadius="full"
-                      px={2}
-                      py={1}
-                      variant="subtle"
-                    >
-                      <Flex align="center">
-                        <Box
-                          className={`w-2 h-2 rounded-full mr-2 ${
-                            doctor.isActive ? "bg-green-500" : "bg-red-500"
-                          }`}
-                        />
-                        {doctor.isActive ? "Active" : "Inactive"}
-                      </Flex>
-                    </Badge>
-                  </Td>
-                  <Td className="px-6 py-4">
-                    <Menu>
-                      <MenuButton
-                        as={Button}
-                        size="sm"
-                        variant="outline"
-                        rightIcon={<ChevronDownIcon />}
-                        className="shadow-sm hover:shadow transition-shadow duration-150"
-                      >
-                        Actions
-                      </MenuButton>
-                      <MenuList className="shadow-lg">
-                        <MenuItem
-                          icon={doctor.isActive ? <LockIcon /> : <UnlockIcon />}
-                          color={doctor.isActive ? "red.500" : "green.500"}
-                          onClick={() => openDeactivateModal(doctor)}
-                        >
-                          {doctor.isActive ? "Deactivate" : "Activate"}
-                        </MenuItem>
-                      </MenuList>
-                    </Menu>
-                  </Td>
+        {/* No results message */}
+        {doctors?.length === 0 && (
+          <Box p={6} textAlign="center" bg="white">
+            <Text fontSize="lg" fontWeight="medium" color="gray.600">
+              {debouncedSearchTerm
+                ? "No doctors found matching your search"
+                : "No doctors available"}
+            </Text>
+            {debouncedSearchTerm && (
+              <Button mt={4} variant="outline" onClick={clearSearch}>
+                Clear search
+              </Button>
+            )}
+          </Box>
+        )}
+
+        {/* Table - only show if there are results */}
+        {doctors?.length > 0 && (
+          <Box className="overflow-x-auto">
+            <Table variant="simple" colorScheme="gray">
+              <Thead className="bg-gray-50">
+                <Tr>
+                  <Th className="px-6 py-4 text-gray-500 font-medium">Name</Th>
+                  <Th className="px-6 py-4 text-gray-500 font-medium">Email</Th>
+                  <Th className="px-6 py-4 text-gray-500 font-medium">
+                    Specialization
+                  </Th>
+                  <Th className="px-6 py-4 text-gray-500 font-medium">
+                    Experience
+                  </Th>
+                  <Th className="px-6 py-4 text-gray-500 font-medium">
+                    Status
+                  </Th>
+                  <Th className="px-6 py-4 text-gray-500 font-medium">
+                    Actions
+                  </Th>
                 </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        </Box>
+              </Thead>
+              <Tbody>
+                {doctors?.map((doctor) => (
+                  <Tr
+                    key={doctor._id}
+                    className="hover:bg-gray-50 transition-colors duration-150"
+                  >
+                    <Td className="px-6 py-4">
+                      <Flex align="center">
+                        <Avatar
+                          size="sm"
+                          name={doctor.fullName}
+                          src={doctor.profilePicture}
+                          bg="teal.500"
+                          color="white"
+                          mr={3}
+                        />
+                        <Box>
+                          <Text fontWeight="medium">{doctor.fullName}</Text>
+                          <Text fontSize="sm" color="gray.500">
+                            {doctor.qualification}
+                          </Text>
+                        </Box>
+                      </Flex>
+                    </Td>
+                    <Td className="px-6 py-4">
+                      <Text color="gray.700">{doctor.email}</Text>
+                    </Td>
+                    <Td className="px-6 py-4">
+                      <Badge
+                        colorScheme="purple"
+                        borderRadius="full"
+                        px={2}
+                        py={1}
+                      >
+                        {doctor.specialization}
+                      </Badge>
+                    </Td>
+                    <Td className="px-6 py-4">
+                      <Text>
+                        {doctor.yearsOfExperience}{" "}
+                        {doctor.yearsOfExperience === 1 ? "year" : "years"}
+                      </Text>
+                    </Td>
+                    <Td className="px-6 py-4">
+                      <Badge
+                        colorScheme={doctor.isActive ? "green" : "red"}
+                        borderRadius="full"
+                        px={2}
+                        py={1}
+                        variant="subtle"
+                      >
+                        <Flex align="center">
+                          <Box
+                            className={`w-2 h-2 rounded-full mr-2 ${
+                              doctor.isActive ? "bg-green-500" : "bg-red-500"
+                            }`}
+                          />
+                          {doctor.isActive ? "Active" : "Inactive"}
+                        </Flex>
+                      </Badge>
+                    </Td>
+                    <Td className="px-6 py-4">
+                      <Menu>
+                        <MenuButton
+                          as={Button}
+                          size="sm"
+                          variant="outline"
+                          rightIcon={<ChevronDownIcon />}
+                          className="shadow-sm hover:shadow transition-shadow duration-150"
+                        >
+                          Actions
+                        </MenuButton>
+                        <MenuList className="shadow-lg">
+                          <MenuItem
+                            icon={
+                              doctor.isActive ? <LockIcon /> : <UnlockIcon />
+                            }
+                            color={doctor.isActive ? "red.500" : "green.500"}
+                            onClick={() => openDeactivateModal(doctor)}
+                          >
+                            {doctor.isActive ? "Deactivate" : "Activate"}
+                          </MenuItem>
+                        </MenuList>
+                      </Menu>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
+        )}
 
         {totalPages > 1 && (
           <Flex
@@ -356,7 +445,7 @@ export const Doctors = () => {
               </Text>{" "}
               of{" "}
               <Text as="span" fontWeight="medium">
-                {selectedDoctor?.pagination?.totalCount || 0} doctors
+                {debouncedSearchTerm ? "filtered" : "total"} doctors
               </Text>
             </Text>
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Box,
@@ -58,41 +58,64 @@ export const Users = () => {
   const { users, isLoading, error } = useSelector(
     (state) => state?.systemAdminSlice
   );
-
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const searchInputRef = useRef(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const { currentPage, totalPages } = useSelector(
     (state) => state?.systemAdminSlice?.pagination?.users
   );
+
+  useEffect(() => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [users]);
 
   const handlePageChange = (page) => {
     dispatch(handleGetUsers({ page, limit: 10 }));
   };
 
   useEffect(() => {
-    console.log("Fetching users for page:", currentPage);
-    dispatch(handleGetUsers({ page: currentPage, limit: 10 }))
-      .unwrap()
-      .then((data) => {
-        console.log("Users fetched successfully:", data);
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm.trim());
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    dispatch(
+      handleGetUsers({
+        page: currentPage,
+        limit: 10,
+        search: debouncedSearchTerm,
       })
-      .catch((error) => {
-        console.error("Error fetching users:", error);
-      });
-  }, [dispatch, currentPage]);
+    ).catch(console.error);
+  }, [dispatch, currentPage, debouncedSearchTerm]);
+
+  //
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      setDebouncedSearchTerm(searchTerm.trim());
+    }
+  };
   const openDeactivateModal = (user) => {
     setSelectedUser(user);
     setIsDeactivateModalOpen(true);
   };
 
-  // Close modal and reset selected user
   const closeDeactivateModal = () => {
     setIsDeactivateModalOpen(false);
     setSelectedUser(null);
   };
 
-  // Enhanced deactivate function
   const handleDeactivate = async () => {
     if (!selectedUser) return;
 
@@ -197,6 +220,7 @@ export const Users = () => {
             <SearchIcon color="gray.400" />
           </InputLeftElement>
           <Input
+            ref={searchInputRef}
             placeholder="Search users..."
             borderRadius="lg"
             borderColor="gray.300"
@@ -205,6 +229,9 @@ export const Users = () => {
               borderColor: "blue.500",
               boxShadow: "0 0 0 1px blue.500",
             }}
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onKeyDown={handleSearchKeyDown}
           />
         </InputGroup>
       </Flex>
@@ -218,96 +245,127 @@ export const Users = () => {
         borderColor="gray.200"
         className="hover:shadow-lg transition-shadow duration-300"
       >
-        <Box className="overflow-x-auto">
-          <Table variant="simple" colorScheme="gray">
-            <Thead className="bg-gray-50">
-              <Tr>
-                <Th className="px-6 py-4 text-gray-500 font-medium">Name</Th>
-                <Th className="px-6 py-4 text-gray-500 font-medium">Email</Th>
-                <Th className="px-6 py-4 text-gray-500 font-medium">Role</Th>
-                <Th className="px-6 py-4 text-gray-500 font-medium">Status</Th>
-                <Th className="px-6 py-4 text-gray-500 font-medium">Actions</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {users?.map((user) => (
-                <Tr
-                  key={user.id}
-                  className="hover:bg-gray-50 transition-colors duration-150"
-                >
-                  <Td className="px-6 py-4">
-                    <Flex align="center">
-                      <Avatar
-                        size="sm"
-                        name={user.fullName}
-                        bg="blue.500"
-                        color="white"
-                        mr={3}
-                      />
-                      <Box>
-                        <Text fontWeight="medium">{user.fullName}</Text>
-                      </Box>
-                    </Flex>
-                  </Td>
-                  <Td className="px-6 py-4">
-                    <Text color="gray.700">{user.email}</Text>
-                  </Td>
-                  <Td className="px-6 py-4">
-                    <Badge
-                      colorScheme={user.role === "admin" ? "purple" : "blue"}
-                      borderRadius="full"
-                      px={2}
-                      py={1}
-                    >
-                      {user.role}
-                    </Badge>
-                  </Td>
-                  <Td className="px-6 py-4">
-                    <Badge
-                      colorScheme={user.isActive ? "green" : "red"}
-                      borderRadius="full"
-                      px={2}
-                      py={1}
-                      variant="subtle"
-                    >
-                      <Flex align="center">
-                        <Box
-                          className={`w-2 h-2 rounded-full mr-2 ${
-                            user.isActive ? "bg-green-500" : "bg-red-500"
-                          }`}
-                        />
-                        {user.isActive ? "Active" : "Inactive"}
-                      </Flex>
-                    </Badge>
-                  </Td>
-                  <Td className="px-6 py-4">
-                    <Menu>
-                      <MenuButton
-                        as={Button}
-                        size="sm"
-                        variant="outline"
-                        rightIcon={<ChevronDownIcon />}
-                        className="shadow-sm hover:shadow transition-shadow duration-150"
-                      >
-                        Actions
-                      </MenuButton>
-                      <MenuList className="shadow-lg">
-                        <MenuItem
-                          icon={user.isActive ? <LockIcon /> : <UnlockIcon />}
-                          color={user.isActive ? "red.500" : "green.500"}
-                          onClick={() => openDeactivateModal(user)}
-                        >
-                          {user.isActive ? "Deactivate" : "Activate"}
-                        </MenuItem>
-                        <MenuDivider />
-                      </MenuList>
-                    </Menu>
-                  </Td>
+        {/* No results message */}
+        {users?.length === 0 && (
+          <Box p={6} textAlign="center" bg="white">
+            <Text fontSize="lg" fontWeight="medium" color="gray.600">
+              {searchTerm
+                ? "No users found matching your search"
+                : "No users available"}
+            </Text>
+            {searchTerm && (
+              <Button
+                mt={4}
+                variant="outline"
+                onClick={() => {
+                  setSearchTerm("");
+                  setDebouncedSearchTerm("");
+                  searchInputRef.current?.focus();
+                }}
+              >
+                Clear search
+              </Button>
+            )}
+          </Box>
+        )}
+
+        {/* Table - only show if there are results */}
+        {users?.length > 0 && (
+          <Box className="overflow-x-auto">
+            <Table variant="simple" colorScheme="gray">
+              <Thead className="bg-gray-50">
+                <Tr>
+                  <Th className="px-6 py-4 text-gray-500 font-medium">Name</Th>
+                  <Th className="px-6 py-4 text-gray-500 font-medium">Email</Th>
+                  <Th className="px-6 py-4 text-gray-500 font-medium">Role</Th>
+                  <Th className="px-6 py-4 text-gray-500 font-medium">
+                    Status
+                  </Th>
+                  <Th className="px-6 py-4 text-gray-500 font-medium">
+                    Actions
+                  </Th>
                 </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        </Box>
+              </Thead>
+              <Tbody>
+                {users?.map((user) => (
+                  <Tr
+                    key={user.id}
+                    className="hover:bg-gray-50 transition-colors duration-150"
+                  >
+                    <Td className="px-6 py-4">
+                      <Flex align="center">
+                        <Avatar
+                          size="sm"
+                          name={user.fullName}
+                          bg="blue.500"
+                          color="white"
+                          mr={3}
+                        />
+                        <Box>
+                          <Text fontWeight="medium">{user.fullName}</Text>
+                        </Box>
+                      </Flex>
+                    </Td>
+                    <Td className="px-6 py-4">
+                      <Text color="gray.700">{user.email}</Text>
+                    </Td>
+                    <Td className="px-6 py-4">
+                      <Badge
+                        colorScheme={user.role === "admin" ? "purple" : "blue"}
+                        borderRadius="full"
+                        px={2}
+                        py={1}
+                      >
+                        {user.role}
+                      </Badge>
+                    </Td>
+                    <Td className="px-6 py-4">
+                      <Badge
+                        colorScheme={user.isActive ? "green" : "red"}
+                        borderRadius="full"
+                        px={2}
+                        py={1}
+                        variant="subtle"
+                      >
+                        <Flex align="center">
+                          <Box
+                            className={`w-2 h-2 rounded-full mr-2 ${
+                              user.isActive ? "bg-green-500" : "bg-red-500"
+                            }`}
+                          />
+                          {user.isActive ? "Active" : "Inactive"}
+                        </Flex>
+                      </Badge>
+                    </Td>
+                    <Td className="px-6 py-4">
+                      <Menu>
+                        <MenuButton
+                          as={Button}
+                          size="sm"
+                          variant="outline"
+                          rightIcon={<ChevronDownIcon />}
+                          className="shadow-sm hover:shadow transition-shadow duration-150"
+                        >
+                          Actions
+                        </MenuButton>
+                        <MenuList className="shadow-lg">
+                          <MenuItem
+                            icon={user.isActive ? <LockIcon /> : <UnlockIcon />}
+                            color={user.isActive ? "red.500" : "green.500"}
+                            onClick={() => openDeactivateModal(user)}
+                          >
+                            {user.isActive ? "Deactivate" : "Activate"}
+                          </MenuItem>
+                          <MenuDivider />
+                        </MenuList>
+                      </Menu>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
+        )}
 
         {totalPages > 1 && (
           <Flex
@@ -330,7 +388,7 @@ export const Users = () => {
               </Text>{" "}
               of{" "}
               <Text as="span" fontWeight="medium">
-                total users
+                {searchTerm ? "filtered" : "total"} users
               </Text>
             </Text>
 
@@ -343,8 +401,6 @@ export const Users = () => {
           </Flex>
         )}
       </Box>
-
-      {/* Enhanced Deactivation Modal */}
       <Modal
         isOpen={isDeactivateModalOpen}
         onClose={closeDeactivateModal}

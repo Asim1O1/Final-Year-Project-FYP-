@@ -18,7 +18,7 @@ import Notifications from "../common/Notification";
 
 import {
   handleClearAllNotifications,
-  handleGetUserNotifications,
+  handleGetNotifications,
   handleMarkAllNotificationsAsRead,
   handleMarkNotificationAsRead,
 } from "../../features/notification/notificationSlice";
@@ -38,7 +38,7 @@ const Navbar = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      dispatch(handleGetUserNotifications());
+      dispatch(handleGetNotifications());
     }
   }, [dispatch, isAuthenticated]);
 

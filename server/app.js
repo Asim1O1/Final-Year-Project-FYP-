@@ -15,6 +15,7 @@ import messageRoute from "./api/message/message.route.js";
 import reportRoute from "./api/medical_report/medicalReport.route.js";
 import medicalTestRoute from "./api/medical_test/medical_test.route.js";
 import systemAdminRoute from "./api/system_admin/system_admin.route.js";
+import activityRoute from "./api/activity/activity.route.js";
 
 import globalErrorHandler from "./middlewares/globalErrorHandler.js";
 
@@ -45,6 +46,7 @@ app.use("/api/messages", messageRoute);
 app.use("/api/report", reportRoute);
 app.use("/api/medicalTest", medicalTestRoute);
 app.use("/api/systemAdmin", systemAdminRoute);
+app.use("/api/systemAdmin", activityRoute);
 
 // Health check route
 app.get("/", (req, res) => {

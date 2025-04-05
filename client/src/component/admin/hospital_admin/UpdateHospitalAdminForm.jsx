@@ -136,7 +136,14 @@ const UpdateHospitalAdminForm = ({
       console.log("The admin datat is", adminData);
       const updatedData = {
         adminId: adminData._id,
-        updatedData: formData,
+        updatedData: {
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          gender: formData.gender,
+          address: formData.address,
+          hospital: formData.hospitalId,  
+        },
       };
       const result = await dispatch(
         handleHospitalAdminUpdate(updatedData)

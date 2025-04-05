@@ -31,9 +31,13 @@ export const handleGetDashboardStats = createAsyncThunk(
 // Async Thunk to fetch users
 export const handleGetUsers = createAsyncThunk(
   "systemAdmin/getUsers",
-  async ({ page, limit }, { rejectWithValue }) => {
+  async ({ page, limit, search = "" }, { rejectWithValue }) => {
     try {
-      const response = await systemAdminService.getUsersService(page, limit);
+      const response = await systemAdminService.getUsersService(
+        page,
+        limit,
+        search
+      );
       if (!response.isSuccess) {
         throw createApiResponse({
           isSuccess: false,
@@ -57,9 +61,13 @@ export const handleGetUsers = createAsyncThunk(
 // Async Thunk to fetch doctors
 export const handleGetDoctors = createAsyncThunk(
   "systemAdmin/getDoctors",
-  async ({ page, limit }, { rejectWithValue }) => {
+  async ({ page, limit, search = "" }, { rejectWithValue }) => {
     try {
-      const response = await systemAdminService.getDoctorsService(page, limit);
+      const response = await systemAdminService.getDoctorsService(
+        page,
+        limit,
+        search
+      );
       if (!response.isSuccess) {
         throw createApiResponse({
           isSuccess: false,
@@ -106,6 +114,35 @@ export const handleAccountStatus = createAsyncThunk(
   }
 );
 
+export const handleGetRecentActivities = createAsyncThunk(
+  "systemAdmin/getRecentActivities",
+  async ({ page = 1, limit = 10 }, { rejectWithValue }) => {
+    try {
+      const response = await systemAdminService.getRecentActivitiesService(
+        page,
+        limit
+      );
+      console.log("The response is", response);
+      if (!response.isSuccess) {
+        throw createApiResponse({
+          isSuccess: false,
+          message: response.message || "Failed to fetch recent activities",
+        });
+      }
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        createApiResponse({
+          isSuccess: false,
+          message:
+            error.message ||
+            "Failed to fetch recent activities. Please try again.",
+        })
+      );
+    }
+  }
+);
+
 // Reusable Handlers for Pending & Rejected
 const handlePending = (state) => {
   state.isLoading = true;
@@ -128,10 +165,11 @@ const systemAdminSlice = createSlice({
     isLoading: false,
     error: null,
     successMessage: null,
-    // Separate pagination state (only metadata)
+    activities: [],
     pagination: {
-      users: { totalCount: 0, currentPage: 1, totalPages: 1 }, // For users pagination
-      doctors: { totalCount: 0, currentPage: 1, totalPages: 1 }, // For doctors pagination
+      users: { totalCount: 0, currentPage: 1, totalPages: 1 },
+      doctors: { totalCount: 0, currentPage: 1, totalPages: 1 },
+      activities: { totalCount: 0, currentPage: 1, totalPages: 1 }, // <- add this
     },
   },
   reducers: {
@@ -231,7 +269,26 @@ const systemAdminSlice = createSlice({
           }
         }
       })
-      .addCase(handleAccountStatus.rejected, handleRejected);
+      .addCase(handleAccountStatus.rejected, handleRejected)
+      // Fetch Recent Activities
+      .addCase(handleGetRecentActivities.pending, handlePending)
+      .addCase(handleGetRecentActivities.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+
+        if (Array.isArray(action.payload.data)) {
+          state.activities = action.payload.data;
+        } else {
+          console.error("Invalid data structure for activities");
+        }
+
+        state.pagination.activities = {
+          totalCount: action.payload.totalCount,
+          currentPage: action.payload.currentPage,
+          totalPages: action.payload.totalPages,
+        };
+      })
+      .addCase(handleGetRecentActivities.rejected, handleRejected);
   },
 });
 // Export actions and reducer

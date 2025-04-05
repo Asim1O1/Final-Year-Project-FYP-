@@ -17,7 +17,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["appointment", "message", "payment", "campaign", "test_booking"],
+      enum: ["appointment", "message", "payment", "campaign", "test_booking", "doctor"],
       required: true,
     },
     relatedId: {

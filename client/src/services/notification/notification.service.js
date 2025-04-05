@@ -1,7 +1,7 @@
 import axiosInstance from "../../utils/axiosInstance";
 import createApiResponse from "../../utils/createApiResponse";
 
-export const getUserNotificationsService = async () => {
+export const getNotificationsService = async () => {
   try {
     const response = await axiosInstance.get("/api/notifications");
     console.log("The response while getting user notifications is", response);

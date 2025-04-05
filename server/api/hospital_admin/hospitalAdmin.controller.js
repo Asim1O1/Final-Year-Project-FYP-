@@ -3,10 +3,12 @@ import hospitalModel from "../../models/hospital.model.js";
 import bcrypt from "bcryptjs";
 import createResponse from "../../utils/responseBuilder.js";
 import { paginate } from "../../utils/paginationUtil.js";
+import { logActivity } from "../activity/activity.controller.js";
 
 export const createHospitalAdmin = async (req, res, next) => {
   try {
-    const { fullName, email, password, gender, phone, hospitalId, address } = req.body;
+    const { fullName, email, password, gender, phone, hospitalId, address } =
+      req.body;
     console.log("The request body is", req.body);
 
     const existingUser = await userModel.findOne({
@@ -54,6 +56,21 @@ export const createHospitalAdmin = async (req, res, next) => {
     hospital.hospital_admin = hospitalAdmin._id;
 
     await hospital.save();
+    await logActivity("hospital_admin_created", {
+      fullName: hospitalAdmin.fullName,
+      email: hospitalAdmin.email,
+      role: "hospital_admin",
+      userId: hospitalAdmin._id,
+      name: hospitalAdmin.fullName,
+
+      targetType: "Hospital",
+      targetId: hospitalId,
+
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+
+      visibleTo: ["system_admin"],
+    });
 
     const { password: _, ...hospitalAdminData } = hospitalAdmin.toObject();
 
@@ -73,12 +90,15 @@ export const createHospitalAdmin = async (req, res, next) => {
 
 export const updateHospitalAdmin = async (req, res, next) => {
   try {
-    console.log("The id", req.params.id);
     const { id } = req.params;
     const updateData = req.body;
-    console.log("The updateData", updateData);
+
+    console.log("🔧 [Update Hospital Admin]");
+    console.log("➡️ Admin ID:", id);
+    console.log("📝 Incoming Update Data:", updateData);
 
     if (updateData.password) {
+      console.log("🔐 Hashing new password...");
       updateData.password = await bcrypt.hash(updateData.password, 10);
     }
 
@@ -89,6 +109,7 @@ export const updateHospitalAdmin = async (req, res, next) => {
     );
 
     if (!updatedAdmin) {
+      console.warn("⚠️ No admin found with that ID.");
       return res.status(404).json(
         createResponse({
           isSuccess: false,
@@ -99,6 +120,8 @@ export const updateHospitalAdmin = async (req, res, next) => {
       );
     }
 
+    console.log("✅ Admin updated successfully:", updatedAdmin);
+
     return res.status(200).json(
       createResponse({
         isSuccess: true,
@@ -108,15 +131,14 @@ export const updateHospitalAdmin = async (req, res, next) => {
       })
     );
   } catch (error) {
-    console.error("Update Hospital Admin Error:", error.message);
+    console.error("❌ Update Hospital Admin Error:", error.message);
     next(error);
   }
 };
 
 export const deleteHospitalAdmin = async (req, res, next) => {
   try {
-
-    console.log("Entered the delete hospital admin cotroller in the backend")
+    console.log("Entered the delete hospital admin cotroller in the backend");
     const { id } = req.params;
 
     const deletedAdmin = await userModel.findByIdAndDelete(id);
@@ -185,9 +207,9 @@ export const getHospitalAdminById = async (req, res, next) => {
 
 export const getAllHospitalAdmins = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, sort = "createdAt" } = req.query;
+    const { page = 1, limit = 10, sort = "createdAt", search = "" } = req.query;
 
-    // Parse sort parameters
+    // Determine sort field and order
     const sortOrder = sort.startsWith("-") ? -1 : 1;
     const sortField = sort.replace("-", "");
     const sortOptions = { [sortField]: sortOrder };
@@ -195,11 +217,26 @@ export const getAllHospitalAdmins = async (req, res, next) => {
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
 
-    if (!pageNum && !limitNum) {
-      // If pagination params are missing, return all hospital admins
+    // Build search query
+    const searchQuery = {
+      role: "hospital_admin",
+      ...(search && {
+        $or: [
+          { fullName: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+          { "hospital.name": { $regex: search, $options: "i" } },
+        ],
+      }),
+    };
+
+    // If pagination params are missing, return all hospital admins without pagination
+    const isPaginationDisabled = isNaN(pageNum) || isNaN(limitNum);
+
+    if (isPaginationDisabled) {
       const hospitalAdmins = await userModel
-        .find({ role: "hospital_admin" })
-        .populate("hospital", "name"); // Populate hospital name
+        .find(searchQuery)
+        .populate("hospital", "name")
+        .sort(sortOptions);
 
       return res.status(200).json(
         createResponse({
@@ -215,34 +252,22 @@ export const getAllHospitalAdmins = async (req, res, next) => {
       );
     }
 
-    // Implement pagination logic here
-    const result = await paginate(
-      userModel,
-      { role: "hospital_admin" },
-      {
-        page: pageNum,
-        limit: limitNum,
-        sort: sortOptions,
-      }
-    );
-
-    // Fetch hospital name for each hospital admin
-    const hospitalAdmins = await userModel
-      .find({ role: "hospital_admin" })
-      .skip((pageNum - 1) * limitNum)
-      .limit(limitNum)
-      .sort(sortOptions)
-      .populate("hospital", "name"); // Populate hospital name
-
-    console.log("The result in the backend is", result);
+    // Paginated query using custom paginate utility
+    const result = await paginate(userModel, searchQuery, {
+      page: pageNum,
+      limit: limitNum,
+      sort: sortOptions,
+      populate: {
+        path: "hospital",
+        select: "name",
+      },
+    });
 
     return res.status(200).json({
       isSuccess: true,
       statusCode: 200,
       message: "Hospital admins retrieved successfully",
-      data: hospitalAdmins.map((admin) => ({
-        ...admin.toObject(),
-      })),
+      data: result.data,
       pagination: {
         totalCount: result.totalCount,
         currentPage: result.currentPage,
@@ -250,7 +275,7 @@ export const getAllHospitalAdmins = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.error("Get All Hospital Admins Error:", error.message);
+    console.error("❌ Get All Hospital Admins Error:", error.message);
     next(error);
   }
 };

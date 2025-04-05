@@ -5,6 +5,8 @@ import { paginate } from "../../utils/paginationUtil.js";
 import { validateDoctorInput } from "../../utils/validationUtils.js";
 import fs from "fs";
 import bcryptjs from "bcryptjs";
+import Notification from "../../models/notification.model.js";
+import userModel from "../../models/user.model.js";
 
 export const createDoctor = async (req, res, next) => {
   try {
@@ -130,6 +132,25 @@ export const createDoctor = async (req, res, next) => {
 
     const doctorObject = newDoctor.toObject();
     delete doctorObject.password;
+
+    const systemAdmins = await userModel.find({ role: "system_admin" });
+
+    const notifications = systemAdmins.map((admin) => ({
+      user: admin._id,
+      message: `A new doctor named ${newDoctor.fullName} has been added to the system.`,
+      type: "doctor",
+      relatedId: newDoctor._id,
+    }));
+
+    await Notification.insertMany(notifications);
+
+    // ✅ Emit real-time notification via Socket.io
+    const io = req.app.get("socketio");
+    systemAdmins.forEach((admin) => {
+      io.to(admin._id.toString()).emit("new-notification", {
+        message: `New doctor ${newDoctor.fullName} added.`,
+      });
+    });
 
     return res.status(201).json(
       createResponse({
@@ -513,6 +534,25 @@ export const deleteDoctor = async (req, res, next) => {
         })
       );
     }
+
+    const systemAdmins = await userModel.find({ role: "system_admin" });
+
+    const notifications = systemAdmins.map((admin) => ({
+      user: admin._id,
+      message: `Doctor ${doctor.fullName} has been deleted from the system.`,
+      type: "doctor",
+      relatedId: doctor._id,
+    }));
+
+    await Notification.insertMany(notifications);
+
+    // ✅ Emit real-time notification via Socket.io
+    const io = req.app.get("socketio");
+    systemAdmins.forEach((admin) => {
+      io.to(admin._id.toString()).emit("new-notification", {
+        message: `Doctor ${doctor.fullName} has been deleted.`,
+      });
+    });
 
     return res.status(200).json(
       createResponse({

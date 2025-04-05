@@ -2,7 +2,7 @@ import createResponse from "../../utils/responseBuilder.js";
 import Notification from "../../models/notification.model.js";
 
 // Get user notifications
-export const getUserNotifications = async (req, res, next) => {
+export const getNotifications = async (req, res, next) => {
   try {
     const userId = req.user?._id;
     if (!userId) {

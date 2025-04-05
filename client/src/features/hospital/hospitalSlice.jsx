@@ -106,7 +106,6 @@ export const fetchAllHospitals = createAsyncThunk(
       if (!response.isSuccess) {
         throw response;
       }
-    
 
       return response.data;
     } catch (error) {
