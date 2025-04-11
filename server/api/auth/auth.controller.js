@@ -82,17 +82,19 @@ export const handleUserRegistration = async (req, res, next) => {
 
     await sendEmail(newUser.email, subject, template, emailData);
     await logActivity("new_user", {
+      title: "User Registered",
+      description: `${newUser.fullName} (${newUser.email}) created an account`,
       fullName: newUser.fullName,
       email: newUser.email,
       role: newUser.role,
       userId: newUser._id,
       name: newUser.fullName,
 
-      targetType: "User",
-      targetId: newUser._id,
-
-      ipAddress: req.ip,
-      userAgent: req.headers["user-agent"],
+      performedBy: {
+        role: req.user?.role || "system_admin",
+        userId: req.user?._id,
+        name: req.user?.fullName,
+      },
 
       visibleTo: ["system_admin"],
     });

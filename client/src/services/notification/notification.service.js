@@ -64,8 +64,8 @@ export const markNotificationAsReadService = async (notificationId) => {
 export const markAllNotificationsAsReadService = async () => {
   try {
     const response = await axiosInstance.put(
-      "/api/notifications/mark-all-read"
-    );
+      "/api/notifications/mark-all-as-read"
+    );  
     console.log("Response while marking all notifications as read:", response);
 
     if (!response?.data?.isSuccess) {

@@ -18,12 +18,10 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
   VStack,
-  HStack,
   Textarea,
   Box,
   Flex,
   FormErrorMessage,
-  useToast,
   Divider,
   IconButton,
   Image,
@@ -34,19 +32,20 @@ import {
   TabPanel,
   Badge,
 } from "@chakra-ui/react";
-import { AddIcon, ChevronDownIcon, DeleteIcon } from "@chakra-ui/icons";
+import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
   fetchAllDoctors,
   handleDoctorUpdate,
 } from "../../../features/doctor/doctorSlice";
-import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
+import PREDEFINED_SPECIALTIES from "../../../../../constants/Specialties";
+
+import { notification } from "antd";
 
 const UpdateDoctorForm = ({ isOpen, onClose, doctorData }) => {
   const dispatch = useDispatch();
 
-  const toast = useToast();
   const fileInputRef = useRef(null);
   const profileFileInputRef = useRef(null);
 
@@ -73,16 +72,23 @@ const UpdateDoctorForm = ({ isOpen, onClose, doctorData }) => {
   const [errors, setErrors] = useState({});
   const [certificationPreview, setCertificationPreview] = useState("");
   const [profileImagePreview, setProfileImagePreview] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const hospitals = useSelector(
-    (state) => state?.hospitalSlice?.hospitals?.hospitals
-  );
+  const currentUser = useSelector((state) => state?.auth?.user?.data);
+  const hospitalId = currentUser?.hospital;
 
   useEffect(() => {
     if (isOpen) {
-      dispatch(fetchAllHospitals());
+      dispatch(
+        fetchAllDoctors({
+          page: currentPage,
+          limit: 10,
+          hospital: hospitalId,
+        })
+      );
     }
-  }, [isOpen, dispatch]);
+  }, [isOpen, dispatch, currentPage, hospitalId]);
+  const predefinedSpecialties = PREDEFINED_SPECIALTIES;
 
   // Populate form when doctorData changes
   useEffect(() => {
@@ -231,35 +237,37 @@ const UpdateDoctorForm = ({ isOpen, onClose, doctorData }) => {
       console.log("The response hile updting docgtor is", response);
 
       if (response.isSuccess) {
-        toast({
-          title: "Doctor updated",
-          description: "Doctor information has been updated successfully",
-          status: "success",
-          duration: 5000,
-          isClosable: true,
+        notification.success({
+          message: "Doctor Updated",
+          description:
+            response?.message ||
+            "Doctor information has been updated successfully.",
+          duration: 2.5,
         });
 
         // Refresh doctor list
-        dispatch(fetchAllDoctors({ page: 1, limit: 10 }));
+        dispatch(
+          fetchAllDoctors({
+            page: currentPage,
+            limit: 10,
+            hospital: hospitalId,
+          })
+        );
         onClose();
       } else {
-        toast({
-          title: "Error",
-          description: response.message || "Failed to update doctor",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
+        notification.error({
+          message: "Update Failed",
+          description: response.message || "Failed to update doctor.",
+          duration: 2.5,
         });
       }
     } catch (error) {
       console.error("Error updating doctor:", error);
-      toast({
-        title: "Error",
+      notification.error({
+        message: "Error",
         description:
-          error.message || "An error occurred while updating the doctor",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
+          error.message || "An error occurred while updating the doctor.",
+        duration: 2.5,
       });
     } finally {
       setIsSubmitting(false);
@@ -390,44 +398,25 @@ const UpdateDoctorForm = ({ isOpen, onClose, doctorData }) => {
                 <VStack spacing={5} align="stretch">
                   <FormControl isInvalid={errors.specialization}>
                     <FormLabel fontWeight="medium">Specialization</FormLabel>
-                    <Input
+                    <Select
                       name="specialization"
                       value={formData.specialization}
                       onChange={handleInputChange}
-                      placeholder="Specialization"
-                      className="hover:border-blue-300 focus:border-blue-500"
-                      borderRadius="md"
+                      placeholder="Select a specialization"
                       bg="gray.50"
-                      _focus={{ bg: "white" }}
-                    />
+                      pl="40px"
+                    >
+                      {predefinedSpecialties.map((specialty, index) => (
+                        <option key={index} value={specialty}>
+                          {specialty}
+                        </option>
+                      ))}
+                    </Select>
                     {errors.specialization && (
                       <FormErrorMessage className="text-red-500">
                         {errors.specialization}
                       </FormErrorMessage>
                     )}
-                  </FormControl>
-
-                  <FormControl>
-                    <FormLabel fontWeight="medium">Hospital</FormLabel>
-                    <Select
-                      name="hospital"
-                      value={formData.hospital}
-                      onChange={handleInputChange}
-                      pl="40px"
-                      fontSize="sm"
-                      className="max-h-40 overflow-y-auto hover:border-blue-300 focus:border-blue-500"
-                      borderRadius="md"
-                      bg="gray.50"
-                      _focus={{ bg: "white" }}
-                      icon={<ChevronDownIcon />}
-                    >
-                      <option value="">Select Hospital</option>
-                      {hospitals?.map((hospital) => (
-                        <option key={hospital._id} value={hospital._id}>
-                          {hospital.name}
-                        </option>
-                      ))}
-                    </Select>
                   </FormControl>
 
                   <FormControl>

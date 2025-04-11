@@ -29,6 +29,10 @@ const medicalReportSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    test: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "MedicalTest",
+    },
     uploadedAt: {
       type: Date,
       default: Date.now,

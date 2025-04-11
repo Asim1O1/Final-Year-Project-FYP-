@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Loader, Check, X, AlertCircle } from "lucide-react";
+import { Check, X, AlertCircle } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchVolunteerRequests,
@@ -7,6 +7,7 @@ import {
 } from "../../../features/campaign/campaignSlice";
 import { Box, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 import Pagination from "../../../utils/Pagination";
+import CustomLoader from "../../common/CustomSpinner";
 const VolunteerRequestsManager = () => {
   const dispatch = useDispatch();
   const [expandedRequests, setExpandedRequests] = useState({});
@@ -57,7 +58,7 @@ const VolunteerRequestsManager = () => {
   if (isLoading && volunteerRequests.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader className="w-8 h-8 animate-spin text-blue-500" />
+        <CustomLoader className="w-8 h-8 animate-spin text-blue-500" />
         <span className="ml-2">Loading volunteer requests...</span>
       </div>
     );
@@ -150,7 +151,7 @@ const VolunteerRequestsManager = () => {
                                     className="flex items-center px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-300"
                                   >
                                     {isProcessing ? (
-                                      <Loader className="w-4 h-4 animate-spin mr-1" />
+                                      <CustomLoader className="w-4 h-4 animate-spin mr-1" />
                                     ) : (
                                       <Check className="w-4 h-4 mr-1" />
                                     )}

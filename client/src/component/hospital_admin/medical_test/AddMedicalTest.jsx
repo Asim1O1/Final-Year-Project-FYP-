@@ -1,4 +1,4 @@
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Box,
@@ -29,12 +29,14 @@ import {
 import { DollarSign, FileText, Building2 } from "lucide-react";
 import { notification } from "antd";
 import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
-import { createMedicalTest } from "../../../features/medical_test/medicalTestSlice";
+import { createMedicalTest, fetchAllMedicalTests } from "../../../features/medical_test/medicalTestSlice";
 import { SmallCloseIcon } from "@chakra-ui/icons";
+import CustomLoader from "../../common/CustomSpinner";
 
 const AddMedicalTest = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const initialFormData = {
     testName: "",
     testPrice: "",
@@ -42,6 +44,12 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
     testDescription: "",
     testImage: null,
   };
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useEffect(() => {
+    dispatch(fetchAllMedicalTests({ page: currentPage }));
+  }, [dispatch, currentPage, refreshTrigger]);
+  
 
   const [formData, setFormData] = useState(initialFormData);
   const [imagePreview, setImagePreview] = useState(null);
@@ -49,12 +57,22 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
   const hospitals = useSelector(
     (state) => state?.hospitalSlice?.hospitals?.hospitals
   );
-  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    dispatch(fetchAllHospitals({ page: currentPage, limit: 10 }));
-  }, [dispatch, currentPage]);
+    dispatch(fetchAllHospitals());
+  }, [dispatch]);
+  
 
+  const currentUser = useSelector((state) => state?.auth?.user?.data);
+
+  const adminHospital = hospitals?.find(
+    (hospital) => hospital._id === currentUser?.hospital
+  );
+  useEffect(() => {
+    if (adminHospital?._id && !formData.hospital) {
+      setFormData(prev => ({...prev, hospital: adminHospital._id}));
+    }
+  }, [adminHospital, formData.hospital]);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -84,6 +102,7 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
     try {
       // Validation
       if (!formData.testName || !formData.testPrice || !formData.hospital) {
+        console.log("form data .hospital", formData.hospital)
         throw new Error("Please fill all required fields");
       }
 
@@ -104,7 +123,10 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
       }
 
       const response = await dispatch(createMedicalTest(testData)).unwrap();
-      console.log("The resopnse is", response);
+      
+
+      setRefreshTrigger(prev => prev + 1);
+    
 
       notification.success({
         message: "Success",
@@ -143,7 +165,7 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
           alignItems="center"
           justifyContent="center"
         >
-          <Spinner
+          <CustomLoader
             thickness="4px"
             speed="0.65s"
             emptyColor="gray.200"
@@ -221,17 +243,16 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
                     </InputLeftElement>
                     <Select
                       name="hospital"
-                      value={formData.hospital}
+                      value={adminHospital?._id || ""}
                       onChange={handleChange}
-                      placeholder="Select Hospital"
-                      bg="gray.50"
                       pl="40px"
+                      isDisabled // Disable since there's only one option
                     >
-                      {hospitals?.map((hospital) => (
-                        <option key={hospital._id} value={hospital._id}>
-                          {hospital.name}
+                      {adminHospital && (
+                        <option value={adminHospital._id}>
+                          {adminHospital.name}
                         </option>
-                      ))}
+                      )}
                     </Select>
                   </InputGroup>
                 </FormControl>
@@ -318,7 +339,7 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
                 type="submit"
                 colorScheme="teal"
                 size="md"
-                isLoading={isLoading}
+               
                 loadingText="Adding..."
               >
                 Add Test

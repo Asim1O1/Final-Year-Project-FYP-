@@ -3,6 +3,10 @@ import { Box, Button, HStack, Text, Icon, Flex } from "@chakra-ui/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
 
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+  console.log("Pagination currentPage", currentPage);
+  console.log("Pagination totalPages", totalPages);
+  console.log("Pagination onPageChange", onPageChange);
+  
   const handlePageChange = (page) => {
     if (page < 1 || page > totalPages) return;
     onPageChange(page);

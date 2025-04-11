@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -13,49 +13,123 @@ import {
   MenuItem,
   useToast,
   Skeleton,
+  AlertDialogFooter,
+  AlertDialogOverlay,
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  Badge,
+  Icon,
+  Divider,
+  SimpleGrid,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { Calendar, MapPin, MoreVertical, Edit, Trash, Building, ArrowRight } from "lucide-react";
+import {
+  MapPin,
+  MoreVertical,
+  Edit,
+  Trash,
+  Building,
+  AlertCircle,
+  RefreshCw,
+  CalendarX,
+  Plus,
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
+  Calendar,
+  Users,
+} from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllCampaigns } from "../../../features/campaign/campaignSlice";
+import {
+  fetchAllCampaigns,
+  handleCampaignDeletion,
+} from "../../../features/campaign/campaignSlice";
+import Pagination from "../../../utils/Pagination";
 
-const CampaignList = ({ userRole, onEdit, onDelete }) => {
+const CampaignList = ({ onEdit }) => {
   const dispatch = useDispatch();
   const toast = useToast();
+  const currentUser = useSelector((state) => state?.auth?.user?.data);
+  const hospitalId = currentUser?.hospital;
+
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const cancelRef = useRef();
+  const userRole = currentUser?.role;
 
   // Fetch campaigns from Redux store
-  const { campaigns, isLoading, error } = useSelector((state) => state?.campaignSlice);
-  console.log("Campaigns from Redux:", campaigns);
+  const { campaigns, isLoading, error } = useSelector(
+    (state) => state?.campaignSlice?.campaigns
+  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages  = useSelector(
+    (state) => state?.campaignSlice?.campaigns?.pagination?.totalPages
+  );
 
+  const cardBg = useColorModeValue("white", "gray.800");
+  const cardBorder = useColorModeValue("gray.200", "gray.700");
+  const cardHoverBorder = useColorModeValue("blue.300", "blue.500");
+  const textColorPrimary = useColorModeValue("gray.800", "white");
+  const textColorSecondary = useColorModeValue("gray.600", "gray.400");
+  const dividerColor = useColorModeValue("gray.200", "gray.700");
+
+  // Status badge color mapping
+  const statusColors = {
+    active: "green",
+    completed: "blue",
+    upcoming: "purple",
+    canceled: "red",
+    draft: "orange",
+  };
   // Fetch campaigns on component mount
   useEffect(() => {
-    const fetchCampaigns = async () => {
-      const result = await dispatch(fetchAllCampaigns());
-      console.log("Campaigns fetched:", result);
-    };
-  
-    fetchCampaigns();
-  }, [dispatch]);
-  
+    dispatch(
+      fetchAllCampaigns({
+        page: currentPage,
+        limit: 10,
+        hospital: hospitalId,
+      })
+    );
+  }, [dispatch, currentPage, hospitalId]);
 
-  // Handle confirm delete
-  const handleDeleteConfirm = (campaignId, campaignTitle) => {
-    if (window.confirm(`Are you sure you want to delete "${campaignTitle}"?`)) {
-      onDelete(campaignId);
+  // Delete dialog handlers
+  const onDeleteOpen = (campaign) => {
+    setSelectedCampaign(campaign);
+    setIsDeleteOpen(true);
+  };
+
+  const onDeleteClose = () => {
+    setIsDeleteOpen(false);
+    setSelectedCampaign(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (selectedCampaign) {
+      const result = await dispatch(
+        handleCampaignDeletion(selectedCampaign._id)
+      );
+      console.log("the result is", result);
       toast({
         title: "Campaign deleted",
-        description: `"${campaignTitle}" has been removed successfully.`,
+        description: `"${selectedCampaign.title}" has been removed successfully.`,
         status: "success",
         duration: 5000,
         isClosable: true,
+        position: "top-right",
       });
+      onDeleteClose();
     }
   };
 
   // Format date
   const formatDate = (dateString) => {
     try {
-      return new Date(dateString).toLocaleDateString();
+      const options = { year: "numeric", month: "long", day: "numeric" };
+      return new Date(dateString).toLocaleDateString(undefined, options);
     } catch (error) {
       console.error("Error formatting date:", error);
       return dateString;
@@ -64,126 +138,331 @@ const CampaignList = ({ userRole, onEdit, onDelete }) => {
 
   if (isLoading) {
     return (
-      <Stack spacing={4}>
-        {[1, 2, 3].map((item) => (
-          <Box key={item} p={5} shadow="md" borderWidth="1px" borderRadius="md" bg="white">
-            <Skeleton height="30px" width="60%" mb={4} />
-            <Skeleton height="20px" width="100%" mb={3} />
-            <Flex gap={6} mt={4}>
-              <Skeleton height="20px" width="30%" />
-              <Skeleton height="20px" width="30%" />
-            </Flex>
-          </Box>
-        ))}
-      </Stack>
+      <Box bg="gray.50" p={4} borderRadius="lg" shadow="sm">
+        <Stack spacing={6}>
+          {[1, 2, 3].map((item) => (
+            <Box
+              key={item}
+              p={6}
+              shadow="sm"
+              borderWidth="1px"
+              borderRadius="lg"
+              bg="white"
+            >
+              <Skeleton height="36px" width="70%" mb={4} />
+              <Skeleton height="20px" width="100%" mb={3} />
+              <Skeleton height="20px" width="90%" mb={5} />
+              <Flex gap={8} mt={6} mb={4}>
+                <Skeleton height="20px" width="30%" />
+                <Skeleton height="20px" width="30%" />
+              </Flex>
+              <Flex justify="space-between">
+                <Skeleton height="24px" width="120px" />
+                <Skeleton height="36px" width="120px" borderRadius="md" />
+              </Flex>
+            </Box>
+          ))}
+        </Stack>
+      </Box>
     );
   }
 
   if (error) {
-    console.log(error);
     return (
-      <Box textAlign="center" py={10} px={6}>
-        <Heading as="h3" size="lg" mb={2}>
+      <Box textAlign="center" py={12} px={6} bg="gray.50" borderRadius="lg">
+        <Icon as={AlertCircle} boxSize={12} color="red.500" mb={4} />
+        <Heading as="h3" size="lg" mb={3}>
           Error loading campaigns
         </Heading>
-        <Text color="gray.500">{error?.error}</Text>
+        <Text color="gray.600" fontSize="lg">
+          {error?.error || "Please try again later."}
+        </Text>
+        <Button
+          mt={6}
+          colorScheme="blue"
+          leftIcon={<RefreshCw size={18} />}
+          onClick={() =>
+            dispatch(
+              fetchAllCampaigns({
+                page: currentPage,
+                limit: 10,
+                hospital: hospitalId,
+              })
+            )
+          }
+        >
+          Retry
+        </Button>
       </Box>
     );
   }
 
   if (!campaigns || campaigns.length === 0) {
     return (
-      <Box textAlign="center" py={10} px={6}>
-        <Heading as="h3" size="lg" mb={2}>
+      <Box
+        textAlign="center"
+        py={16}
+        px={6}
+        bg="gray.50"
+        borderRadius="lg"
+        borderWidth="1px"
+        borderColor="gray.200"
+      >
+        <Icon as={CalendarX} boxSize={12} color="gray.400" mb={4} />
+        <Heading as="h3" size="lg" mb={3} color="gray.700">
           No campaigns found
         </Heading>
-        <Text color="gray.500">
+        <Text color="gray.500" fontSize="lg" maxW="md" mx="auto">
           There are currently no campaigns matching your search criteria.
         </Text>
+        {userRole === "hospital_admin" && (
+          <Button
+            mt={8}
+            size="lg"
+            colorScheme="blue"
+            leftIcon={<Plus size={20} />}
+            as={Link}
+            to="/campaigns/new"
+          >
+            Create New Campaign
+          </Button>
+        )}
       </Box>
     );
   }
 
   return (
-    <Stack spacing={4}>
-      {campaigns.map((campaign) => (
-        <Box
-          key={campaign._id} 
-          p={5}
-          shadow="sm"
-          borderWidth="1px"
-          borderRadius="md"
-          bg="white"
-          transition="all 0.2s"
-          _hover={{ shadow: "md" }}
-        >
-          <Flex justify="space-between" align="flex-start">
-            <Stack spacing={1}>
-              <Heading size="md" fontWeight="semibold">
-                {campaign.title}
-              </Heading>
-              <Text color="gray.600" noOfLines={2}>
-                {campaign.description}
-              </Text>
-            </Stack>
-            {userRole === "hospital_admin" && (
-              <Menu>
-                <MenuButton
-                  as={IconButton}
-                  icon={<MoreVertical size={18} />}
-                  variant="ghost"
-                  size="sm"
-                  aria-label="More options"
-                />
-                <MenuList>
-                  <MenuItem 
-                    icon={<Edit size={18} />} 
-                    onClick={() => onEdit(campaign)}
-                  >
-                    Edit
-                  </MenuItem>
-                  <MenuItem
-                    icon={<Trash size={18} />}
-                    color="red.500"
-                    onClick={() => handleDeleteConfirm(campaign._id, campaign.title)} // Use `_id`
-                  >
-                    Delete
-                  </MenuItem>
-                </MenuList>
-              </Menu>
-            )}
-          </Flex>
-
-          <Stack spacing={3} mt={4}>
-            <Flex align="center" color="gray.600">
-              <Calendar size={16} />
-              <Text ml={2}>{formatDate(campaign.date)}</Text>
-            </Flex>
-            <Flex align="center" color="gray.600">
-              <MapPin size={16} />
-              <Text ml={2}>{campaign.location}</Text>
-            </Flex>
-            <Flex align="center" color="gray.600">
-              <Building size={16} />
-              <Text ml={2}>{campaign.hospital?.name}</Text> 
-            </Flex>
-          </Stack>
-
-          <Flex justify="flex-end" mt={4}>
-            <Button
-              as={Link}
-              to={`/campaigns/${campaign._id}`} // Use `_id`
-              colorScheme="blue"
-              variant="ghost"
-              size="sm"
-              rightIcon={<ArrowRight size={16} />}
+    <Box>
+      <Stack spacing={6}>
+        {campaigns.map((campaign) => {
+          return (
+            <Box
+              key={campaign._id}
+              p={{ base: 4, md: 6 }}
+              shadow="sm"
+              borderWidth="1px"
+              borderColor={cardBorder}
+              borderRadius="lg"
+              bg={cardBg}
+              transition="all 0.2s ease"
+              _hover={{
+                shadow: "md",
+                borderColor: cardHoverBorder,
+                transform: "translateY(-2px)",
+              }}
+              position="relative"
+              overflow="hidden"
             >
-              View Details
-            </Button>
-          </Flex>
-        </Box>
-      ))}
-    </Stack>
+              {/* Status indicator */}
+              <Badge
+                position="absolute"
+                top={4}
+                right={4}
+                colorScheme={statusColors[status] || "gray"}
+                textTransform="capitalize"
+                fontSize="xs"
+                px={2}
+                py={1}
+                borderRadius="full"
+              ></Badge>
+
+              <Flex
+                justify="space-between"
+                align="flex-start"
+                flexDirection={{ base: "column", md: "row" }}
+                gap={{ base: 4, md: 0 }}
+              >
+                <Stack spacing={2} flex="1" pr={{ md: 12 }}>
+                  <Heading
+                    size={{ base: "md", md: "md" }}
+                    fontWeight="bold"
+                    color={textColorPrimary}
+                    lineHeight="1.3"
+                  >
+                    {campaign.title}
+                  </Heading>
+                  <Text
+                    color={textColorSecondary}
+                    fontSize={{ base: "sm", md: "md" }}
+                    noOfLines={2}
+                    maxW="3xl"
+                    lineHeight="1.6"
+                  >
+                    {campaign?.description || "No description provided"}
+                  </Text>
+                </Stack>
+
+                {userRole === "hospital_admin" && (
+                  <Menu placement="bottom-end">
+                    <MenuButton
+                      as={IconButton}
+                      icon={<MoreVertical size={18} />}
+                      variant="ghost"
+                      size="sm"
+                      aria-label="More options"
+                      borderRadius="md"
+                      ml={{ md: 4 }}
+                      _hover={{ bg: "gray.100" }}
+                    />
+                    <MenuList shadow="lg" borderRadius="md" py={2} minW="180px">
+                      <MenuItem
+                        icon={<Edit size={16} />}
+                        onClick={() => onEdit(campaign)}
+                        fontWeight="medium"
+                        py={3}
+                        _hover={{ bg: "blue.50", color: "blue.600" }}
+                      >
+                        Edit Campaign
+                      </MenuItem>
+                      <MenuItem
+                        icon={<Trash size={16} />}
+                        color="red.500"
+                        onClick={() => onDeleteOpen && onDeleteOpen(campaign)}
+                        fontWeight="medium"
+                        py={3}
+                        _hover={{ bg: "red.50", color: "red.600" }}
+                      >
+                        Delete Campaign
+                      </MenuItem>
+                    </MenuList>
+                  </Menu>
+                )}
+              </Flex>
+
+              <Divider my={4} borderColor={dividerColor} />
+
+              <SimpleGrid
+                columns={{ base: 1, sm: 2, md: 4 }}
+                spacing={{ base: 4, md: 6 }}
+                mt={4}
+              >
+                <Flex align="center" color={textColorSecondary}>
+                  <Flex
+                    p={2}
+                    bg="blue.50"
+                    borderRadius="md"
+                    align="center"
+                    justify="center"
+                    mr={3}
+                    boxSize="36px"
+                  >
+                    <Calendar size={18} color="#3182CE" />
+                  </Flex>
+                  <Box>
+                    <Text fontSize="xs" color="gray.500" fontWeight="medium">
+                      DATE
+                    </Text>
+                    <Text fontWeight="semibold" fontSize="sm">
+                      {formatDate(campaign.date)}
+                    </Text>
+                  </Box>
+                </Flex>
+
+                <Flex align="center" color={textColorSecondary}>
+                  <Flex
+                    p={2}
+                    bg="green.50"
+                    borderRadius="md"
+                    align="center"
+                    justify="center"
+                    mr={3}
+                    boxSize="36px"
+                  >
+                    <MapPin size={18} color="#38A169" />
+                  </Flex>
+                  <Box>
+                    <Text fontSize="xs" color="gray.500" fontWeight="medium">
+                      LOCATION
+                    </Text>
+                    <Text fontWeight="semibold" fontSize="sm">
+                      {campaign.location || "N/A"}
+                    </Text>
+                  </Box>
+                </Flex>
+
+                <Flex align="center" color={textColorSecondary}>
+                  <Flex
+                    p={2}
+                    bg="purple.50"
+                    borderRadius="md"
+                    align="center"
+                    justify="center"
+                    mr={3}
+                    boxSize="36px"
+                  >
+                    <Building size={18} color="#805AD5" />
+                  </Flex>
+                  <Box>
+                    <Text fontSize="xs" color="gray.500" fontWeight="medium">
+                      HOSPITAL
+                    </Text>
+                    <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
+                      {campaign.hospital?.name || "N/A"}
+                    </Text>
+                  </Box>
+                </Flex>
+
+                <Flex align="center" color={textColorSecondary}>
+                  <Flex
+                    p={2}
+                    bg="orange.50"
+                    borderRadius="md"
+                    align="center"
+                    justify="center"
+                    mr={3}
+                    boxSize="36px"
+                  >
+                    <Users size={18} color="#DD6B20" />
+                  </Flex>
+                  <Box>
+                    <Text fontSize="xs" color="gray.500" fontWeight="medium">
+                      PARTICIPANTS
+                    </Text>
+                    <Text fontWeight="semibold" fontSize="sm">
+                      {campaign.participants?.length || 0}
+                    </Text>
+                  </Box>
+                </Flex>
+              </SimpleGrid>
+            </Box>
+          );
+        })}
+      </Stack>
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages || 1}
+        onPageChange={(page) => setCurrentPage(page)}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        isOpen={isDeleteOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onDeleteClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent borderRadius="lg">
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Campaign
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              Are you sure you want to delete "{selectedCampaign?.title}"? This
+              action cannot be undone.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onDeleteClose}>
+                Cancel
+              </Button>
+              <Button colorScheme="red" onClick={handleDeleteConfirm} ml={3}>
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+    </Box>
   );
 };
 

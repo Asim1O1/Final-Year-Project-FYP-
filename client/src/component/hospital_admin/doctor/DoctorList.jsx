@@ -19,12 +19,12 @@ import {
   CardHeader,
   CardBody,
   Badge,
-  Spinner,
+ 
   Image,
   HStack,
   VStack,
 } from "@chakra-ui/react";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState,useEffect } from "react";
 import {
   User,
   Mail,
@@ -43,6 +43,7 @@ import {
   handleDoctorDeletion,
 } from "../../../features/doctor/doctorSlice";
 import { notification } from "antd";
+import CustomLoader from "../../common/CustomSpinner";
 
 const DoctorList = () => {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -53,7 +54,8 @@ const DoctorList = () => {
     onClose: onDeleteClose,
   } = useDisclosure();
   const [currentPage, setCurrentPage] = useState(1);
-
+ const currentUser = useSelector((state) => state?.auth?.user?.data);
+ const hospitalId = currentUser?.hospital;
   const dispatch = useDispatch();
   const { doctors, isLoading, totalPages } = useSelector(
     (state) => state.doctorSlice
@@ -67,8 +69,14 @@ const DoctorList = () => {
 
   // Fetch doctors when the component mounts or when currentPage/filters change
   useEffect(() => {
-    dispatch(fetchAllDoctors({ page: currentPage, limit: 10 }));
-  }, [dispatch, currentPage]);
+    if (hospitalId) {
+      dispatch(fetchAllDoctors({ 
+        page: currentPage, 
+        limit: 10,
+        hospital: hospitalId
+      }));
+    }
+  }, [dispatch, currentPage, hospitalId]);
 
   const handleEditClick = (doctor) => {
     setSelectedDoctor(doctor);
@@ -91,10 +99,10 @@ const DoctorList = () => {
         notification.success({
           message: "Doctor Deleted",
           description: "The doctor has been successfully deleted.",
-        });
+        }); 
         setSelectedDoctor(null);
         onDeleteClose();
-        dispatch(fetchAllDoctors({ page: currentPage, limit: 10 }));
+        dispatch(fetchAllDoctors({ page: currentPage, limit: 10, hospital: hospitalId }));
       } catch (error) {
         notification.error({
           message: "Failed to delete doctor",
@@ -130,7 +138,7 @@ const DoctorList = () => {
       <CardBody p={4}>
         {isLoading ? (
           <Flex justify="center" py={8}>
-            <Spinner size="xl" color="blue.500" />
+            <CustomLoader size="xl" color="blue.500" />
           </Flex>
         ) : (
           <Flex direction="column" gap={4}>

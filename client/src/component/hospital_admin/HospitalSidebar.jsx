@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { Box, VStack, Icon, Text, Flex, Collapse } from "@chakra-ui/react";
-import { useNavigate, useLocation } from "react-router-dom";                                                                                        
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   RiDashboardLine,
   RiStethoscopeLine,
   RiTestTubeLine,
   RiCalendarCheckLine,
   RiMegaphoneLine,
-  RiSettings4Line,
+
   RiUserHeartLine,
   RiFileListLine,
   RiArrowDownSLine,
@@ -39,7 +39,7 @@ export const HospitalSidebar = () => {
 
   const isSubMenuActive = (item) => {
     if (!item.subItems) return false;
-    return item.subItems.some(subItem => location.pathname === subItem.path);
+    return item.subItems.some((subItem) => location.pathname === subItem.path);
   };
 
   const menuItems = [
@@ -66,13 +66,13 @@ export const HospitalSidebar = () => {
       subItems: [
         {
           label: "All Reports",
-          path: "/hospital-admin/medical-reports"
+          path: "/hospital-admin/medical-reports",
         },
         {
           label: "Upload Report",
-          path: "/hospital-admin/medical-reports/upload"
-        }
-      ]
+          path: "/hospital-admin/medical-reports/upload",
+        },
+      ],
     },
     {
       icon: RiMegaphoneLine,
@@ -84,11 +84,7 @@ export const HospitalSidebar = () => {
       label: "Volunteer Requests",
       path: "/hospital-admin/volunteer-requests",
     },
-    {
-      icon: RiSettings4Line,
-      label: "Settings",
-      path: "/hospital-admin/settings",
-    },
+
     {
       icon: LogOutIcon,
       label: "Logout",
@@ -111,26 +107,40 @@ export const HospitalSidebar = () => {
               p={3}
               cursor="pointer"
               borderRadius="md"
-              bg={isActive(item.path) || isSubMenuActive(item) ? "blue.50" : "transparent"}
+              bg={
+                isActive(item.path) || isSubMenuActive(item)
+                  ? "blue.50"
+                  : "transparent"
+              }
               _hover={{ bg: "blue.50" }}
-              color={isActive(item.path) || isSubMenuActive(item) ? "blue.600" : "gray.700"}
+              color={
+                isActive(item.path) || isSubMenuActive(item)
+                  ? "blue.600"
+                  : "gray.700"
+              }
               alignItems="center"
               onClick={() => {
                 if (item.action) {
-                  item.action(); // Call the logout action
+                  item.action(); 
                 } else if (item.subItems) {
-                  toggleSubMenu(item.label); // Toggle submenu
+                  toggleSubMenu(item.label); 
+                  navigate(item.path); 
                 } else {
-                  navigate(item.path); // Navigate if no action is present
+                  // Handle regular menu items
+                  navigate(item.path);
                 }
               }}
             >
               <Icon as={item.icon} boxSize={5} mr={3} />
               <Text flex="1">{item.label}</Text>
               {item.subItems && (
-                <Icon 
-                  as={openSubMenu === item.label ? RiArrowUpSLine : RiArrowDownSLine} 
-                  boxSize={5} 
+                <Icon
+                  as={
+                    openSubMenu === item.label
+                      ? RiArrowUpSLine
+                      : RiArrowDownSLine
+                  }
+                  boxSize={5}
                 />
               )}
             </Flex>

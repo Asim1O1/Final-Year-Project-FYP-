@@ -33,7 +33,7 @@ import {
   TabPanel,
 } from "@chakra-ui/react";
 
-import { handleDoctorRegistration } from "../../../features/doctor/doctorSlice";
+import { fetchAllDoctors, handleDoctorRegistration } from "../../../features/doctor/doctorSlice";
 import {
   Award,
   AwardIcon,
@@ -54,7 +54,7 @@ import { notification, Upload } from "antd";
 import PREDEFINED_SPECIALTIES from "../../../../../constants/Specialties";
 
 import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
-import Pagination from "../../../utils/Pagination";
+
 import InputForm from "../../auth/InputForm";
 import PasswordToggle from "../../auth/PasswordToggle";
 
@@ -64,6 +64,9 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = React.useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const[currentPage, setCurrentPage] = useState(1);
+ const currentUser = useSelector((state) => state?.auth?.user?.data);
+ const hospitalId = currentUser?.hospital;
   const [qualificationForm, setQualificationForm] = useState({
     degree: "",
     university: "",
@@ -135,6 +138,7 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
       });
     }
   };
+  
 
   const removeQualification = (key) => {
     setFormData((prev) => {
@@ -146,21 +150,28 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
       };
     });
   };
-  const totalPages = useSelector(
-    (state) => state?.hospitalSlice?.data?.pagination?.totalPages
-  );
 
   const hospitals = useSelector(
     (state) => state?.hospitalSlice?.hospitals?.hospitals
   );
-  const [currentPage, setCurrentPage] = useState(1);
+
+
+  const adminHospital = hospitals?.find(
+    (hospital) => hospital._id === currentUser?.hospital
+  );
 
   useEffect(() => {
-    dispatch(fetchAllHospitals({ page: currentPage, limit: 10 }));
-  }, [dispatch, currentPage]);
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
+    dispatch(fetchAllHospitals());
+  }, [dispatch]);
+  useEffect(() => {
+    if (adminHospital?._id) {
+      setFormData(prev => ({
+        ...prev,
+        hospital: adminHospital._id
+      }));
+    }
+  }, [adminHospital]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -251,6 +262,13 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
       ).unwrap();
 
       console.log("The response is", response);
+       await   dispatch(
+               fetchAllDoctors({
+                 page: currentPage,
+                 limit: 10,
+                 hospital: hospitalId,
+               })
+             )
 
       notification.success({
         title: "Success",
@@ -529,16 +547,16 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
                           </InputLeftElement>
                           <Select
                             name="hospital"
-                            value={formData.hospital}
+                            value={adminHospital?._id || ""}
                             onChange={handleChange}
                             pl="40px"
+                            isDisabled // Disable since there's only one option
                           >
-                            <option value="">Select Hospital</option>
-                            {hospitals?.map((hospital) => (
-                              <option key={hospital._id} value={hospital._id}>
-                                {hospital.name}
+                            {adminHospital && (
+                              <option value={adminHospital._id}>
+                                {adminHospital.name}
                               </option>
-                            ))}
+                            )}
                           </Select>
                         </InputGroup>
                       </FormControl>

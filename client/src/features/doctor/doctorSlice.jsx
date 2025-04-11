@@ -69,7 +69,6 @@ export const fetchAllDoctors = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       const response = await doctorService.getAllDoctorsService(params);
-      console.log("The response while dinf fetcgAll doctors in thun", response);
 
       if (!response.isSuccess) throw response?.data;
       return response.data;
@@ -90,10 +89,6 @@ export const fetchDoctorsBySpecialization = createAsyncThunk(
       const response = await doctorService.getDoctorsBySpecialization(
         specialization,
         params
-      );
-      console.log(
-        "The response while fetching doctors by specialization:",
-        response
       );
 
       if (!response.isSuccess) throw response?.data;

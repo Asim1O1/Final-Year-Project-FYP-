@@ -15,15 +15,22 @@ import {
   useToast,
   Textarea,
 } from "@chakra-ui/react";
-import { Input, DatePicker, Select } from "antd";
+import { Input, DatePicker, Select, notification } from "antd";
 import dayjs from "dayjs";
+import { handleCampaignUpdate } from "../../../features/campaign/campaignSlice";
 
 import { fetchAllCampaigns } from "../../../features/campaign/campaignSlice";
+import { useDispatch, useSelector } from "react-redux";
 
 const UpdateCampaignForm = ({ isOpen, onClose, campaignData, hospitals }) => {
-  console.log("hospitals are", hospitals);
-  const toast = useToast();
+  console.log("UpdateCampaignForm campaignData", campaignData);
+
+  const dispatch = useDispatch();
+  console.log("UpdateCampaignForm hospitals", hospitals);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const currentUser = useSelector((state) => state?.auth?.user?.data);
+  const hospitalId = currentUser?.hospital;
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -35,26 +42,43 @@ const UpdateCampaignForm = ({ isOpen, onClose, campaignData, hospitals }) => {
 
   // Update form data when campaign data changes
   useEffect(() => {
-    if (campaignData) {
-      console.log("Campaign data:", campaignData);
+    console.log(
+      "[UpdateCampaignForm] useEffect - campaignData changed:",
+      campaignData
+    );
 
-      // Handle the hospital ID correctly
+    if (campaignData) {
+      console.log("[UpdateCampaignForm] Setting form data from campaignData");
+
       let hospitalValue = "";
       if (campaignData.hospital) {
-        // If hospital is an object with _id property (common in MongoDB)
         if (
           typeof campaignData.hospital === "object" &&
           campaignData.hospital._id
         ) {
           hospitalValue = campaignData.hospital._id;
-        }
-        // If hospital is already a string ID
-        else if (typeof campaignData.hospital === "string") {
+          console.log(
+            "[UpdateCampaignForm] Hospital is object, using _id:",
+            hospitalValue
+          );
+        } else if (typeof campaignData.hospital === "string") {
           hospitalValue = campaignData.hospital;
+          console.log(
+            "[UpdateCampaignForm] Hospital is string, using value:",
+            hospitalValue
+          );
         }
       }
 
       setFormData({
+        title: campaignData.title || "",
+        description: campaignData.description || "",
+        date: campaignData.date || "",
+        location: campaignData.location || "",
+        hospital: hospitalValue,
+      });
+
+      console.log("[UpdateCampaignForm] Form data set to:", {
         title: campaignData.title || "",
         description: campaignData.description || "",
         date: campaignData.date || "",
@@ -72,7 +96,6 @@ const UpdateCampaignForm = ({ isOpen, onClose, campaignData, hospitals }) => {
       [name]: value,
     });
 
-    // Clear error for this field
     if (errors[name]) {
       setErrors({
         ...errors,
@@ -88,7 +111,6 @@ const UpdateCampaignForm = ({ isOpen, onClose, campaignData, hospitals }) => {
       date: dateString,
     });
 
-    // Clear error for this field
     if (errors.date) {
       setErrors({
         ...errors,
@@ -97,14 +119,14 @@ const UpdateCampaignForm = ({ isOpen, onClose, campaignData, hospitals }) => {
     }
   };
 
-  // Handle hospital selection
-  const handleHospitalChange = (value) => {
+  // Handle hospital select change
+  const handleHospitalChange = (e) => {
+    const value = e.target.value;
     setFormData({
       ...formData,
       hospital: value,
     });
 
-    // Clear error for this field
     if (errors.hospital) {
       setErrors({
         ...errors,
@@ -116,21 +138,12 @@ const UpdateCampaignForm = ({ isOpen, onClose, campaignData, hospitals }) => {
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.title.trim()) {
-      newErrors.title = "Title is required";
-    }
-    if (!formData.description.trim()) {
+    if (!formData.title.trim()) newErrors.title = "Title is required";
+    if (!formData.description.trim())
       newErrors.description = "Description is required";
-    }
-    if (!formData.date) {
-      newErrors.date = "Date is required";
-    }
-    if (!formData.location.trim()) {
-      newErrors.location = "Location is required";
-    }
-    if (!formData.hospital) {
-      newErrors.hospital = "Hospital is required";
-    }
+    if (!formData.date) newErrors.date = "Date is required";
+    if (!formData.location.trim()) newErrors.location = "Location is required";
+    if (!formData.hospital) newErrors.hospital = "Hospital is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -138,34 +151,43 @@ const UpdateCampaignForm = ({ isOpen, onClose, campaignData, hospitals }) => {
 
   // Handle form submission
   const handleSubmit = async () => {
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
 
     try {
-      // Here you would typically send the data to your API
-      // For now, we'll just simulate a successful submission
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const result = await dispatch(
+        handleCampaignUpdate({
+          campaignId: campaignData?._id,
+          updatedData: formData,
+        })
+      ).unwrap();
+      console.log("the result while updating campaign is", result);
+      dispatch(
+        fetchAllCampaigns({
+          page: currentPage,
+          limit: 10,
+          hospital: hospitalId,
+        })
+      );
 
-      toast({
+      notification.success({
         title: "Campaign updated",
         description: "The campaign has been updated successfully.",
-        status: "success",
-        duration: 5000,
+
+        duration: 2.5,
         isClosable: true,
       });
 
       onClose();
     } catch (error) {
-      console.error("Error updating campaign:", error);
-      toast({
+      console.error("The error is", error);
+      notification.error({
         title: "Error",
         description:
           "There was an error updating the campaign. Please try again.",
         status: "error",
-        duration: 5000,
+        duration: 2.5,
         isClosable: true,
       });
     } finally {
@@ -225,15 +247,20 @@ const UpdateCampaignForm = ({ isOpen, onClose, campaignData, hospitals }) => {
               />
               <FormErrorMessage>{errors.location}</FormErrorMessage>
             </FormControl>
+
             <FormControl isInvalid={errors.hospital}>
               <FormLabel>Hospital</FormLabel>
               <Select
                 placeholder="Select hospital"
-                style={{ width: "100%" }}
-                options={hospitals}
                 value={formData.hospital}
                 onChange={handleHospitalChange}
-              />
+              >
+                {hospitals?.map((hospital) => (
+                  <option key={hospital.value} value={hospital.value}>
+                    {hospital.label}
+                  </option>
+                ))}
+              </Select>
               <FormErrorMessage>{errors.hospital}</FormErrorMessage>
             </FormControl>
           </Stack>

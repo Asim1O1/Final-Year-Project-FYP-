@@ -238,11 +238,15 @@ const getHospitalTestBookingsService = async (hospitalId, filters = {}) => {
 
 // Update test booking status (admin action)
 const updateTestBookingStatusService = async (bookingId, status) => {
-  console.log("Entered the update test booking status service", bookingId, status);
+  console.log(
+    "Entered the update test booking status service",
+    bookingId,
+    status
+  );
   try {
     const response = await axiosInstance.put(
       `/api/medicalTest/${bookingId}/status`,
-     { status: status}
+      { status: status }
     );
 
     if (response?.data?.isSuccess === false) {

@@ -2,16 +2,17 @@ import mongoose from "mongoose";
 
 const activitySchema = new mongoose.Schema(
   {
-    // Core Activity Data
     type: {
       type: String,
       required: true,
       enum: [
         "hospital_registration",
         "new_user",
-        "doctor_approval",
+        "doctor_created",
         "account_status_change",
         "hospital_admin_created",
+        "campaign_created",
+        "medical_test_created",
       ],
     },
     title: { type: String, required: true },
@@ -22,7 +23,7 @@ const activitySchema = new mongoose.Schema(
       type: [String],
       required: true,
       enum: ["system_admin", "hospital_admin", "doctor", "patient"],
-      default: ["system_admin"], // Default: only visible to system admins
+      default: ["system_admin"],
     },
 
     // Actor Information
@@ -34,31 +35,12 @@ const activitySchema = new mongoose.Schema(
       },
       userId: {
         type: mongoose.Schema.Types.ObjectId,
-        refPath: "performedBy.role",
       },
-      name: String, // Cached for quick display
+      name: String,
     },
-
-    // Target Entity (optional)
-    targetEntity: {
-      type: {
-        type: String,
-        enum: ["Hospital", "User", "Doctor", "Appointment"],
-      },
-      id: {
-        type: mongoose.Schema.Types.ObjectId,
-        refPath: "targetEntity.type",
-      },
-    },
-
-    // Technical Metadata
-    ipAddress: String,
-    userAgent: String,
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
   }
 );
 

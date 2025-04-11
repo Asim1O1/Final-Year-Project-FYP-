@@ -5,7 +5,8 @@ import Notification from "../../models/notification.model.js";
 import userModel from "../../models/user.model.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 import { emailTemplates } from "../../utils/emailTemplates.js";
-import {paginate} from "../../utils/paginationUtil.js";
+import { paginate } from "../../utils/paginationUtil.js";
+import { logActivity } from "../activity/activity.controller.js";
 
 export const createCampaign = async (req, res, next) => {
   const {
@@ -37,8 +38,11 @@ export const createCampaign = async (req, res, next) => {
 
   try {
     // Check if hospital exists
-    const hospitalExists = await Hospital.exists({ _id: hospital });
-    if (!hospitalExists) {
+    // Get full hospital details instead of just checking existence
+    const hospitalData = await Hospital.findById(hospital);
+    console.log("The hospital data", hospitalData);
+
+    if (!hospitalData) {
       return res.status(404).json(
         createResponse({
           isSuccess: false,
@@ -77,6 +81,20 @@ export const createCampaign = async (req, res, next) => {
     });
 
     await campaign.save();
+    await logActivity("campaign_created", {
+      // Core Activity Data
+      title: `Campaign Created: ${title}`,
+      description: `A new campaign titled "${title}" is scheduled for ${date} at ${location}, organized by ${hospitalData.name}.`,
+
+      performedBy: {
+        role: req.user?.role || "hospital_admin",
+        userId: req.user?._id,
+        name: req.user?.fullName,
+      },
+
+      // Visibility: who can see this activity
+      visibleTo: ["hospital_admin"],
+    });
 
     // Notify all users
     const users = await userModel.find({ role: "user" }, "_id email");
@@ -96,18 +114,18 @@ export const createCampaign = async (req, res, next) => {
     io.emit("new-campaign", { message: `New campaign: ${title}` });
 
     // Send email notifications
-    for (const user of users) {
-      const data = {
-        fullName: user.fullName,
-        title: campaign.title,
-        date: new Date(campaign.date).toLocaleDateString(),
-        location: campaign.location,
-      };
-      const template = emailTemplates.campaignCreated;
-      const subject = emailTemplates.campaignCreated.subject;
+    // for (const user of users) {
+    //   const data = {
+    //     fullName: user.fullName,
+    //     title: campaign.title,
+    //     date: new Date(campaign.date).toLocaleDateString(),
+    //     location: campaign.location,
+    //   };
+    //   const template = emailTemplates.campaignCreated;
+    //   const subject = emailTemplates.campaignCreated.subject;
 
-      await sendEmail(user.email, subject, template, data);
-    }
+    //   await sendEmail(user.email, subject, template, data);
+    // }
 
     return res.status(201).json(
       createResponse({
@@ -126,10 +144,16 @@ export const createCampaign = async (req, res, next) => {
 
 export const updateCampaign = async (req, res, next) => {
   const { id } = req.params;
-  const { title, description, date, location, hospital } = req.body;
+  const { title, description, date, location } = req.body;
+
+  console.log("🔧 Update Campaign Request Received");
+  console.log("Params:", req.params);
+  console.log("Body:", req.body);
+  console.log("User:", req.user);
 
   // Validate request body
-  if (!title && !description && !date && !location && !hospital) {
+  if (!title && !description && !date && !location) {
+    console.warn("⚠️ No fields provided to update");
     return res.status(400).json(
       createResponse({
         isSuccess: false,
@@ -145,7 +169,10 @@ export const updateCampaign = async (req, res, next) => {
   try {
     // Find the campaign by ID
     const campaign = await Campaign.findById(id);
+    console.log("🧾 Found campaign:", campaign);
+
     if (!campaign) {
+      console.warn("⚠️ Campaign not found");
       return res.status(404).json(
         createResponse({
           isSuccess: false,
@@ -162,6 +189,7 @@ export const updateCampaign = async (req, res, next) => {
       campaign.createdBy.toString() !== req.user._id.toString() &&
       req.user.role !== "admin"
     ) {
+      console.warn("🚫 Unauthorized update attempt by user:", req.user._id);
       return res.status(403).json(
         createResponse({
           isSuccess: false,
@@ -175,29 +203,26 @@ export const updateCampaign = async (req, res, next) => {
     }
 
     // Update the campaign fields
-    if (title) campaign.title = title;
-    if (description) campaign.description = description;
-    if (date) campaign.date = date;
-    if (location) campaign.location = location;
-    if (hospital) {
-      const hospitalExists = await Hospital.findById(hospital);
-      if (!hospitalExists) {
-        return res.status(404).json(
-          createResponse({
-            isSuccess: false,
-            statusCode: 404,
-            message: "Hospital not found",
-            error: null,
-            data: null,
-          })
-        );
-      }
-      campaign.hospital = hospital;
+    if (title) {
+      console.log("✏️ Updating title:", title);
+      campaign.title = title;
+    }
+    if (description) {
+      console.log("✏️ Updating description:", description);
+      campaign.description = description;
+    }
+    if (date) {
+      console.log("✏️ Updating date:", date);
+      campaign.date = date;
+    }
+    if (location) {
+      console.log("✏️ Updating location:", location);
+      campaign.location = location;
     }
 
     await campaign.save();
+    console.log("✅ Campaign updated successfully:", campaign);
 
-    // Return success response
     return res.status(200).json(
       createResponse({
         isSuccess: true,
@@ -208,10 +233,11 @@ export const updateCampaign = async (req, res, next) => {
       })
     );
   } catch (error) {
-    console.error("Error updating campaign:", error);
+    console.error("❌ Error updating campaign:", error);
     return next(error);
   }
 };
+
 
 export const deleteCampaign = async (req, res, next) => {
   const { id } = req.params;
@@ -268,7 +294,7 @@ export const deleteCampaign = async (req, res, next) => {
 };
 
 export const getCampaignById = async (req, res, next) => {
-  console.log("ENETERDD ENETERD")
+  console.log("ENETERDD ENETERD");
   const { id } = req.params;
 
   try {
@@ -308,22 +334,74 @@ export const getCampaignById = async (req, res, next) => {
 
 export const getAllCampaigns = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, sort = "createdAt" } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      sort = "createdAt",
+      hospital,
+      search,
+      startDate,
+      endDate,
+    } = req.query;
+
+    console.log("Incoming query params:", {
+      page,
+      limit,
+      sort,
+      hospital,
+      search,
+      startDate,
+      endDate,
+    });
+
+    const query = {};
+
+    // Filter by hospital
+    if (hospital) {
+      query.hospital = hospital;
+      console.log("Filtering by hospital:", hospital);
+    }
+
+    // Search by campaign name (case insensitive)
+    if (search) {
+      query.name = { $regex: search, $options: "i" };
+      console.log("Search query for campaign name:", query.name);
+    }
+
+    // Filter by date range
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        query.createdAt.$gte = new Date(startDate);
+        console.log(
+          "Filtering campaigns from startDate:",
+          query.createdAt.$gte
+        );
+      }
+      if (endDate) {
+        query.createdAt.$lte = new Date(endDate);
+        console.log("Filtering campaigns until endDate:", query.createdAt.$lte);
+      }
+    }
 
     // Parse sort parameters
     const sortOrder = sort.startsWith("-") ? -1 : 1;
     const sortField = sort.replace("-", "");
     const sortOptions = { [sortField]: sortOrder };
+    console.log("Sort options:", sortOptions);
 
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
+    console.log("Pagination values -> page:", pageNum, "limit:", limitNum);
 
     if (!pageNum && !limitNum) {
-      // If pagination params are missing, return all campaigns
-      const campaigns = await Campaign.find()
+      console.log("Fetching all campaigns without pagination...");
+      const campaigns = await Campaign.find(query)
         .populate("hospital", "name address")
         .populate("createdBy", "name email")
         .populate("volunteers", "name email");
+
+      console.log("Total campaigns fetched (no pagination):", campaigns.length);
 
       return res.status(200).json(
         createResponse({
@@ -339,18 +417,21 @@ export const getAllCampaigns = async (req, res, next) => {
       );
     }
 
-    // Implement pagination logic
-    const totalCount = await Campaign.countDocuments({});
-    const totalPages = Math.ceil(totalCount / limitNum);
+    console.log("Fetching paginated campaigns...");
 
-    // Fetch campaigns with pagination and populate related fields
-    const campaigns = await Campaign.find()
+    const totalCount = await Campaign.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limitNum);
+    console.log("Total campaigns:", totalCount, "Total pages:", totalPages);
+
+    const campaigns = await Campaign.find(query)
       .skip((pageNum - 1) * limitNum)
       .limit(limitNum)
       .sort(sortOptions)
       .populate("hospital", "name address")
       .populate("createdBy", "name email")
       .populate("volunteers", "name email");
+
+    console.log("Campaigns returned for current page:", campaigns.length);
 
     return res.status(200).json({
       isSuccess: true,
@@ -442,7 +523,7 @@ export const volunteerForCampaign = async (req, res, next) => {
       const notification = new Notification({
         user: hospitalAdmin._id,
         message: `New volunteer request for campaign: ${campaign.title}`,
-        type: "volunteer_request",
+        type: "campaign",
       });
       await notification.save();
 
@@ -539,14 +620,14 @@ export const handleVolunteerRequest = async (req, res, next) => {
 };
 
 export const getAllVolunteerRequests = async (req, res, next) => {
-  console.log("entered the get all volynteer requests")
+  console.log("entered the get all volynteer requests");
 
   try {
     const { page, limit } = req.query;
 
     const result = await paginate(
       Campaign,
-      { "volunteerRequests": { $exists: true, $ne: [] } }, // Ensures non-empty volunteer requests
+      { volunteerRequests: { $exists: true, $ne: [] } }, // Ensures non-empty volunteer requests
       {
         page,
         limit,

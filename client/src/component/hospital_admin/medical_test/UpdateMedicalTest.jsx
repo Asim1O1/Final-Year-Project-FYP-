@@ -34,7 +34,12 @@ import {
   IconButton,
   Image,
 } from "@chakra-ui/react";
-import { ChevronDownIcon, CloseIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
+import {
+  ChevronDownIcon,
+  CloseIcon,
+  DeleteIcon,
+  EditIcon,
+} from "@chakra-ui/icons";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
@@ -337,12 +342,7 @@ const UpdateMedicalTestForm = ({ isOpen, onClose, testData }) => {
               >
                 Test Information
               </Tab>
-              <Tab
-                className="font-medium transition-colors hover:bg-green-50"
-                _selected={{ bg: "green.50", borderColor: "green.500" }}
-              >
-                Hospital & Time
-              </Tab>
+
               <Tab
                 className="font-medium transition-colors hover:bg-green-50"
                 _selected={{ bg: "green.50", borderColor: "green.500" }}
@@ -412,39 +412,6 @@ const UpdateMedicalTestForm = ({ isOpen, onClose, testData }) => {
                         <NumberDecrementStepper className="hover:bg-green-50" />
                       </NumberInputStepper>
                     </NumberInput>
-                  </FormControl>
-                </VStack>
-              </TabPanel>
-
-              {/* Tab 2: Hospital & Time */}
-              <TabPanel>
-                <VStack spacing={5} align="stretch">
-                  <FormControl isInvalid={errors.hospital}>
-                    <FormLabel fontWeight="medium">Hospital</FormLabel>
-                    <Select
-                      name="hospital"
-                      value={formData.hospital}
-                      onChange={handleInputChange}
-                      pl="40px"
-                      fontSize="sm"
-                      className="max-h-40 overflow-y-auto hover:border-green-300 focus:border-green-500"
-                      borderRadius="md"
-                      bg="gray.50"
-                      _focus={{ bg: "white" }}
-                      icon={<ChevronDownIcon />}
-                    >
-                      <option value="">Select Hospital</option>
-                      {hospitals?.map((hospital) => (
-                        <option key={hospital._id} value={hospital._id}>
-                          {hospital.name}
-                        </option>
-                      ))}
-                    </Select>
-                    {errors.hospital && (
-                      <FormErrorMessage className="text-red-500">
-                        {errors.hospital}
-                      </FormErrorMessage>
-                    )}
                   </FormControl>
                 </VStack>
               </TabPanel>

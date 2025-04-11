@@ -54,7 +54,7 @@ const PatientDetails = () => {
   const [formData, setFormData] = useState({
     reason: "",
     hospitalId: "",
-    paymentMethod: "pay_on_site",
+    paymentMethod: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingDoctor, setIsLoadingDoctor] = useState(true);
@@ -84,6 +84,7 @@ const PatientDetails = () => {
           const result = await dispatch(
             completePayment({ pidx, transaction_id, amount, purchase_order_id })
           ).unwrap();
+          console.log("The result of payment completion is", result);
 
           if (result.IsSuccess) {
             notification.success({
@@ -193,8 +194,10 @@ const PatientDetails = () => {
     try {
       // First, create the appointment regardless of payment method
       const result = await dispatch(bookAppointment(appointmentData)).unwrap();
+      console.log("the result in book appointment ", result)
 
       if (formData.paymentMethod === "pay_now") {
+        console.log("enetered the pay_now")
         // Get the appointmentId from the result
         const appointmentId = result.data.appointmentId;
 
@@ -207,8 +210,9 @@ const PatientDetails = () => {
             bookingType: "appointment",
           })
         ).unwrap();
+        console.log("The payment response is", paymentResponse);
 
-        window.location.href = paymentResponse.payment_url;
+        window.location.href =paymentResponse?.data?.payment_url || paymentResponse.payment_url  ;
       } else {
         // For pay_on_site, just show success and redirect
         notification.success({

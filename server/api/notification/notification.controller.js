@@ -5,7 +5,10 @@ import Notification from "../../models/notification.model.js";
 export const getNotifications = async (req, res, next) => {
   try {
     const userId = req.user?._id;
+    console.log("🔍 Logged in user ID:", userId);
+
     if (!userId) {
+      console.warn("⚠️ Unauthorized access: No user ID found in req.user");
       return res.status(401).json(
         createResponse({
           isSuccess: false,
@@ -15,10 +18,17 @@ export const getNotifications = async (req, res, next) => {
       );
     }
 
+    console.log("📦 Fetching notifications for user:", userId);
+
     const notifications = await Notification.find({ user: userId })
       .sort({ createdAt: -1 })
       .populate({ path: "campaign", select: "title" })
       .populate({ path: "appointment", select: "date doctor" });
+
+    console.log("✅ Notifications fetched:", notifications.length);
+    if (notifications.length > 0) {
+      console.log("📝 First notification sample:", notifications[0]);
+    }
 
     return res.status(200).json(
       createResponse({
@@ -28,7 +38,7 @@ export const getNotifications = async (req, res, next) => {
       })
     );
   } catch (error) {
-    console.error("Error fetching notifications:", error);
+    console.error("❌ Error fetching notifications:", error);
     next(error);
   }
 };

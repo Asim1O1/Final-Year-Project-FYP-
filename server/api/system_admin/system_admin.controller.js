@@ -113,13 +113,15 @@ export const handleAccountStatus = async (req, res, next) => {
   try {
     const { accountId, role } = req.params;
 
+    console.log("The req users is", req?.user);
+
     let Model;
     if (role === "doctor") {
       Model = Doctor;
-    } else if (role === "user" || role === "hospital_admin") {
+    } else if (role === "user") {
       Model = User;
     } else {
-      console.warn("Invalid role provided:", role);
+      console.warn("[WARN] Invalid role provided:", role);
       return res.status(400).json(
         createResponse({
           isSuccess: false,
@@ -132,7 +134,7 @@ export const handleAccountStatus = async (req, res, next) => {
     const account = await Model.findById(accountId);
 
     if (!account) {
-      console.warn(`${role} not found with ID:`, accountId);
+      console.warn(`[WARN] ${role} not found with ID:`, accountId);
       return res.status(404).json(
         createResponse({
           isSuccess: false,
@@ -142,7 +144,6 @@ export const handleAccountStatus = async (req, res, next) => {
       );
     }
 
-    // Check if the action is redundant
     if (account.isActive && req.body.action === "activate") {
       return res.status(400).json(
         createResponse({
@@ -163,7 +164,6 @@ export const handleAccountStatus = async (req, res, next) => {
       );
     }
 
-    // Toggle status
     const updatedAccount = await Model.findByIdAndUpdate(
       accountId,
       { isActive: !account.isActive },
@@ -184,14 +184,24 @@ export const handleAccountStatus = async (req, res, next) => {
 
     await sendEmail(updatedAccount.email, subject, template, data);
 
+    console.debug("[DEBUG] Logging activity with data:", {
+      role: req.user?.role,
+      userId: req.user?._id,
+      name: req.user?.fullName,
+    });
+
     await logActivity("account_status_change", {
-      fullName: updatedAccount.fullName,
-      isActive: updatedAccount.isActive,
-      userId: updatedAccount._id,
-      name: updatedAccount.fullName,
-      role: "system_admin",
-      nameOfActor: req.user?.fullName,
-      actorId: req.user?._id,
+      title: updatedAccount.isActive
+        ? "Account Activated"
+        : "Account Deactivated",
+      description: `${updatedAccount.fullName}'s account has been ${
+        updatedAccount.isActive ? "activated" : "deactivated"
+      }`,
+      performedBy: {
+        role: req.user?.role || "system_admin",
+        userId: req.user?._id,
+        name: req.user?.fullName,
+      },
     });
 
     return res.status(200).json(
@@ -205,7 +215,7 @@ export const handleAccountStatus = async (req, res, next) => {
       })
     );
   } catch (error) {
-    console.error("Error handling account status:", error);
+    console.error("[ERROR] Error handling account status:", error);
     next(error);
   }
 };

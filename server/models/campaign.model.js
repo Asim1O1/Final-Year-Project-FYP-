@@ -51,7 +51,7 @@ const campaignSchema = new mongoose.Schema(
         answers: [
           {
             question: String,
-            answer: mongoose.Schema.Types.Mixed, 
+            answer: mongoose.Schema.Types.Mixed,
             questionType: String,
           },
         ],
@@ -62,10 +62,10 @@ const campaignSchema = new mongoose.Schema(
         question: { type: String, required: [true, "Question is required"] },
         questionType: {
           type: String,
-          enum: ["question",  "boolean"],
+          enum: ["question", "boolean"],
           required: [true, "Question type is required"],
         },
-       
+
         isRequired: { type: Boolean, default: false },
       },
     ],
@@ -74,6 +74,7 @@ const campaignSchema = new mongoose.Schema(
       ref: "User",
       required: [true, "CreatedBy is required"],
     },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

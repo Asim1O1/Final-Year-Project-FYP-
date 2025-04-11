@@ -12,6 +12,8 @@ import { paginate } from "../../utils/paginationUtil.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 import { emailTemplates } from "../../utils/emailTemplates.js";
 
+import { logActivity } from "../activity/activity.controller.js";
+
 export const createMedicalTest = async (req, res, next) => {
   const { testName, testPrice, hospital, testDescription } = req.body;
   console.log("Request body:", req.body);
@@ -70,6 +72,20 @@ export const createMedicalTest = async (req, res, next) => {
     });
 
     await newMedicalTest.save();
+    await logActivity("medical_test_created", {
+      // Core Activity Data
+      title: `Medical Test Created: ${testName}`,
+      description: `A new medical test named ${testName} with price ${testPrice} was created at ${existingHospital.name}.`,
+
+      // Actor Information
+      performedBy: {
+        role: req.user?.role,
+        userId: req.user?._id,
+        name: req.user?.fullName,
+      },
+
+      visibleTo: ["hospital_admin"],
+    });
 
     // Link the new medical test to the hospital
     existingHospital.medicalTests.push(newMedicalTest._id);
@@ -130,9 +146,10 @@ export const getMedicalTestById = async (req, res, next) => {
  */
 export const getMedicalTests = async (req, res, next) => {
   try {
-    const { page, limit, hospital, search } = req.query;
+    const { page = 1, limit = 10, hospital, search } = req.query;
 
-    let query = {};
+    // Build dynamic query
+    const query = {};
     if (hospital) {
       query.hospital = hospital;
     }
@@ -141,18 +158,18 @@ export const getMedicalTests = async (req, res, next) => {
     }
 
     const options = {
-      page,
-      limit,
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
       sort: { createdAt: -1 },
       populate: {
         path: "hospital",
-        select: "name location contactNumber", // Fetch only hospital name and location
+        select: "name location contactNumber",
       },
     };
 
-    let result = await paginate(MedicalTest, query, options);
+    const result = await paginate(MedicalTest, query, options);
 
-    // **Manually Remove `timeSlot` and `payment` Before Sending Response**
+    // Remove sensitive or unnecessary fields
     result.data = result.data.map((test) => {
       const { timeSlot, payment, ...filteredTest } = test.toObject();
       return filteredTest;
@@ -326,7 +343,7 @@ export const bulkDeleteMedicalTests = async (req, res, next) => {
 };
 
 export const bookMedicalTest = async (req, res, next) => {
-  console.log("entered the book medical test backend function ");
+  console.log("Entered the book medical test backend function");
   const {
     userId,
     testId,
@@ -381,7 +398,6 @@ export const bookMedicalTest = async (req, res, next) => {
       );
     }
 
-    console.log("Checking if user, test, and hospital exist...");
     // Check if user, test, and hospital exist
     const user = await User.findById(userId);
     if (!user) {
@@ -419,14 +435,13 @@ export const bookMedicalTest = async (req, res, next) => {
       );
     }
 
-    console.log("Checking for existing bookings...");
     // Check for existing bookings at the same time
     const existingBooking = await TestBooking.findOne({
       testId,
       hospitalId,
       bookingDate: new Date(bookingDate),
       bookingTime,
-      status: { $in: ["pending", "approved", "booked", "confirmed"] }, // Added new statuses
+      status: { $in: ["pending", "approved", "booked", "confirmed"] },
     });
 
     if (existingBooking) {
@@ -453,11 +468,10 @@ export const bookMedicalTest = async (req, res, next) => {
     }
 
     // Determine status based on payment method
-    const status = paymentMethod === "pay_on_site" ? "booked" : "confirmed";
-    const paymentStatus =
-      paymentMethod === "pay_now" ? "Pending" : "To be paid on site";
 
-    console.log(`Creating new test booking with status: ${status}...`);
+    const status = paymentMethod === "pay_on_site" ? "booked" : "booked";
+    const paymentStatus = paymentMethod === "pay_now" ? "Pending" : "Pending";
+
     // Create new test booking
     const newTestBooking = new TestBooking({
       userId,
@@ -476,45 +490,80 @@ export const bookMedicalTest = async (req, res, next) => {
     console.log("Test booking created successfully:", newTestBooking._id);
 
     // Update the MedicalTest status
-    await MedicalTest.findByIdAndUpdate(testId, { status: status });
+    await MedicalTest.findByIdAndUpdate(testId, { status });
     console.log(`MedicalTest ${testId} status updated to ${status}`);
 
-    // Send In-App Notification
-    console.log("Creating notification...");
-    const notification = new Notification({
+    // Get socket.io instance once
+    const io = req.app.get("socketio");
+
+    // 1. NOTIFY HOSPITAL ADMIN(S)
+    const hospitalAdmins = await User.find({
+      role: "hospital_admin",
+      hospitalId: hospital._id,
+    });
+
+    console.log(
+      `Found ${hospitalAdmins.length} admin(s) for hospital: ${hospital.name}`
+    );
+
+    if (hospitalAdmins.length > 0) {
+      const adminNotifications = hospitalAdmins.map((admin) => ({
+        user: admin._id,
+        message: `New ${test.testName} test booked by ${
+          user.fullName
+        } on ${new Date(bookingDate).toLocaleDateString()} at ${bookingTime}`,
+        type: "test_booking_admin",
+        relatedId: newTestBooking._id,
+        hospitalId: hospital._id,
+      }));
+
+      await Notification.insertMany(adminNotifications);
+      console.log(`Admin notifications inserted in DB.`);
+
+      hospitalAdmins.forEach((admin) => {
+        console.log(`Emitting 'new-admin-notification' to admin: ${admin._id}`);
+        io.to(admin._id.toString()).emit("new-admin-notification", {
+          message: `New test booking at ${hospital.name}`,
+          bookingDetails: {
+            testName: test.testName,
+            patientName: user.fullName,
+            date: new Date(bookingDate).toLocaleDateString(),
+            time: bookingTime,
+            tokenNumber: tokenNumber,
+          },
+        });
+      });
+    } else {
+      console.log(`⚠️ No admins found for hospital: ${hospital.name}`);
+    }
+
+    // Notify patient
+    const userNotification = new Notification({
       user: userId,
       message: `Your ${test.name} test at ${hospital.name} on ${new Date(
         bookingDate
       ).toLocaleDateString()} at ${bookingTime} has been ${
         status === "confirmed" ? "confirmed" : "booked"
       } successfully.${
-        tokenNumber
-          ? ` Your token number is ${tokenNumber}. Please arrive 10 minutes early.`
-          : ""
+        tokenNumber ? ` Your token number is ${tokenNumber}.` : ""
       }`,
       type: "test_booking",
       relatedId: newTestBooking._id,
     });
 
-    await notification.save();
-    console.log("Notification created successfully:", notification._id);
+    await userNotification.save();
+    console.log("✅ User notification created:", userNotification._id);
 
-    // Emit real-time notification via Socket.io
-    console.log("Emitting socket notification...");
-    const io = req.app.get("socketio");
+    console.log(`Emitting 'new-notification' to user: ${userId}`);
     io.to(userId.toString()).emit("new-notification", {
-      message: `Your ${test.name} test has been ${
-        status === "confirmed" ? "confirmed" : "booked"
-      }.`,
+      message: `Test booking ${
+        status === "confirmed" ? "confirmed" : "created"
+      }`,
+      bookingId: newTestBooking._id,
     });
-    console.log("Socket notification emitted");
 
-    // Send Confirmation Email
-    console.log("Preparing to send confirmation email...");
-    const subject = emailTemplates.testBooking.subject;
-    const template = emailTemplates.testBooking;
-
-    const data = {
+    // 3. SEND CONFIRMATION EMAIL
+    const emailData = {
       fullName: user.fullName,
       testName: test.name,
       hospitalName: hospital.name,
@@ -525,14 +574,19 @@ export const bookMedicalTest = async (req, res, next) => {
       tokenNumber: tokenNumber,
       bookingStatus: status === "confirmed" ? "Confirmed" : "Booked",
       instructions: tokenNumber
-        ? "Please arrive 10 minutes early with your token number to complete payment and take your test."
-        : "You can proceed directly to the test center as you've already paid online.",
+        ? "Please arrive 10 minutes early with your token number."
+        : "Proceed directly to the test center.",
     };
 
-    await sendEmail(user.email, subject, template, data);
+    await sendEmail(
+      user.email,
+      emailTemplates.testBooking.subject,
+      emailTemplates.testBooking,
+      emailData
+    );
     console.log("Confirmation email sent to:", user.email);
 
-    console.log("Returning success response");
+    // Return success response
     res.status(201).json(
       createResponse({
         isSuccess: true,
@@ -559,16 +613,18 @@ export const bookMedicalTest = async (req, res, next) => {
   }
 };
 
-// Get all test bookings for a specific hospital (for admin)
 export const getHospitalTestBookings = async (req, res, next) => {
   const { hospitalId } = req.params;
-  console.log("The hospital id", hospitalId);
-  const { status, date } = req.query;
+  const { status, date, search, page = 1, limit = 10 } = req.query;
 
-  console.log("Fetching test bookings for hospital:", hospitalId);
+  console.log("Fetching test bookings for hospital:", hospitalId, {
+    status,
+    date,
+    search,
+  });
 
   try {
-    // Validate hospital ID
+    // 1. Validate hospital ID
     if (!hospitalId) {
       return res.status(400).json(
         createResponse({
@@ -579,7 +635,7 @@ export const getHospitalTestBookings = async (req, res, next) => {
       );
     }
 
-    // Check if hospital exists
+    // 2. Check if hospital exists
     const hospital = await Hospital.findById(hospitalId);
     if (!hospital) {
       return res.status(404).json(
@@ -591,13 +647,34 @@ export const getHospitalTestBookings = async (req, res, next) => {
       );
     }
 
-    // Build query
+    // 3. Build dynamic query
     const query = { hospitalId };
 
-    if (status) {
+    // Handle search for populated fields
+    if (search) {
+      // First find matching tests and users
+      const matchingTests = await MedicalTest.find({
+        testName: { $regex: search, $options: "i" },
+      }).select("_id");
+
+      const matchingUsers = await User.find({
+        fullName: { $regex: search, $options: "i" },
+      }).select("_id");
+
+      // Use the IDs in the main query
+      query.$or = [
+        { testId: { $in: matchingTests.map((test) => test._id) } },
+        { userId: { $in: matchingUsers.map((user) => user._id) } },
+      ];
+    }
+
+    // Filter by status if provided and valid
+    const validStatuses = ["pending", "confirmed", "completed", "cancelled"];
+    if (status && validStatuses.includes(status)) {
       query.status = status;
     }
 
+    // Filter by date if provided
     if (date) {
       query.bookingDate = {
         $gte: new Date(new Date(date).setHours(0, 0, 0)),
@@ -605,20 +682,38 @@ export const getHospitalTestBookings = async (req, res, next) => {
       };
     }
 
-    console.log("Querying test bookings with:", query);
+    console.log("Final Query:", query);
 
-    // Get bookings with populated user and test details
+    // 4. Fetch bookings with pagination
+    const skip = (page - 1) * limit;
     const bookings = await TestBooking.find(query)
       .populate("userId", "fullName email phone")
       .populate("testId", "testName testPrice testDescription")
-      .sort({ bookingDate: 1, bookingTime: 1 });
+      .sort({ bookingDate: 1, bookingTime: 1 })
+      .skip(skip)
+      .limit(Number(limit));
 
-    res.status(200).json(
+    const totalBookings = await TestBooking.countDocuments(query);
+
+    console.log(`Found ${bookings.length} bookings (Total: ${totalBookings})`);
+
+    // 5. Return paginated results
+    return res.status(200).json(
       createResponse({
         isSuccess: true,
         statusCode: 200,
-        message: "Test bookings retrieved successfully",
-        data: bookings,
+        message:
+          bookings.length > 0
+            ? "Test bookings retrieved successfully"
+            : "No bookings found for the specified criteria.",
+        data: {
+          bookings,
+          pagination: {
+            currentPage: Number(page),
+            totalPages: Math.ceil(totalBookings / limit),
+            totalBookings,
+          },
+        },
       })
     );
   } catch (error) {
@@ -662,12 +757,7 @@ export const updateTestBookingStatus = async (req, res, next) => {
     }
 
     // Validate status transition
-    const validStatuses = [
-      "pending",
-      "completed",
-      "cancelled",
-      "report_available",
-    ];
+    const validStatuses = ["pending", "completed", "cancelled"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json(
         createResponse({
@@ -681,32 +771,32 @@ export const updateTestBookingStatus = async (req, res, next) => {
     // Update booking
     const updatedBooking = await TestBooking.findByIdAndUpdate(
       bookingId,
-      { status },
+      {
+        status,
+        paymentStatus: "Paid",
+      },
       { new: true }
     ).populate("userId", "fullName email");
 
     console.log("Test booking status updated:", updatedBooking);
 
-    // Send notification to user if status changed to completed
-    if (status === "completed" || status === "cancelled") {
-      let notificationMessage = "";
-      let socketMessage = "";
+    const io = req.app.get("socketio");
 
-      if (status === "completed") {
-        notificationMessage = `Your ${updatedBooking.testId.name} test has been completed.`;
-        socketMessage = `Your test has been completed.`;
-      } else if (status === "cancelled") {
-        notificationMessage = `Your ${updatedBooking.testId.name} test appointment has been cancelled.`;
-        socketMessage = `Your test appointment has been cancelled.`;
-      }
-      await notification.save();
+    const notification = new Notification({
+      user: updatedBooking.userId._id,
+      message: `Your test booking status has been updated to ${status}.`,
+      type: "test_booking",
+      relatedId: updatedBooking._id,
+    });
 
-      // Emit real-time notification
-      const io = req.app.get("socketio");
-      io.to(booking.userId.toString()).emit("new-notification", {
-        message: `Your test has been completed.`,
-      });
-    }
+    io.to(updatedBooking.userId._id.toString()).emit("new-notification", {
+      message: notification.message,
+      bookingId: updatedBooking._id,
+      type: notification.type,
+      user: notification.user,
+    });
+
+    await notification.save();
 
     res.status(200).json(
       createResponse({

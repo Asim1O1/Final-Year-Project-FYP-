@@ -3,7 +3,6 @@ import createApiResponse from "../../utils/createApiResponse";
 import axiosInstance from "../../utils/axiosInstance";
 import { BASE_BACKEND_URL } from "../../../constants";
 
-
 const createDoctorService = async (doctorData) => {
   try {
     // Log the FormData to verify its contents
@@ -40,7 +39,8 @@ const createDoctorService = async (doctorData) => {
     console.error("Error in createDoctorService function:", error?.response);
 
     // Handle the error response
-    const errorMessage = error?.response?.data?.error ||
+    const errorMessage =
+      error?.response?.data?.error ||
       error?.response?.data?.error?.[0] ||
       error?.response?.data?.message ||
       "An error occurred during registration.";
@@ -133,13 +133,8 @@ const deleteDoctorService = async (doctorId) => {
 // Get a doctor by ID
 const getDoctorByIdService = async (doctorId) => {
   try {
-    const response = await axiosInstance.get(
-      `/api/doctor/${doctorId}`
-    );
-    console.log(
-      "The response while fetching doctor by ID is",
-      response
-    );
+    const response = await axiosInstance.get(`/api/doctor/${doctorId}`);
+    console.log("The response while fetching doctor by ID is", response);
 
     if (!response?.data?.isSuccess) {
       throw createApiResponse({
@@ -167,14 +162,28 @@ const getDoctorByIdService = async (doctorId) => {
 };
 
 // Get all doctors (with optional filters & pagination)
-const getAllDoctorsService = async (filters = {}) => {
+export const getAllDoctorsService = async (filters = {}) => {
   try {
-    const { page = 1, limit = 10 } = filters;
-    const queryParams = new URLSearchParams({ page, limit }).toString();
+    const {
+      page = 1,
+      limit = 10,
+      sort = "createdAt",
+      hospital,
+      search,
+    } = filters;
+
+    const queryParams = new URLSearchParams({
+      page,
+      limit,
+      sort,
+      ...(hospital && { hospital }),
+      ...(search && { search }), // Add search if present
+    }).toString();
 
     const response = await axios.get(
       `${BASE_BACKEND_URL}/api/doctor?${queryParams}`
     );
+
     console.log("The response while fetching all doctors is", response);
 
     if (!response?.data?.isSuccess) {
@@ -187,12 +196,10 @@ const getAllDoctorsService = async (filters = {}) => {
 
     return createApiResponse({
       isSuccess: true,
-      message: "Doctors retrieved successfully",
+      message: response?.data?.message || "Doctors retrieved successfully",
       data: {
         doctors: response?.data?.data,
-        totalCount: response?.data?.data?.totalCount,
-        currentPage: response?.data?.data?.currentPage,
-        totalPages: response?.data?.data?.totalPages,
+        ...response?.data?.pagination,
       },
     });
   } catch (error) {
@@ -209,7 +216,10 @@ const getAllDoctorsService = async (filters = {}) => {
 
 const getDoctorsBySpecialization = async (specialization, filters = {}) => {
   try {
-    console.log("The specialization in getDoctorsBySpecialization are", specialization);
+    console.log(
+      "The specialization in getDoctorsBySpecialization are",
+      specialization
+    );
     const { page = 1, limit = 10 } = filters;
     const queryParams = new URLSearchParams({ page, limit }).toString();
 
@@ -260,7 +270,6 @@ const doctorService = {
   getDoctorByIdService,
   getAllDoctorsService,
   getDoctorsBySpecialization,
- 
 };
 
 export default doctorService;

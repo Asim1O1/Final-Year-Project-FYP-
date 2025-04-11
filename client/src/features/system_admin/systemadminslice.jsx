@@ -1,6 +1,7 @@
 import systemAdminService from "../../services/system_admin/system_admin.service";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import createApiResponse from "../../utils/createApiResponse";
+import { getRecentActivitiesService } from "../../services/recent_activity/recent_activity.service";
 
 // Async Thunk to fetch dashboard stats
 export const handleGetDashboardStats = createAsyncThunk(
@@ -114,35 +115,6 @@ export const handleAccountStatus = createAsyncThunk(
   }
 );
 
-export const handleGetRecentActivities = createAsyncThunk(
-  "systemAdmin/getRecentActivities",
-  async ({ page = 1, limit = 10 }, { rejectWithValue }) => {
-    try {
-      const response = await systemAdminService.getRecentActivitiesService(
-        page,
-        limit
-      );
-      console.log("The response is", response);
-      if (!response.isSuccess) {
-        throw createApiResponse({
-          isSuccess: false,
-          message: response.message || "Failed to fetch recent activities",
-        });
-      }
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        createApiResponse({
-          isSuccess: false,
-          message:
-            error.message ||
-            "Failed to fetch recent activities. Please try again.",
-        })
-      );
-    }
-  }
-);
-
 // Reusable Handlers for Pending & Rejected
 const handlePending = (state) => {
   state.isLoading = true;
@@ -165,7 +137,7 @@ const systemAdminSlice = createSlice({
     isLoading: false,
     error: null,
     successMessage: null,
-    activities: [],
+
     pagination: {
       users: { totalCount: 0, currentPage: 1, totalPages: 1 },
       doctors: { totalCount: 0, currentPage: 1, totalPages: 1 },
@@ -269,26 +241,8 @@ const systemAdminSlice = createSlice({
           }
         }
       })
-      .addCase(handleAccountStatus.rejected, handleRejected)
-      // Fetch Recent Activities
-      .addCase(handleGetRecentActivities.pending, handlePending)
-      .addCase(handleGetRecentActivities.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.error = null;
-
-        if (Array.isArray(action.payload.data)) {
-          state.activities = action.payload.data;
-        } else {
-          console.error("Invalid data structure for activities");
-        }
-
-        state.pagination.activities = {
-          totalCount: action.payload.totalCount,
-          currentPage: action.payload.currentPage,
-          totalPages: action.payload.totalPages,
-        };
-      })
-      .addCase(handleGetRecentActivities.rejected, handleRejected);
+      .addCase(handleAccountStatus.rejected, handleRejected);
+    // Fetch Recent Activities
   },
 });
 // Export actions and reducer

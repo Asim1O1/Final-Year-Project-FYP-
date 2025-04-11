@@ -16,13 +16,14 @@ import {
   Heading,
   Icon,
   Image,
-  Spinner,
+ 
   Text,
   useColorModeValue,
   useDisclosure,
 } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import CustomLoader from "../../common/CustomSpinner";
 import {
   deleteMedicalTest,
   fetchAllMedicalTests,
@@ -141,7 +142,7 @@ const MedicalTestList = () => {
       <CardBody p={4}>
         {isLoading ? (
           <Flex justify="center" py={8}>
-            <Spinner size="xl" color="blue.500" />
+            <CustomLoader size="xl" color="blue.500" />
           </Flex>
         ) : (
           <Flex direction="column" gap={4}>

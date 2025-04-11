@@ -4,6 +4,7 @@ import {
   createHospitalAdminService,
   deleteHospitalAdminService,
   getAllHospitalAdminsService,
+  getDashboardStatsService,
   getHospitalAdminByIdService,
   updateHospitalAdminService,
 } from "../../services/hospital_admin/hospital_admin.service";
@@ -149,11 +150,41 @@ export const handleGetAllHospitalAdmins = createAsyncThunk(
   }
 );
 
+export const handleGetDashboardStats = createAsyncThunk(
+  "hospitalAdmin/getDashboardStats",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getDashboardStatsService();
+
+      if (!response.isSuccess) {
+        throw createApiResponse({
+          isSuccess: false,
+          message: response.message || "Failed to fetch dashboard stats",
+          error: response.error,
+        });
+      }
+
+      return response?.data; // Return stats data
+    } catch (error) {
+      return rejectWithValue(
+        createApiResponse({
+          isSuccess: false,
+          message:
+            error.message ||
+            "Failed to fetch dashboard stats. Please try again.",
+          error: error.error,
+        })
+      );
+    }
+  }
+);
+
 const hospitalAdminSlice = createSlice({
   name: "hospitalAdminSlice",
   initialState: {
     hospitalAdmin: null,
     hospitalAdmins: [],
+    dashboardStats: [],
     isLoading: false,
     error: null,
     successMessage: null,
@@ -168,6 +199,7 @@ const hospitalAdminSlice = createSlice({
       state.error = null;
       state.successMessage = null;
       state.pagination = null;
+      state.dashboardStats = null;
     },
   },
 
@@ -236,6 +268,16 @@ const hospitalAdminSlice = createSlice({
         state.pagination = action.payload?.pagination || null;
       })
       .addCase(handleGetAllHospitalAdmins.rejected, handleRejected);
+
+    builder
+      // Handle Dashboard Stats
+      .addCase(handleGetDashboardStats.pending, handlePending)
+      .addCase(handleGetDashboardStats.fulfilled, (state, action) => {
+        handleFulfilled(state, action);
+
+        state.dashboardStats = action.payload; // Store the stats data in state
+      })
+      .addCase(handleGetDashboardStats.rejected, handleRejected);
   },
 });
 

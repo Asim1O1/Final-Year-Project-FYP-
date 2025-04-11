@@ -15,11 +15,33 @@ import {
   Progress,
   useColorModeValue,
   Select,
+  CardFooter,
+  Icon,
+  Divider,
+  HStack,
+  Alert,
+  AlertIcon,
+  InputRightElement,
+  InputGroup,
+  StepTitle,
+  StepDescription,
+  StepIndicator,
+  Step,
+  StepStatus,
+  StepSeparator,
+  Stepper,
+  CardBody,
+  Flex,
+  CardHeader,
+  Container,
+  Card,
 } from "@chakra-ui/react";
 import {
   fetchUserCompletedTests,
   handleMedicalReportUpload,
 } from "../../../features/test_report/testReportSlice";
+import { BuildingIcon, ClipboardListIcon, FileIcon, FilesIcon, UploadIcon, UserIcon } from "lucide-react";
+import { ArrowRightIcon, CheckCircleIcon, CheckIcon } from "@chakra-ui/icons";
 
 const MedicalReportUpload = () => {
   const dispatch = useDispatch();
@@ -66,12 +88,19 @@ const MedicalReportUpload = () => {
     console.log("Test selected:", testId);
   }, [hospital, testId]);
 
+  let currentStep = 0;
+  if (emailConfirmed) currentStep = 1;
+  if (emailConfirmed && hospital) currentStep = 2;
+  if (emailConfirmed && hospital && testId) currentStep = 3;
+
   // Color mode values
-  const bgColor = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-  const headingColor = useColorModeValue("blue.600", "blue.400");
-  const labelColor = useColorModeValue("gray.700", "gray.300");
-  const hintColor = useColorModeValue("gray.500", "gray.400");
+ const bgColor = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const labelColor = useColorModeValue('gray.700', 'gray.300');
+  const headingColor = useColorModeValue('blue.700', 'blue.300');
+  const hintColor = useColorModeValue('gray.500', 'gray.400');
+  const stepBgColor = useColorModeValue('blue.50', 'blue.900');
+  const activeStepBg = useColorModeValue('blue.100', 'blue.800');
 
   const validateForm = () => {
     const newErrors = {};
@@ -303,223 +332,321 @@ const MedicalReportUpload = () => {
   };
 
   return (
-    <Box
-      maxW="container.md"
-      mx="auto"
-      p={6}
+    <Container maxW="container.md" py={8}>
+    <Card
       bg={bgColor}
-      borderRadius="lg"
+      borderRadius="xl"
       boxShadow="md"
       borderWidth="1px"
       borderColor={borderColor}
+      overflow="hidden"
     >
-      <Heading size="lg" mb={6} color={headingColor} fontWeight="600">
-        Upload Medical Report
-      </Heading>
+      <CardHeader borderBottomWidth="1px" borderColor={borderColor} bg={useColorModeValue('gray.50', 'gray.750')}>
+        <Flex align="center" gap={3}>
+          <Icon as={UploadIcon} color="blue.500" boxSize={5} />
+          <Heading size="lg" color={headingColor} fontWeight="600">
+            Upload Medical Report
+          </Heading>
+        </Flex>
+      </CardHeader>
 
-      <Box as="form" onSubmit={handleSubmit}>
-        <VStack spacing={5} align="stretch">
-          <FormControl isInvalid={errors.file} isRequired>
-            <FormLabel color={labelColor}>Upload File</FormLabel>
-            <Input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={handleFileChange}
-              p={1}
-              borderWidth="1px"
-              borderColor={borderColor}
-              borderRadius="md"
-              _hover={{ borderColor: "blue.400" }}
-              bg={useColorModeValue("white", "gray.700")}
-            />
-            <Text fontSize="sm" color={hintColor} mt={1}>
-              Allowed formats: PDF, JPG, PNG (Max 5MB)
-            </Text>
-            {errors.file && <FormErrorMessage>{errors.file}</FormErrorMessage>}
-          </FormControl>
+      <CardBody pt={6}>
+        <Box as="form" onSubmit={handleSubmit}>
+          <VStack spacing={6} align="stretch">
+            {/* Progress Stepper */}
+            <Stepper size="sm" index={currentStep} colorScheme="blue" mb={2}>
+              <Step>
+                <StepIndicator bg={currentStep >= 0 ? activeStepBg : stepBgColor}>
+                  <StepStatus 
+                    complete={<Icon as={CheckIcon} />} 
+                    incomplete={<Icon as={UserIcon} />} 
+                    active={<Icon as={UserIcon} />} 
+                  />
+                </StepIndicator>
+                <Box flexShrink='0'>
+                  <StepTitle>Patient</StepTitle>
+                  <StepDescription>Confirm email</StepDescription>
+                </Box>
+                <StepSeparator />
+              </Step>
+              <Step>
+                <StepIndicator bg={currentStep >= 1 ? activeStepBg : stepBgColor}>
+                  <StepStatus 
+                    complete={<Icon as={CheckIcon} />} 
+                    incomplete={<Icon as={BuildingIcon} />} 
+                    active={<Icon as={BuildingIcon} />} 
+                  />
+                </StepIndicator>
+                <Box flexShrink='0'>
+                  <StepTitle>Hospital</StepTitle>
+                  <StepDescription>Select facility</StepDescription>
+                </Box>
+                <StepSeparator />
+              </Step>
+              <Step>
+                <StepIndicator bg={currentStep >= 2 ? activeStepBg : stepBgColor}>
+                  <StepStatus 
+                    complete={<Icon as={CheckIcon} />} 
+                    incomplete={<Icon as={ClipboardListIcon} />} 
+                    active={<Icon as={ClipboardListIcon} />} 
+                  />
+                </StepIndicator>
+                <Box flexShrink='0'>
+                  <StepTitle>Test</StepTitle>
+                  <StepDescription>Select test</StepDescription>
+                </Box>
+                <StepSeparator />
+              </Step>
+              <Step>
+                <StepIndicator bg={currentStep >= 3 ? activeStepBg : stepBgColor}>
+                  <StepStatus 
+                    complete={<Icon as={CheckIcon} />} 
+                    incomplete={<Icon as={FileIcon} />} 
+                    active={<Icon as={FilesIcon} />} 
+                  />
+                </StepIndicator>
+                <Box flexShrink='0'>
+                  <StepTitle>Upload</StepTitle>
+                  <StepDescription>Submit report</StepDescription>
+                </Box>
+              </Step>
+            </Stepper>
 
-          <FormControl isInvalid={errors.reportTitle} isRequired>
-            <FormLabel color={labelColor}>Report Title</FormLabel>
-            <Input
-              value={reportTitle}
-              onChange={(e) => setReportTitle(e.target.value)}
-              placeholder="Enter report title"
-              borderWidth="1px"
-              borderColor={borderColor}
-              borderRadius="md"
-              _hover={{ borderColor: "blue.400" }}
-              _focus={{
-                borderColor: "blue.500",
-                boxShadow: "0 0 0 1px blue.500",
-              }}
-            />
-            {errors.reportTitle && (
-              <FormErrorMessage>{errors.reportTitle}</FormErrorMessage>
+            <Divider />
+
+            {/* Patient Information Section */}
+            <Box>
+              <Heading size="sm" mb={4} color={labelColor}>
+                Patient Information
+              </Heading>
+              
+              <FormControl isInvalid={errors.email} isRequired mb={4}>
+                <FormLabel color={labelColor}>Patient Email</FormLabel>
+                <InputGroup size="md">
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter patient email"
+                    borderRadius="md"
+                    isReadOnly={emailConfirmed}
+                    _hover={{ borderColor: "blue.400" }}
+                    _focus={{
+                      borderColor: "blue.500",
+                      boxShadow: "0 0 0 1px blue.500",
+                    }}
+                    pr="140px"
+                  />
+                  <InputRightElement width="auto" pr={1}>
+                    {!emailConfirmed ? (
+                      <Button
+                        onClick={handleConfirmEmail}
+                        colorScheme="blue"
+                        size="sm"
+                        rightIcon={<ArrowRightIcon size={16} />}
+                      >
+                        Verify Email
+                      </Button>
+                    ) : (
+                      <HStack spacing={1}>
+                        <Icon as={CheckCircleIcon} color="green.500" />
+                        <Button
+                          onClick={handleChangeEmail}
+                          variant="ghost"
+                          size="sm"
+                          color="gray.500"
+                        >
+                          Change
+                        </Button>
+                      </HStack>
+                    )}
+                  </InputRightElement>
+                </InputGroup>
+                {errors.email && (
+                  <FormErrorMessage>{errors.email}</FormErrorMessage>
+                )}
+              </FormControl>
+            </Box>
+
+            {/* Hospital and Test Selection */}
+            {emailConfirmed && (
+              <>
+                {completedTests?.length === 0 && (
+                  <Alert status="info" variant="left-accent" borderRadius="md">
+                    <AlertIcon />
+                    <Box flex="1">
+                      <Text fontWeight="medium">
+                        {isLoading ? "Searching records..." : "No test records found"}
+                      </Text>
+                      <Text fontSize="sm">
+                        Please verify the patient email address is correct.
+                      </Text>
+                    </Box>
+                  </Alert>
+                )}
+
+                <Divider />
+                
+                <Box>
+                  <Heading size="sm" mb={4} color={labelColor}>
+                    Test Details
+                  </Heading>
+                  
+                  <HStack spacing={4} align="flex-start">
+                    <FormControl isInvalid={errors.hospital} isRequired flex="1">
+                      <FormLabel color={labelColor}>Hospital</FormLabel>
+                      <Select
+                        placeholder="Select hospital"
+                        value={hospital}
+                        onChange={handleHospitalChange}
+                        borderRadius="md"
+                        icon={<BuildingIcon size={16} />}
+                        _hover={{ borderColor: "blue.400" }}
+                      >
+                        {renderHospitalOptions()}
+                      </Select>
+                      {errors.hospital && (
+                        <FormErrorMessage>{errors.hospital}</FormErrorMessage>
+                      )}
+                    </FormControl>
+
+                    <FormControl isInvalid={errors.testId} isRequired flex="1">
+                      <FormLabel color={labelColor}>Test</FormLabel>
+                      <Select
+                        placeholder="Select test"
+                        value={testId}
+                        onChange={handleTestChange}
+                        borderRadius="md"
+                        icon={<ClipboardListIcon size={16} />}
+                        _hover={{ borderColor: "blue.400" }}
+                        isDisabled={!hospital}
+                      >
+                        {renderTestOptions()}
+                      </Select>
+                      {errors.testId && (
+                        <FormErrorMessage>{errors.testId}</FormErrorMessage>
+                      )}
+                    </FormControl>
+                  </HStack>
+                </Box>
+                
+                <Divider />
+              </>
             )}
-          </FormControl>
 
-          <FormControl isInvalid={errors.doctorName} isRequired>
-            <FormLabel color={labelColor}>Doctor Name</FormLabel>
-            <Input
-              value={doctorName}
-              onChange={(e) => setDoctorName(e.target.value)}
-              placeholder="Enter doctor's name"
-              borderWidth="1px"
-              borderColor={borderColor}
-              borderRadius="md"
-              _hover={{ borderColor: "blue.400" }}
-              _focus={{
-                borderColor: "blue.500",
-                boxShadow: "0 0 0 1px blue.500",
-              }}
-            />
-            {errors.doctorName && (
-              <FormErrorMessage>{errors.doctorName}</FormErrorMessage>
-            )}
-          </FormControl>
+            {/* Report Information */}
+            <Box>
+              <Heading size="sm" mb={4} color={labelColor}>
+                Report Information
+              </Heading>
+              
+              <FormControl isInvalid={errors.reportTitle} isRequired mb={4}>
+                <FormLabel color={labelColor}>Report Title</FormLabel>
+                <Input
+                  value={reportTitle}
+                  onChange={(e) => setReportTitle(e.target.value)}
+                  placeholder="Enter report title"
+                  borderRadius="md"
+                  _hover={{ borderColor: "blue.400" }}
+                />
+                {errors.reportTitle && (
+                  <FormErrorMessage>{errors.reportTitle}</FormErrorMessage>
+                )}
+              </FormControl>
 
-          <FormControl isInvalid={errors.email} isRequired>
-            <FormLabel color={labelColor}>Patient Email</FormLabel>
-            <Box display="flex" alignItems="center" gap={2}>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter patient email"
-                borderWidth="1px"
-                borderColor={borderColor}
-                borderRadius="md"
-                _hover={{ borderColor: "blue.400" }}
-                _focus={{
-                  borderColor: "blue.500",
-                  boxShadow: "0 0 0 1px blue.500",
-                }}
-                isReadOnly={emailConfirmed}
-              />
-              {!emailConfirmed ? (
-                <Button
-                  onClick={handleConfirmEmail}
+              <FormControl isInvalid={errors.doctorName} isRequired mb={4}>
+                <FormLabel color={labelColor}>Doctor Name</FormLabel>
+                <Input
+                  value={doctorName}
+                  onChange={(e) => setDoctorName(e.target.value)}
+                  placeholder="Enter doctor's name"
+                  borderRadius="md"
+                  _hover={{ borderColor: "blue.400" }}
+                />
+                {errors.doctorName && (
+                  <FormErrorMessage>{errors.doctorName}</FormErrorMessage>
+                )}
+              </FormControl>
+
+              <FormControl isInvalid={errors.file} isRequired>
+                <FormLabel color={labelColor}>Report File</FormLabel>
+                <Box
+                  borderWidth="1px"
+                  borderStyle="dashed"
+                  borderColor={borderColor}
+                  borderRadius="md"
+                  p={4}
+                  textAlign="center"
+                  bg={useColorModeValue("gray.50", "gray.700")}
+                  _hover={{ borderColor: "blue.400", bg: useColorModeValue("blue.50", "blue.900") }}
+                  transition="all 0.2s"
+                  cursor="pointer"
+                  as="label"
+                >
+                  <Input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleFileChange}
+                    display="none"
+                  />
+                  <Icon as={UploadIcon} mb={2} boxSize={8} color="blue.500" />
+                  <Text fontWeight="medium">
+                    Drag files here or click to browse
+                  </Text>
+                  <Text fontSize="sm" color={hintColor} mt={1}>
+                    Allowed formats: PDF, JPG, PNG (Max 5MB)
+                  </Text>
+                </Box>
+                {errors.file && <FormErrorMessage mt={2}>{errors.file}</FormErrorMessage>}
+              </FormControl>
+            </Box>
+
+            {/* Upload Progress */}
+            {(isLoading || uploadProgress > 0) && (
+              <Box mt={2}>
+                <Text mb={2} fontWeight="medium">
+                  Uploading... {uploadProgress}%
+                </Text>
+                <Progress
+                  value={uploadProgress}
+                  size="sm"
                   colorScheme="blue"
-                  size="md"
-                  width="150px"
-                >
-                  Confirm Email
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleChangeEmail}
-                  colorScheme="gray"
-                  size="md"
-                  width="150px"
-                >
-                  Change Email
-                </Button>
-              )}
-            </Box>
-            {errors.email && (
-              <FormErrorMessage>{errors.email}</FormErrorMessage>
-            )}
-          </FormControl>
-
-          {emailConfirmed && (
-            <>
-              <Box
-                p={3}
-                bg="blue.50"
-                color="blue.800"
-                borderRadius="md"
-                mb={2}
-                display={completedTests?.length === 0 ? "block" : "none"}
-              >
-                <Text fontWeight="medium">
-                  Fetching tests for email: {email}
-                  {isLoading && " (Loading...)"}
-                </Text>
-                <Text fontSize="sm">
-                  {!completedTests || completedTests.length === 0
-                    ? "No test records found for this email. Please verify the email address."
-                    : `Found ${completedTests.length} test records.`}
-                </Text>
+                  borderRadius="full"
+                  bg={borderColor}
+                  hasStripe
+                  isAnimated
+                />
               </Box>
-              <FormControl isInvalid={errors.hospital} isRequired>
-                <FormLabel color={labelColor}>Hospital</FormLabel>
-                <Select
-                  placeholder="Select hospital"
-                  value={hospital}
-                  onChange={handleHospitalChange}
-                  borderWidth="1px"
-                  borderColor={borderColor}
-                  borderRadius="md"
-                  _hover={{ borderColor: "blue.400" }}
-                  _focus={{
-                    borderColor: "blue.500",
-                    boxShadow: "0 0 0 1px blue.500",
-                  }}
-                >
-                  {renderHospitalOptions()}
-                </Select>
-                {errors.hospital && (
-                  <FormErrorMessage>{errors.hospital}</FormErrorMessage>
-                )}
-              </FormControl>
+            )}
+          </VStack>
+        </Box>
+      </CardBody>
 
-              <FormControl isInvalid={errors.testId} isRequired>
-                <FormLabel color={labelColor}>Test</FormLabel>
-                <Select
-                  placeholder="Select test"
-                  value={testId}
-                  onChange={handleTestChange}
-                  borderWidth="1px"
-                  borderColor={borderColor}
-                  borderRadius="md"
-                  _hover={{ borderColor: "blue.400" }}
-                  _focus={{
-                    borderColor: "blue.500",
-                    boxShadow: "0 0 0 1px blue.500",
-                  }}
-                >
-                  {renderTestOptions()}
-                </Select>
-                {errors.testId && (
-                  <FormErrorMessage>{errors.testId}</FormErrorMessage>
-                )}
-              </FormControl>
-            </>
-          )}
-
-          {(isLoading || uploadProgress > 0) && (
-            <Box my={4}>
-              <Text mb={2} fontWeight="medium">
-                Uploading... {uploadProgress}%
-              </Text>
-              <Progress
-                value={uploadProgress}
-                size="sm"
-                colorScheme="blue"
-                borderRadius="md"
-                bg={borderColor}
-              />
-            </Box>
-          )}
-
-          <Button
-            type="submit"
-            colorScheme="blue"
-            isLoading={isLoading}
-            loadingText="Uploading"
-            size="md"
-            fontWeight="semibold"
-            px={6}
-            mt={2}
-            _hover={{ bg: "blue.700" }}
-            boxShadow="sm"
-            isDisabled={!emailConfirmed}
-          >
-            Upload Report
-          </Button>
-        </VStack>
-      </Box>
-    </Box>
+      <CardFooter 
+        borderTopWidth="1px" 
+        borderColor={borderColor}
+        bg={useColorModeValue('gray.50', 'gray.750')}
+      >
+        <Button
+          type="submit"
+          onClick={handleSubmit}
+          colorScheme="blue"
+          isLoading={isLoading}
+          loadingText="Uploading"
+          size="lg"
+          fontWeight="semibold"
+          px={8}
+          leftIcon={<UploadIcon size={18} />}
+          _hover={{ transform: 'translateY(-1px)', boxShadow: 'md' }}
+          transition="all 0.2s"
+          width="full"
+          isDisabled={!emailConfirmed}
+        >
+          Upload Report
+        </Button>
+      </CardFooter>
+    </Card>
+  </Container>
   );
 };
 export default MedicalReportUpload;

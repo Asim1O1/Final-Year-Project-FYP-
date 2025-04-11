@@ -32,6 +32,7 @@ export const handleCampaignCreation = createAsyncThunk(
 export const handleCampaignUpdate = createAsyncThunk(
   "campaign/updateCampaign",
   async ({ campaignId, updatedData }, { rejectWithValue }) => {
+    console.log("THe updated data in the campaign slice is", updatedData)
     try {
       const response = await campaignServices.updateCampaignService(
         campaignId,
@@ -68,7 +69,27 @@ export const fetchAllCampaigns = createAsyncThunk(
   "campaign/fetchAllCampaigns",
   async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await campaignServices.getAllCampaignsService(params);
+      // Destructure with default values
+      const {
+        page = 1,
+        limit = 10,
+        sort = "createdAt",
+        hospital = null,
+        search = null,
+        startDate = null,
+        endDate = null,
+      } = params;
+
+      const response = await campaignServices.getAllCampaignsService({
+        page,
+        limit,
+        sort,
+        hospital,
+        search,
+        startDate,
+        endDate,
+      });
+
       if (!response.isSuccess) throw response;
       return response.data;
     } catch (error) {
@@ -212,9 +233,11 @@ const campaignSlice = createSlice({
       .addCase(handleCampaignDeletion.pending, handlePending)
       .addCase(handleCampaignDeletion.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.campaigns = state.campaigns.filter(
-          (campaign) => campaign.id !== action.payload.campaignId
-        );
+        if (Array.isArray(state.campaigns)) {
+          state.campaigns = state.campaigns.filter(
+            (campaign) => campaign.id !== action.payload.campaignId
+          );
+        }
         state.error = null;
       })
       .addCase(handleCampaignDeletion.rejected, handleRejected);

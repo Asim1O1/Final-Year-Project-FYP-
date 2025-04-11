@@ -7,6 +7,7 @@ import fs from "fs";
 import bcryptjs from "bcryptjs";
 import Notification from "../../models/notification.model.js";
 import userModel from "../../models/user.model.js";
+import { logActivity } from "../activity/activity.controller.js";
 
 export const createDoctor = async (req, res, next) => {
   try {
@@ -130,6 +131,21 @@ export const createDoctor = async (req, res, next) => {
       isVerified: true,
     });
 
+    await logActivity("doctor_created", {
+      // Core Activity Info
+      title: `Doctor Created: ${newDoctor.fullName}`,
+      description: `Doctor ${newDoctor.fullName} (${newDoctor.email}) was added by ${req.user?.fullName}.`,
+
+      // Actor Info
+      performedBy: {
+        role: req.user?.role || "hospital_admin",
+        userId: req.user?._id,
+        name: req.user?.fullName,
+      },
+
+      visibleTo: ["hospital_admin"],
+    });
+
     const doctorObject = newDoctor.toObject();
     delete doctorObject.password;
 
@@ -181,14 +197,6 @@ export const createDoctor = async (req, res, next) => {
 };
 
 export const updateDoctor = async (req, res, next) => {
-  console.log("-------------------------");
-  console.log("UPDATE DOCTOR CONTROLLER CALLED");
-  console.log("Request Content-Type:", req.headers["content-type"]);
-  console.log("Files object keys:", Object.keys(req.files || {}));
-  console.log("Files object:", req.files);
-  console.log("Body keys:", Object.keys(req.body || {}));
-  console.log("-------------------------");
-
   try {
     const { id } = req.params;
     console.log("The doctor id is", id);
@@ -366,7 +374,7 @@ export const updateDoctor = async (req, res, next) => {
           certificationImage: certificationImageUrl,
           consultationFee: req.body.consultationFee || doctor.consultationFee,
           availability: parsedAvailability,
-          hospital: req.body.hospital || doctor.hospital,
+
           yearsOfExperience:
             req.body.yearsOfExperience || doctor.yearsOfExperience,
           doctorProfileImage: doctorProfileImageUrl,
@@ -418,9 +426,32 @@ export const updateDoctor = async (req, res, next) => {
 
 export const getAllDoctors = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, sort = "createdAt" } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      sort = "createdAt",
+      hospital,
+      search, // optional search keyword
+    } = req.query;
 
-    // Parse sort parameters
+    const query = {};
+
+    // Filter by hospital if provided
+    if (hospital) {
+      query.hospital = hospital;
+    }
+
+    // Add search conditions for name, specialization, or email
+    if (search) {
+      const regex = new RegExp(search, "i"); // case-insensitive
+      query.$or = [
+        { fullName: { $regex: regex } },
+        { specialization: { $regex: regex } },
+        { email: { $regex: regex } },
+      ];
+    }
+
+    // Sort options
     const sortOrder = sort.startsWith("-") ? -1 : 1;
     const sortField = sort.replace("-", "");
     const sortOptions = { [sortField]: sortOrder };
@@ -428,9 +459,12 @@ export const getAllDoctors = async (req, res, next) => {
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
 
+    // If pagination is not required
     if (!pageNum && !limitNum) {
-      // If pagination params are missing, return all doctors
-      const doctors = await doctorModel.find().populate("hospital", "name");
+      const doctors = await doctorModel
+        .find(query)
+        .sort(sortOptions)
+        .populate("hospital", "name");
 
       return res.status(200).json(
         createResponse({
@@ -446,34 +480,26 @@ export const getAllDoctors = async (req, res, next) => {
       );
     }
 
-    // Implement pagination logic
-    const result = await paginate(
-      doctorModel,
-      {},
-      {
-        page: pageNum,
-        limit: limitNum,
-        sort: sortOptions,
-      }
-    );
+    // Pagination metadata
+    const result = await paginate(doctorModel, query, {
+      page: pageNum,
+      limit: limitNum,
+      sort: sortOptions,
+    });
 
-    // Fetch doctors with pagination and populate hospital names
+    // Get paginated doctors with populated hospital names
     const doctors = await doctorModel
-      .find()
+      .find(query)
       .skip((pageNum - 1) * limitNum)
       .limit(limitNum)
       .sort(sortOptions)
-      .populate("hospital", "name"); // Populate hospital name
-
-    console.log("The result in the backend is", result);
+      .populate("hospital", "name");
 
     return res.status(200).json({
       isSuccess: true,
       statusCode: 200,
       message: "Doctors retrieved successfully",
-      data: doctors.map((doctor) => ({
-        ...doctor.toObject(),
-      })),
+      data: doctors.map((doctor) => doctor.toObject()),
       pagination: {
         totalCount: result.totalCount,
         currentPage: result.currentPage,
@@ -481,7 +507,7 @@ export const getAllDoctors = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching doctors:", error);
+    console.error("❌ Error fetching doctors:", error);
     return next(error);
   }
 };

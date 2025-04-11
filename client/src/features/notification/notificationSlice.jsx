@@ -11,7 +11,7 @@ import createApiResponse from "../../utils/createApiResponse";
  * Fetch user notifications
  */
 export const handleGetNotifications = createAsyncThunk(
-  "notification/getUserNotifications",
+  "notification/getNotifications",
   async (_, { rejectWithValue }) => {
     try {
       const response = await getNotificationsService();
@@ -21,9 +21,10 @@ export const handleGetNotifications = createAsyncThunk(
           message: response.message || "Failed to fetch notifications",
         });
       }
-      console.log("The response while getting notifications is", response);
+      // console.log("The response while getting notifications is", response);
       return response?.data;
     } catch (error) {
+      console.error("Error while fetching notifications:", error);
       return rejectWithValue(
         createApiResponse({
           isSuccess: false,

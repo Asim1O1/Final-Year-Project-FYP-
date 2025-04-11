@@ -28,41 +28,54 @@ import {
   IconButton,
   Badge,
   Heading,
+  InputGroup,
+  Icon,
+  InputLeftElement,
 } from "@chakra-ui/react";
 import { notification } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
-import { handleCampaignCreation } from "../../../features/campaign/campaignSlice";
+import {
+  fetchAllCampaigns,
+  handleCampaignCreation,
+} from "../../../features/campaign/campaignSlice";
 import { DeleteIcon } from "@chakra-ui/icons";
+import { Building2 } from "lucide-react";
 
 const AddCampaignForm = ({ isOpen, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const dispatch = useDispatch();
-
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    date: "",
-    location: "",
-    hospital: "",
-    allowVolunteers: false,
-    maxVolunteers: 0,
-    volunteerQuestions: [], // Initialize volunteer questions array
-  });
-
-  const [errors, setErrors] = useState({});
-  const [newQuestion, setNewQuestion] = useState({
-    question: "",
-    questionType: "question", // Default question type (text response)
-    isRequired: true,
-  });
-
   // Fetch hospitals from Redux store
   const hospitals = useSelector((state) => {
     if (state?.hospitalSlice?.hospitals?.hospitals) {
       return state.hospitalSlice.hospitals.hospitals;
     }
     return state?.hospitalSlice?.hospitals || [];
+  });
+
+  const currentUser = useSelector((state) => state?.auth?.user?.data);
+  const hospitalId = currentUser?.hospital;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const adminHospital = hospitals?.find(
+    (hospital) => hospital._id === currentUser?.hospital
+  );
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    date: "",
+    location: "",
+    hospital: adminHospital?._id || "",
+    allowVolunteers: false,
+    maxVolunteers: 0,
+    volunteerQuestions: [],
+  });
+
+  const [errors, setErrors] = useState({});
+  const [newQuestion, setNewQuestion] = useState({
+    question: "",
+    questionType: "question",
+    isRequired: true,
   });
 
   useEffect(() => {
@@ -87,12 +100,6 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
         volunteerQuestions: "",
       }));
     }
-  };
-
-  const handleHospitalChange = (e) => {
-    const value = e.target.value;
-    setFormData((prev) => ({ ...prev, hospital: value }));
-    if (errors.hospital) setErrors((prev) => ({ ...prev, hospital: "" }));
   };
 
   const handleQuestionChange = (e) => {
@@ -149,10 +156,15 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
       newErrors.description = "Description is required";
     if (!formData.date) newErrors.date = "Date is required";
     if (!formData.location.trim()) newErrors.location = "Location is required";
-    if (!formData.hospital) newErrors.hospital = "Hospital is required";
+
+    if (adminHospital && !formData.hospital) {
+      setFormData((prev) => ({ ...prev, hospital: adminHospital._id }));
+    } else if (!formData.hospital) {
+      newErrors.hospital = "Hospital is required";
+    }
 
     if (formData.allowVolunteers) {
-      if (formData.maxVolunteers <= 0)
+      if (parseInt(formData.maxVolunteers) <= 0)
         newErrors.maxVolunteers = "Maximum volunteers must be greater than 0";
       if (formData.volunteerQuestions.length === 0)
         newErrors.volunteerQuestions =
@@ -165,27 +177,75 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("entered handle submit");
-    if (!validateForm()) return;
+    console.log("Form data before validation:", formData);
+
+    // Create a working copy of form data that we can modify immediately
+    const submissionData = { ...formData };
+
+    // Set hospital ID from adminHospital if available and not already set
+    if (adminHospital && !submissionData.hospital) {
+      submissionData.hospital = adminHospital._id;
+    }
+
+    // Validate with our modified data
+    const newErrors = {};
+    if (!submissionData.title.trim()) newErrors.title = "Title is required";
+    if (!submissionData.description.trim())
+      newErrors.description = "Description is required";
+    if (!submissionData.date) newErrors.date = "Date is required";
+    if (!submissionData.location.trim())
+      newErrors.location = "Location is required";
+    if (!submissionData.hospital) newErrors.hospital = "Hospital is required";
+
+    if (submissionData.allowVolunteers) {
+      if (parseInt(submissionData.maxVolunteers) <= 0)
+        newErrors.maxVolunteers = "Maximum volunteers must be greater than 0";
+      if (submissionData.volunteerQuestions.length === 0)
+        newErrors.volunteerQuestions =
+          "At least one volunteer question is required";
+    }
+
+    // Update the errors state
+    setErrors(newErrors);
+
+    // If there are errors, stop the submission
+    if (Object.keys(newErrors).length > 0) {
+      console.log("Form validation failed with errors:", newErrors);
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
-      const campaignData = {
-        ...formData,
-      };
+      console.log("Submitting campaign data:", submissionData);
 
-      const result = await dispatch(
-        handleCampaignCreation(campaignData)
-      ).unwrap();
+      // Ensure maxVolunteers is a number
+      if (submissionData.allowVolunteers) {
+        submissionData.maxVolunteers = parseInt(submissionData.maxVolunteers);
+      }
 
-      console.log("The result got is ", result);
+      // Dispatch with the validated data
+      const actionResult = await dispatch(
+        handleCampaignCreation(submissionData)
+      );
+
+      console.log("Campaign creation result:", actionResult);
+
       notification.success({
         message: "Campaign created",
         description: "The campaign has been created successfully.",
-        duration: 5,
+        duration: 2.5,
       });
 
+      dispatch(
+        fetchAllCampaigns({
+          page: currentPage,
+          limit: 10,
+          hospital: hospitalId,
+        })
+      );
+
+      // Also update the form data state to reflect the hospital ID
       setFormData({
         title: "",
         description: "",
@@ -198,10 +258,11 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
       });
       onClose();
     } catch (error) {
+      console.error("Campaign creation error:", error);
       notification.error({
         message: "Error",
         description:
-          error.message ||
+          (error && error.message) ||
           "There was an error creating the campaign. Please try again.",
         duration: 5,
       });
@@ -218,7 +279,7 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
         <ModalCloseButton />
         <ModalBody>
           <Stack spacing={4}>
-            <FormControl isInvalid={errors.title}>
+            <FormControl isInvalid={!!errors.title}>
               <FormLabel>Title</FormLabel>
               <Input
                 name="title"
@@ -229,7 +290,7 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
               <FormErrorMessage>{errors.title}</FormErrorMessage>
             </FormControl>
 
-            <FormControl isInvalid={errors.description}>
+            <FormControl isInvalid={!!errors.description}>
               <FormLabel>Description</FormLabel>
               <Textarea
                 name="description"
@@ -241,7 +302,7 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
               <FormErrorMessage>{errors.description}</FormErrorMessage>
             </FormControl>
 
-            <FormControl isInvalid={errors.date}>
+            <FormControl isInvalid={!!errors.date}>
               <FormLabel>Date</FormLabel>
               <Input
                 name="date"
@@ -252,7 +313,7 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
               <FormErrorMessage>{errors.date}</FormErrorMessage>
             </FormControl>
 
-            <FormControl isInvalid={errors.location}>
+            <FormControl isInvalid={!!errors.location}>
               <FormLabel>Location</FormLabel>
               <Input
                 name="location"
@@ -263,20 +324,31 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
               <FormErrorMessage>{errors.location}</FormErrorMessage>
             </FormControl>
 
-            <FormControl isInvalid={errors.hospital}>
-              <FormLabel>Hospital</FormLabel>
-              <Select
-                placeholder="Select Hospital"
-                value={formData.hospital}
-                onChange={handleHospitalChange}
-              >
-                {hospitals?.map((hospital) => (
-                  <option key={hospital._id} value={hospital._id}>
-                    {hospital.name}
-                  </option>
-                ))}
-              </Select>
-              <FormErrorMessage>{errors.hospital}</FormErrorMessage>
+            <FormControl isRequired>
+              <FormLabel fontSize="sm" fontWeight="medium">
+                Hospital
+              </FormLabel>
+              <InputGroup>
+                <InputLeftElement pointerEvents="none">
+                  <Icon as={Building2} size={18} />
+                </InputLeftElement>
+                <Select
+                  name="hospital"
+                  value={adminHospital?._id || ""}
+                  onChange={handleInputChange}
+                  pl="40px"
+                  isDisabled={!!adminHospital} // Disable only when there's a hospital
+                >
+                  {adminHospital && (
+                    <option value={adminHospital._id}>
+                      {adminHospital.name}
+                    </option>
+                  )}
+                </Select>
+              </InputGroup>
+              {errors.hospital && (
+                <FormErrorMessage>{errors.hospital}</FormErrorMessage>
+              )}
             </FormControl>
 
             <FormControl>
@@ -292,11 +364,12 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
 
             {formData.allowVolunteers && (
               <>
-                <FormControl isInvalid={errors.maxVolunteers}>
+                <FormControl isInvalid={!!errors.maxVolunteers}>
                   <FormLabel>Max Volunteers</FormLabel>
                   <Input
                     name="maxVolunteers"
                     type="number"
+                    min="1"
                     placeholder="Enter max number of volunteers"
                     value={formData.maxVolunteers}
                     onChange={handleInputChange}
@@ -410,7 +483,11 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
                       />
                     </FormControl>
 
-                    <Button colorScheme="blue" onClick={handleAddQuestion}>
+                    <Button
+                      colorScheme="blue"
+                      onClick={handleAddQuestion}
+                      isDisabled={!newQuestion.question.trim()}
+                    >
                       Add Question
                     </Button>
                   </Box>
@@ -428,6 +505,7 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
             colorScheme="blue"
             isLoading={isSubmitting}
             onClick={handleSubmit}
+            isDisabled={isSubmitting}
           >
             Create Campaign
           </Button>

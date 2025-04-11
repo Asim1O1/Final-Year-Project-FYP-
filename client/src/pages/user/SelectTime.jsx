@@ -36,7 +36,9 @@ const SelectTime = () => {
 
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
@@ -95,8 +97,15 @@ const SelectTime = () => {
     if (!selectedDayData.day) return; // Skip empty slots
 
     // Check if the selected date is in the past
-    const selectedDateObj = new Date(currentYear, selectedDayData.month, selectedDayData.day);
-    if (selectedDateObj < new Date(currentYearValue, currentMonthIndex, currentDate)) {
+    const selectedDateObj = new Date(
+      currentYear,
+      selectedDayData.month,
+      selectedDayData.day
+    );
+    if (
+      selectedDateObj <
+      new Date(currentYearValue, currentMonthIndex, currentDate)
+    ) {
       return; // Disable selection for past dates
     }
 
@@ -148,7 +157,13 @@ const SelectTime = () => {
   // Check if a time slot is in the past
   const isPastTimeSlot = (slot) => {
     const [hour, minute] = slot.split(":").map(Number);
-    const slotTime = new Date(currentYear, currentMonth, selectedDay, hour, minute);
+    const slotTime = new Date(
+      currentYear,
+      currentMonth,
+      selectedDay,
+      hour,
+      minute
+    );
     const now = new Date();
     return slotTime < now;
   };
@@ -193,7 +208,15 @@ const SelectTime = () => {
       </Box>
 
       {/* Doctor Details Card */}
-      <Card borderWidth="1px" borderRadius="lg" overflow="hidden" boxShadow="md" bg={cardBg} borderColor={borderColor} mb={6}>
+      <Card
+        borderWidth="1px"
+        borderRadius="lg"
+        overflow="hidden"
+        boxShadow="md"
+        bg={cardBg}
+        borderColor={borderColor}
+        mb={6}
+      >
         <CardBody>
           {/* Doctor Info */}
           <Flex align="center" mb={6}>
@@ -243,7 +266,14 @@ const SelectTime = () => {
           {/* Calendar Days */}
           <SimpleGrid columns={7} spacing={2} mb={6}>
             {daysOfWeek.map((day) => (
-              <Box key={day} textAlign="center" fontSize="sm" fontWeight="medium" color="gray.500" py={1}>
+              <Box
+                key={day}
+                textAlign="center"
+                fontSize="sm"
+                fontWeight="medium"
+                color="gray.500"
+                py={1}
+              >
                 {day}
               </Box>
             ))}

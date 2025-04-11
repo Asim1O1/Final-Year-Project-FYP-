@@ -8,6 +8,10 @@ import {
   useDisclosure,
   InputGroup,
   InputLeftElement,
+  TagLabel,
+  TagCloseButton,
+  Text,
+  Tag,
 } from "@chakra-ui/react";
 import { Plus, Search } from "lucide-react";
 import { Input } from "antd";
@@ -18,63 +22,91 @@ import { fetchAllHospitals } from "../../features/hospital/hospitalSlice";
 
 import { useDispatch, useSelector } from "react-redux";
 import { debounce } from "lodash";
+import Pagination from "../../utils/Pagination";
+
+import PREDEFINED_SPECIALTIES from "../../../../constants/Specialties";
 
 const HospitalManagement = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedHospital, setSelectedHospital] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1); // State for current page
-  const [totalPages, setTotalPages] = useState(0); // State for total pages
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedSpecialty, setSelectedSpecialty] = useState("");
   const dispatch = useDispatch();
 
-  // Fetch hospitals from Redux state
-  const { hospitals, loading, error } = useSelector((state) => state.hospitalSlice);
-  //  const {totalPages, currentPage} = useSelector(
-  //     (state) => state?.hospitalSlice?.data?.pagination
-  //   );
-
-     // Initial data fetch
-     useEffect(() => {
-      dispatch(fetchAllHospitals({page: currentPage, limit: 10, search: searchTerm}));
-    }, [dispatch, currentPage, searchTerm]);
-
-  // Debounced search function
-  const debouncedSearch = useCallback(
-    debounce((term) => {
-      dispatch(fetchAllHospitals({page: 1, limit: 10, search: term})); // Reset to page 1 when searching
-    }, 500),
-    [dispatch]
+  // Redux state
+  const { hospitals, loading, error, pagination } = useSelector(
+    (state) => state.hospitalSlice
   );
 
-  // Handle search input change
+  // Fetch data on mount or page/search/filter change
+  useEffect(() => {
+    const params = {
+      page: currentPage,
+      limit: 10,
+      search: searchTerm,
+    };
+
+    // Only add specialties if one is selected
+    if (selectedSpecialty) {
+      params.specialty = selectedSpecialty; // Match the backend parameter name
+    }
+
+    dispatch(fetchAllHospitals(params));
+  }, [dispatch, currentPage, searchTerm, selectedSpecialty]);
+
+  // Debounced search
+  const debouncedSearch = useCallback(
+    debounce((term) => {
+      setCurrentPage(1); // Reset to page 1
+
+      const params = {
+        page: 1,
+        limit: 10,
+        search: term,
+      };
+
+      // Only add specialty if one is selected
+      if (selectedSpecialty) {
+        params.specialty = selectedSpecialty; // Match the backend parameter name
+      }
+
+      dispatch(fetchAllHospitals(params));
+    }, 500),
+    [dispatch, selectedSpecialty]
+  );
+
+  // Input change
   const handleSearchChange = (e) => {
     const term = e.target.value;
     setSearchTerm(term);
     debouncedSearch(term);
   };
 
- 
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedSpecialty("");
+    setCurrentPage(1);
+    dispatch(fetchAllHospitals({ page: 1, limit: 10 }));
+  };
 
-  // Handle opening the form for adding a new hospital
   const handleAddHospital = () => {
     setSelectedHospital(null);
     onOpen();
   };
 
-  // Handle opening the form for editing an existing hospital
   const handleEditHospital = (hospital) => {
     setSelectedHospital(hospital);
     onOpen();
   };
 
-  // Handle deleting a hospital
   const handleDeleteHospital = (hospitalId) => {
     console.log("Delete hospital with ID:", hospitalId);
   };
 
   return (
     <Container maxW="container.xl" py={6}>
-      {/* Header Section */}
       <Flex justify="space-between" align="center" mb={6}>
         <Heading size="lg">Hospital Management</Heading>
         <Button
@@ -86,30 +118,38 @@ const HospitalManagement = () => {
         </Button>
       </Flex>
 
-      {/* Search Section */}
+      {/* Search and Filter Section */}
       <Box mb={6}>
-        <Flex gap={4}>
-          <InputGroup flex={1}>
-            <InputLeftElement pointerEvents="none">
-              <Search size={18} color="gray" />
-            </InputLeftElement>
-            <Input
-              placeholder="Search hospitals by name, address, or test..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-            />
-          </InputGroup>
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              setSearchTerm("");
-              dispatch(fetchAllHospitals());
-            }}
-          >
-            Clear
-          </Button>
+        <Flex direction="column" gap={4}>
+          {/* Search */}
+          <Flex gap={4}>
+            <InputGroup flex={1}>
+              <InputLeftElement pointerEvents="none"></InputLeftElement>
+              <Input
+                placeholder="Search hospitals by name..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
+            </InputGroup>
+            <Button variant="outline" onClick={clearFilters}>
+              Clear All
+            </Button>
+          </Flex>
         </Flex>
       </Box>
+
+      {/* Active Filter Display */}
+      {selectedSpecialty && (
+        <Box mb={4}>
+          <Flex align="center" gap={2}>
+            <Text fontWeight="medium">Active filter:</Text>
+            <Tag size="sm" colorScheme="blue" borderRadius="full">
+              <TagLabel>{selectedSpecialty}</TagLabel>
+              <TagCloseButton onClick={() => setSelectedSpecialty("")} />
+            </Tag>
+          </Flex>
+        </Box>
+      )}
 
       {/* Hospital List */}
       <HospitalList
@@ -120,14 +160,32 @@ const HospitalManagement = () => {
         onDelete={handleDeleteHospital}
       />
 
-      {/* Add/Edit Hospital Modal */}
+      {/* Pagination */}
+      {pagination?.totalPages > 1 && (
+        <Pagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          onPageChange={(page) => setCurrentPage(page)}
+        />
+      )}
+
+      {/* Add/Edit Modal */}
       <HospitalForm
         isOpen={isOpen}
         onClose={onClose}
         hospitalId={selectedHospital}
         onSuccess={() => {
           onClose();
-          dispatch(fetchAllHospitals({ search: searchTerm }));
+          const params = {
+            page: currentPage,
+            search: searchTerm,
+          };
+
+          if (selectedSpecialty) {
+            params.specialty = selectedSpecialty; // Match the backend parameter name
+          }
+
+          dispatch(fetchAllHospitals(params));
         }}
       />
     </Container>

@@ -119,7 +119,7 @@ export const bookDoctorAppointment = async (req, res, next) => {
       reason,
       hospital: hospitalId,
       endTime: allSlots[allSlots.indexOf(startTime) + 1],
-      status: "pending", 
+      status: "pending",
       paymentMethod: paymentMethod,
       paymentStatus: paymentMethod === "pay_now" ? "pending" : "not_required",
       paymentId: paymentMethod === "pay_now" ? null : undefined,
@@ -127,24 +127,67 @@ export const bookDoctorAppointment = async (req, res, next) => {
 
     await newAppointment.save();
 
-    // ✅ **Send In-App Notification**
-    const notification = new Notification({
-      user: userId,
+    const patientNotification = new Notification({
+      user: userId, // patient's user ID
       message: `Your appointment with Dr. ${doctor.fullName} on ${new Date(
         date
-      ).toLocaleDateString()} at ${startTime} has been booked successfully.`,
+      ).toLocaleDateString()} at ${startTime} has been booked.`,
       type: "appointment",
-      relatedId: newAppointment._id, // Link to appointment
+      relatedId: newAppointment._id,
     });
+    await patientNotification.save();
 
-    await notification.save();
-
-    // Emit real-time notification via Socket.io
     const io = req.app.get("socketio");
-    io.to(userId.toString()).emit("new-notification", {
-      message: `Your appointment with Dr. ${doctor.fullName} has been booked.`,
+
+    // ✅ 2. Send Notification to DOCTOR (if linked to a User account)
+    if (doctor.user) {
+      // Assuming `doctor.user` is the reference to User model
+      const doctorNotification = new Notification({
+        user: doctor.user, // doctor's linked user ID
+        message: `New appointment booked with you on ${new Date(
+          date
+        ).toLocaleDateString()} at ${startTime} by ${user.fullName}.`,
+        type: "appointment",
+        relatedId: newAppointment._id,
+      });
+      await doctorNotification.save();
+
+      // Real-time Socket.io notification to doctor
+      io.to(doctor.user.toString()).emit("new-notification", {
+        message: `New appointment booked with you by ${user.fullName}.`,
+      });
+    } else {
+      console.warn(
+        "Doctor is not linked to a User account. Notification skipped."
+      );
+    }
+
+    // ✅ 3. Send Notifications to HOSPITAL ADMINS (if any exist)
+    const hospitalAdmins = await userModel.find({
+      role: "hospital_admin",
+      hospital: hospitalId,
     });
 
+    if (hospitalAdmins?.length > 0) {
+      for (const admin of hospitalAdmins) {
+        const adminNotification = new Notification({
+          user: admin._id, // admin's user ID
+          message: `New appointment booked with Dr. ${
+            doctor.fullName
+          } on ${new Date(date).toLocaleDateString()} at ${startTime}.`,
+          type: "appointment",
+          relatedId: newAppointment._id,
+        });
+        await adminNotification.save();
+
+        // Real-time Socket.io notification to admin
+        io.to(admin._id.toString()).emit("new-notification", {
+          message: `New appointment booked with Dr. ${doctor.fullName}.`,
+        });
+      }
+    } else {
+      console.warn("No hospital admins found. Notifications skipped.");
+    }
     // ✅ **Send Confirmation Email**
     const subject = emailTemplates.appointmentBooking.subject;
     const template = emailTemplates.appointmentBooking;
@@ -176,7 +219,7 @@ export const bookDoctorAppointment = async (req, res, next) => {
     next(error);
   }
 };
-  
+
 export const updateAppointmentStatus = async (req, res, next) => {
   const { appointmentId } = req.params;
   const { status, rejectionReason } = req.body;

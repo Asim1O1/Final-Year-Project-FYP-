@@ -5,6 +5,11 @@ import createResponse from "../../utils/responseBuilder.js";
 import { paginate } from "../../utils/paginationUtil.js";
 import { logActivity } from "../activity/activity.controller.js";
 
+import Doctor from "../../models/doctor.model.js";
+import Appointment from "../../models/appointment.model.js";
+import Campaign from "../../models/campaign.model.js";
+import MedicalTest from "../../models/medicalTest.model.js";
+
 export const createHospitalAdmin = async (req, res, next) => {
   try {
     const { fullName, email, password, gender, phone, hospitalId, address } =
@@ -57,19 +62,14 @@ export const createHospitalAdmin = async (req, res, next) => {
 
     await hospital.save();
     await logActivity("hospital_admin_created", {
-      fullName: hospitalAdmin.fullName,
-      email: hospitalAdmin.email,
-      role: "hospital_admin",
-      userId: hospitalAdmin._id,
-      name: hospitalAdmin.fullName,
-
-      targetType: "Hospital",
-      targetId: hospitalId,
-
-      ipAddress: req.ip,
-      userAgent: req.headers["user-agent"],
-
-      visibleTo: ["system_admin"],
+      // Core Activity Data
+      title: `Hospital Admin Created: ${hospitalAdmin.fullName}`,
+      description: `${hospitalAdmin.fullName} (email: ${hospitalAdmin.email}) was assigned as a hospital admin.`,
+      performedBy: {
+        role: req.user?.role || "system_admin",
+        userId: req.user?._id,
+        name: req.user?.fullName,
+      },
     });
 
     const { password: _, ...hospitalAdminData } = hospitalAdmin.toObject();
@@ -276,6 +276,62 @@ export const getAllHospitalAdmins = async (req, res, next) => {
     });
   } catch (error) {
     console.error("❌ Get All Hospital Admins Error:", error.message);
+    next(error);
+  }
+};
+
+export const getDashboardStatsForHospitalAdmin = async (req, res, next) => {
+  try {
+    const hospitalId = req.user.hospital; // Assuming req.user has the hospital ID
+
+    // Count only those associated with the hospital
+    const totalDoctors = await Doctor.countDocuments({ hospital: hospitalId });
+    const totalAppointments = await Appointment.countDocuments({
+      hospital: hospitalId,
+      status: "active",
+    });
+    const totalCampaigns = await Campaign.countDocuments({
+      hospital: hospitalId,
+    });
+    const medicalTestsToday = await MedicalTest.countDocuments({
+      hospital: hospitalId,
+      createdAt: {
+        $gte: new Date(new Date().setHours(0, 0, 0, 0)), // Start of today
+        $lt: new Date(new Date().setHours(23, 59, 59, 999)), // End of today
+      },
+    });
+
+    const stats = [
+      {
+        label: "Total Doctors",
+        number: totalDoctors.toString(),
+        change: "+5%", // Optional placeholder
+        isIncrease: true,
+      },
+      {
+        label: "Medical Tests Today",
+        number: medicalTestsToday.toString(),
+        change: "-3%", // Optional placeholder
+        isIncrease: false,
+      },
+    ];
+
+    return res.status(200).json(
+      createResponse({
+        isSuccess: true,
+        statusCode: 200,
+        message: "Dashboard stats fetched successfully",
+        data: {
+          totalDoctors,
+          totalAppointments,
+          totalCampaigns,
+          totalMedicalTestsToday: medicalTestsToday,
+          stats,
+        },
+      })
+    );
+  } catch (error) {
+    console.error("Get Dashboard Stats Error:", error.message);
     next(error);
   }
 };

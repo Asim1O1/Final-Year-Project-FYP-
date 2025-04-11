@@ -70,6 +70,10 @@ const doctorSchema = new mongoose.Schema(
       ref: "Hospital",
       required: true,
     },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     yearsOfExperience: {
       type: Number,
       required: true,

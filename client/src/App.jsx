@@ -49,6 +49,7 @@ import MedicalTests from "./pages/public/MedicalTests.jsx";
 import { TestDetail } from "./pages/public/TestDetail.jsx";
 import TestBookingList from "./component/hospital_admin/test_booking/test_bookingList.jsx";
 import MedicalReportUpload from "./component/hospital_admin/test_report/UploadReport.jsx";
+import MedicalReports from "./component/hospital_admin/test_report/MedicalReports.jsx";
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -249,6 +250,11 @@ function App() {
           <Route
             path="medical-reports/upload"
             element={<MedicalReportUpload />}
+          />
+
+          <Route
+            path="medical-reports/"
+            element={<MedicalReports />}
           />
 
           <Route

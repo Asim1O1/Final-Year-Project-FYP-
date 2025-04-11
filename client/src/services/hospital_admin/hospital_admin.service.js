@@ -197,3 +197,39 @@ export const getAllHospitalAdminsService = async (queryParams = {}) => {
     });
   }
 };
+
+export const getDashboardStatsService = async () => {
+  try {
+    const response = await axiosInstance.get(
+      `/api/hospitalAdmin/dashboardStats`
+    );
+    console.log("The response while fetching dashboard stats is", response);
+
+    const { isSuccess, message, data } = response?.data || {};
+
+    if (!isSuccess) {
+      return createApiResponse({
+        isSuccess: false,
+        message: message || "Failed to fetch dashboard stats.",
+        data: data?.error || null,
+      });
+    }
+
+    return createApiResponse({
+      isSuccess: true,
+      message: message || "Dashboard stats fetched successfully",
+      data,
+    });
+  } catch (error) {
+    const errorMessage =
+      error?.response?.data?.error?.[0]?.message ||
+      error?.response?.data?.message ||
+      error?.message ||
+      "An error occurred while fetching dashboard stats.";
+
+    return createApiResponse({
+      isSuccess: false,
+      message: errorMessage,
+    });
+  }
+};

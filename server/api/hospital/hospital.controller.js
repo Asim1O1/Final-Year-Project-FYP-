@@ -60,14 +60,15 @@ export const addHospital = async (req, res, next) => {
 
     await newHospital.save();
     await logActivity("hospital_registration", {
-      name: newHospital.name,
-      userId: req?.user?._id, // assuming you're using authentication middleware
-      role: req?.user?.role || "system_admin", // fallback
-      nameOfActor: req?.user?.fullName || "System",
-      targetType: "Hospital",
-      targetId: newHospital._id,
-      ipAddress: req.ip,
-      userAgent: req.headers["user-agent"],
+      // Core Activity Data
+      title: `Hospital Registered: ${newHospital.name}`,
+      description: `New hospital named ${newHospital.name} has been registered.`,
+
+      performedBy: {
+        role: req?.user?.role || "system_admin", // Role of the actor performing this action, defaulting to system_admin if not available
+        userId: req?.user?._id,
+        name: req?.user?.fullName,
+      },
       visibleTo: ["system_admin"],
     });
 
@@ -93,29 +94,47 @@ export const addHospital = async (req, res, next) => {
 
 export const fetchHospitals = async (req, res, next) => {
   try {
-    const { page, limit, sort = "createdAt" } = req.query;
+    const {
+      page,
+      limit,
+      sort = "createdAt",
+      search = "",
+      speciality,
+    } = req.query;
 
     const sortOrder = sort.startsWith("-") ? -1 : 1;
     const sortField = sort.replace("-", "");
     const sortOptions = { [sortField]: sortOrder };
 
-    console.log("Fetching hospitals. Pagination:", { page, limit });
+    // Build dynamic query filters
+    const queryFilter = {};
+
+    // Search by hospital name (case-insensitive)
+    if (search) {
+      queryFilter.name = { $regex: search, $options: "i" };
+    }
+
+    // Filter by speciality
+    if (speciality) {
+      queryFilter.speciality = speciality;
+    }
 
     // No pagination
     if (!page && !limit) {
-      const hospitals = await hospitalModel.find()
+      const hospitals = await hospitalModel
+        .find(queryFilter)
         .sort(sortOptions)
         .populate({
           path: "medicalTests",
           select: "testName testDescription testPrice status testDate",
           match: { status: { $ne: "cancelled" } },
-          options: { sort: { testName: 1 } }
+          options: { sort: { testName: 1 } },
         });
 
-      console.log("Hospitals fetched (no pagination):", hospitals.length);
       hospitals.forEach((hospital, index) => {
         console.log(`Hospital ${index + 1}:`, {
           name: hospital.name,
+          speciality: hospital.speciality,
           testCount: hospital.medicalTests?.length || 0,
         });
       });
@@ -134,26 +153,22 @@ export const fetchHospitals = async (req, res, next) => {
     }
 
     // With pagination
-    const result = await paginate(
-      hospitalModel,
-      {},
-      {
-        page: page || 1,
-        limit: limit || 10,
-        sort: sortOptions,
-        populate: {
-          path: "medicalTests",
-          select: "testName testDescription testPrice status testDate",
-          match: { status: { $ne: "cancelled" } },
-          options: { sort: { testName: 1 } }
-        }
-      }
-    );
+    const result = await paginate(hospitalModel, queryFilter, {
+      page: page || 1,
+      limit: limit || 10,
+      sort: sortOptions,
+      populate: {
+        path: "medicalTests",
+        select: "testName testDescription testPrice status testDate",
+        match: { status: { $ne: "cancelled" } },
+        options: { sort: { testName: 1 } },
+      },
+    });
 
-    console.log("Hospitals fetched (paginated):", result.data.length);
     result.data.forEach((hospital, index) => {
       console.log(`Hospital ${index + 1}:`, {
         name: hospital.name,
+        speciality: hospital.speciality,
         testCount: hospital.medicalTests?.length || 0,
       });
     });
@@ -174,7 +189,7 @@ export const fetchHospitals = async (req, res, next) => {
       })
     );
   } catch (error) {
-    console.error("Error in fetchHospitals:", error);
+    console.error("❌ Error in fetchHospitals:", error);
     next(error);
   }
 };

@@ -137,7 +137,11 @@ export const bookMedicalTest = createAsyncThunk(
 export const fetchHospitalTestBookings = createAsyncThunk(
   "testBooking/fetchHospitalTestBookings",
   async ({ hospitalId, filters = {} }, { rejectWithValue }) => {
-    console.log("entered the fetch hospital test bookings slice thunk func", hospitalId, filters);
+    console.log(
+      "entered the fetch hospital test bookings slice thunk func",
+      hospitalId,
+      filters
+    );
     try {
       const response = await medicalTestService.getHospitalTestBookingsService(
         hospitalId,
@@ -161,15 +165,20 @@ export const fetchHospitalTestBookings = createAsyncThunk(
 export const updateTestBookingStatus = createAsyncThunk(
   "testBooking/updateTestBookingStatus",
   async ({ bookingId, status }, { rejectWithValue }) => {
-    console.log("entered the update test booking status slice thunk func", bookingId, status);
+    console.log(
+      "entered the update test booking status slice thunk func",
+      bookingId,
+      status
+    );
     try {
       const response = await medicalTestService.updateTestBookingStatusService(
         bookingId,
         status
       );
+      console.log("The response is", response);
 
       if (!response.isSuccess) throw response;
-      return response.data;
+      return response;
     } catch (error) {
       return rejectWithValue(
         createApiResponse({
@@ -316,7 +325,8 @@ const medicalTestSlice = createSlice({
       .addCase(fetchHospitalTestBookings.pending, handlePending)
       .addCase(fetchHospitalTestBookings.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.hospitalBookings = action.payload || [];
+        state.hospitalBookings =
+          action.payload.bookings || action.payload.data || [];
         state.error = null;
       })
       .addCase(fetchHospitalTestBookings.rejected, handleRejected);
@@ -326,14 +336,21 @@ const medicalTestSlice = createSlice({
       .addCase(updateTestBookingStatus.pending, handlePending)
       .addCase(updateTestBookingStatus.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Update the specific booking in hospitalBookings if it exists
-        state.hospitalBookings = state.hospitalBookings.map((booking) =>
-          booking._id === action.payload._id ? action.payload : booking
-        );
-        // Also update in userBookings if it exists
-        state.userBookings = state.userBookings.map((booking) =>
-          booking._id === action.payload._id ? action.payload : booking
-        );
+        console.log("The action.payload is", action.payload);
+        if (Array.isArray(state.hospitalBookings)) {
+          state.hospitalBookings = state.hospitalBookings.map((booking) =>
+            booking._id === action.payload._id ? action.payload : booking
+          );
+        } else {
+          state.hospitalBookings = [action.payload]; // Initialize as array if it wasn't
+        }
+
+        // Safely handle userBookings
+        if (Array.isArray(state.userBookings)) {
+          state.userBookings = state.userBookings.map((booking) =>
+            booking._id === action.payload._id ? action.payload : booking
+          );
+        }
         state.error = null;
       })
       .addCase(updateTestBookingStatus.rejected, handleRejected);
