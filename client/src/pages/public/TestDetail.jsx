@@ -29,11 +29,26 @@ import {
   RadioGroup,
   Radio,
   Toast,
+  VStack,
+  HStack,
+  Divider,
+  Container,
 } from "@chakra-ui/react";
-import { ArrowLeft, Calendar, MapPin, Phone, Star } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Calendar,
+  CheckCircle,
+  Clock,
+  CreditCard,
+  DollarSign,
+  MapPin,
+  Phone,
+  Star,
+} from "lucide-react";
 import { fetchSingleMedicalTest } from "../../features/medical_test/medicalTestSlice";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { FaMoneyBillWave } from "react-icons/fa";
+import { FaClipboardList, FaHospital, FaMoneyBillWave } from "react-icons/fa";
 import { notification } from "antd";
 import {
   completePayment,
@@ -41,6 +56,7 @@ import {
 } from "../../features/payment/paymentSlice";
 
 import { bookMedicalTest } from "../../features/medical_test/medicalTestSlice";
+import { InfoIcon } from "@chakra-ui/icons";
 
 export function TestDetail() {
   const { testId } = useParams();
@@ -78,14 +94,18 @@ export function TestDetail() {
     "04:00 PM",
     "05:00 PM",
   ];
+  const bgColor = useColorModeValue("white", "gray.800");
+  const cardBgColor = useColorModeValue("white", "gray.700");
+  const mutedColor = useColorModeValue("gray.600", "gray.400");
+  const borderColor = useColorModeValue("gray.200", "gray.600");
+  const highlightColor = useColorModeValue("blue.50", "blue.900");
+  const accentColor = useColorModeValue("blue.500", "blue.300");
 
   useEffect(() => {
     if (testId) {
       dispatch(fetchSingleMedicalTest(testId));
     }
   }, [dispatch, testId]);
-
-  const mutedColor = useColorModeValue("gray.500", "gray.400");
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -191,7 +211,6 @@ export function TestDetail() {
           paymentResponse.data?.data?.payment_url ||
           paymentResponse.data?.payment_url;
       } else {
-      
         notification.success({
           title: "Test Booked Successfully",
           description: `Your test is confirmed. Token number: ${result.tokenNumber}`,
@@ -244,224 +263,396 @@ export function TestDetail() {
   }
 
   return (
-    <Box flex="1" p={[4, 6]} maxW="6xl" mx="auto">
+    <Container maxW="8xl" py={8} px={[4, 6]}>
       <Button
         variant="ghost"
-        mb={4}
+        mb={6}
         pl={0}
-        leftIcon={<ArrowLeft size={16} />}
+        leftIcon={<ArrowLeft size={18} />}
         onClick={() => navigate(-1)}
+        color={accentColor}
+        _hover={{ bg: highlightColor }}
+        fontWeight="medium"
       >
         Back to Tests
       </Button>
 
-      <Grid templateColumns={["1fr", null, null, "2fr 1fr"]} gap={6}>
-        <GridItem colSpan={[1, null, null, 2]}>
-          <Stack spacing={6}>
-            <Box
-              position="relative"
-              h={["64", "80"]}
-              w="full"
-              borderRadius="lg"
+      <Grid
+        templateColumns={["1fr", null, null, "3fr 2fr"]}
+        gap={8}
+        bg={bgColor}
+      >
+        <GridItem colSpan={[1, null, null, 1]}>
+          <Stack spacing={8}>
+           
+
+            <Card
+              variant="outline"
+              borderColor={borderColor}
+              borderRadius="xl"
+              boxShadow="sm"
               overflow="hidden"
             >
-              <Image
-                src={
-                  medicalTest.testImage ||
-                  "/placeholder.svg?height=400&width=800"
-                }
-                alt={medicalTest.testName}
-                fill
-                className="object-cover"
-              />
-            </Box>
+              <CardBody p={6}>
+                <VStack align="stretch" spacing={6}>
+                  <Box>
+                    <HStack spacing={3} mb={2}>
+                      <Heading as="h1" size="xl" fontWeight="bold">
+                        {medicalTest.testName}
+                      </Heading>
+                      <Badge
+                        colorScheme="blue"
+                        fontSize="sm"
+                        py={1}
+                        px={2}
+                        borderRadius="md"
+                      >
+                        Popular
+                      </Badge>
+                    </HStack>
 
-            <Box>
-              <Flex align="center" gap={2} mb={2}>
-                <Heading as="h1" size="xl" fontWeight="bold">
-                  {medicalTest.testName}
-                </Heading>
-              </Flex>
+                    <Flex align="center" color={mutedColor} mb={4}>
+                      <MapPin size={16} className="mr-2" />
+                      <Text fontWeight="medium">
+                        {medicalTest.hospital?.name || "Hospital not specified"}
+                        ,{" "}
+                        {medicalTest.hospital?.location ||
+                          "Location not specified"}
+                      </Text>
+                    </Flex>
 
-              <Flex align="center" color={mutedColor} mb={4}>
-                <MapPin size={16} className="mr-1" />
-                <Text>
-                  {medicalTest.hospital?.name || "Hospital not specified"},{" "}
-                  {medicalTest.hospital?.location || "Location not specified"}
-                </Text>
-              </Flex>
+                    <Divider my={4} />
 
-              <Box mb={6}>
-                <Heading as="h2" size="md" fontWeight="semibold" mb={2}>
-                  About this Test
-                </Heading>
-                <Text color={mutedColor}>
-                  {medicalTest.testDescription || "No description available"}
-                </Text>
-              </Box>
-
-              <Box mb={6}>
-                <Heading as="h2" size="md" fontWeight="semibold" mb={2}>
-                  Preparation Instructions
-                </Heading>
-                <List spacing={1} pl={5} styleType="disc" color={mutedColor}>
-                  {medicalTest.fastingRequired && (
-                    <ListItem>
-                      Fast for 8-10 hours before the test (water is allowed)
-                    </ListItem>
-                  )}
-                  <ListItem>Bring your ID and insurance card</ListItem>
-                  <ListItem>
-                    Wear comfortable clothing with easy access to arms for blood
-                    tests
-                  </ListItem>
-                  <ListItem>
-                    Inform the technician about any medications you are taking
-                  </ListItem>
-                </List>
-              </Box>
-
-              <Box>
-                <Heading as="h2" size="md" fontWeight="semibold" mb={2}>
-                  Hospital Details
-                </Heading>
-                <Card>
-                  <CardBody p={4}>
-                    <Heading as="h3" size="sm" fontWeight="bold" mb={2}>
-                      {medicalTest.hospital?.name || "Hospital not specified"}
-                    </Heading>
-                    <Stack spacing={2} fontSize="sm">
-                      <Flex align="center">
-                        <MapPin size={16} className="mr-2" color={mutedColor} />
-                        <Text>
-                          {medicalTest.hospital?.address?.fullAddress ||
-                            "Address not available"}
-                        </Text>
+                    <Box mb={6}>
+                      <Flex align="center" mb={3}>
+                        <Icon
+                          as={FaClipboardList}
+                          color={accentColor}
+                          mr={2}
+                          boxSize={5}
+                        />
+                        <Heading as="h2" size="md" fontWeight="semibold">
+                          About this Test
+                        </Heading>
                       </Flex>
-                      <Flex align="center">
-                        <Phone size={16} className="mr-2" color={mutedColor} />
-                        <Text>
-                          {medicalTest.hospital?.contactNumber ||
-                            "Phone not available"}
-                        </Text>
+                      <Text color={mutedColor} lineHeight="tall">
+                        {medicalTest.testDescription ||
+                          "No description available"}
+                      </Text>
+                    </Box>
+
+                    <Box mb={6}>
+                      <Flex align="center" mb={3}>
+                        <Icon
+                          as={InfoIcon}
+                          color={accentColor}
+                          mr={2}
+                          boxSize={5}
+                        />
+                        <Heading as="h2" size="md" fontWeight="semibold">
+                          Preparation Instructions
+                        </Heading>
                       </Flex>
-                    </Stack>
-                  </CardBody>
-                </Card>
-              </Box>
-            </Box>
+                      <Card
+                        bg={highlightColor}
+                        variant="filled"
+                        borderRadius="lg"
+                        p={4}
+                      >
+                        <List spacing={2} pl={5} styleType="none">
+                          {medicalTest.fastingRequired && (
+                            <ListItem display="flex" alignItems="center">
+                              <CheckCircle
+                                size={16}
+                                className="mr-2"
+                                color={accentColor}
+                              />
+                              <Text fontWeight="medium">
+                                Fast for 8-10 hours before the test (water is
+                                allowed)
+                              </Text>
+                            </ListItem>
+                          )}
+                          <ListItem display="flex" alignItems="center">
+                            <CheckCircle
+                              size={16}
+                              className="mr-2"
+                              color={accentColor}
+                            />
+                            <Text fontWeight="medium">
+                              Bring your ID and insurance card
+                            </Text>
+                          </ListItem>
+                          <ListItem display="flex" alignItems="center">
+                            <CheckCircle
+                              size={16}
+                              className="mr-2"
+                              color={accentColor}
+                            />
+                            <Text fontWeight="medium">
+                              Wear comfortable clothing with easy access to arms
+                              for blood tests
+                            </Text>
+                          </ListItem>
+                          <ListItem display="flex" alignItems="center">
+                            <CheckCircle
+                              size={16}
+                              className="mr-2"
+                              color={accentColor}
+                            />
+                            <Text fontWeight="medium">
+                              Inform the technician about any medications you
+                              are taking
+                            </Text>
+                          </ListItem>
+                        </List>
+                      </Card>
+                    </Box>
+
+                    <Box>
+                      <Flex align="center" mb={3}>
+                        <Icon
+                          as={FaHospital}
+                          color={accentColor}
+                          mr={2}
+                          boxSize={5}
+                        />
+                        <Heading as="h2" size="md" fontWeight="semibold">
+                          Hospital Details
+                        </Heading>
+                      </Flex>
+                      <Card
+                        variant="outline"
+                        borderColor={borderColor}
+                        borderRadius="lg"
+                        boxShadow="sm"
+                      >
+                        <CardBody p={5}>
+                          <Heading as="h3" size="md" fontWeight="bold" mb={3}>
+                            {medicalTest.hospital?.name ||
+                              "Hospital not specified"}
+                          </Heading>
+                          <Stack spacing={3} fontSize="md">
+                            <Flex align="center">
+                              <MapPin
+                                size={18}
+                                className="mr-3"
+                                color={accentColor}
+                              />
+                              <Text>
+                                {medicalTest.hospital?.address?.fullAddress ||
+                                  "Address not available"}
+                              </Text>
+                            </Flex>
+                            <Flex align="center">
+                              <Phone
+                                size={18}
+                                className="mr-3"
+                                color={accentColor}
+                              />
+                              <Text>
+                                {medicalTest.hospital?.contactNumber ||
+                                  "Phone not available"}
+                              </Text>
+                            </Flex>
+                          </Stack>
+                        </CardBody>
+                      </Card>
+                    </Box>
+                  </Box>
+                </VStack>
+              </CardBody>
+            </Card>
           </Stack>
         </GridItem>
 
         <GridItem>
-          <Card position="sticky" top="20">
+          <Card
+            position="sticky"
+            top="24"
+            borderRadius="xl"
+            overflow="hidden"
+            borderColor={borderColor}
+            boxShadow="lg"
+          >
+            <Box bg={accentColor} py={4} px={6}>
+              <Heading size="md" color="white" fontWeight="semibold">
+                Book Your Appointment
+              </Heading>
+            </Box>
+
             <CardBody p={6}>
-              <Box mb={6}>
-                <Text fontSize="2xl" fontWeight="bold" color="blue.600" mb={1}>
-                  ${medicalTest.testPrice?.toFixed(2) || "0.00"}
-                </Text>
-                {medicalTest.originalPrice && (
-                  <Flex align="center" gap={2}>
-                    <Text color={mutedColor} textDecoration="line-through">
-                      ${medicalTest.originalPrice.toFixed(2)}
-                    </Text>
-                    <Badge
-                      variant="outline"
-                      color="green.600"
-                      borderColor="green.600"
+              <Box mb={6} bg={highlightColor} p={4} borderRadius="lg">
+                <Flex justify="space-between" align="center">
+                  <Box>
+                    <Text
+                      fontSize="sm"
+                      fontWeight="medium"
+                      color={mutedColor}
+                      mb={1}
                     >
-                      Save{" "}
-                      {Math.round(
-                        (1 -
-                          medicalTest.testPrice / medicalTest.originalPrice) *
-                          100
+                      Test Price
+                    </Text>
+                    <Flex align="baseline" gap={2}>
+                      <Text
+                        fontSize="2xl"
+                        fontWeight="bold"
+                        color={accentColor}
+                      >
+                        ${medicalTest.testPrice?.toFixed(2) || "0.00"}
+                      </Text>
+                      {medicalTest.originalPrice && (
+                        <Text
+                          color={mutedColor}
+                          textDecoration="line-through"
+                          fontSize="md"
+                        >
+                          ${medicalTest.originalPrice.toFixed(2)}
+                        </Text>
                       )}
-                      %
-                    </Badge>
-                  </Flex>
-                )}
+                    </Flex>
+                  </Box>
+                </Flex>
               </Box>
 
               {bookingError && (
-                <Alert status="error" mb={4}>
+                <Alert status="error" mb={4} borderRadius="md">
                   <AlertIcon />
                   {bookingError}
                 </Alert>
               )}
 
-              <Stack as="form" spacing={4}>
+              <Stack as="form" spacing={5}>
                 <FormControl isRequired>
-                  <FormLabel htmlFor="name">Full Name</FormLabel>
+                  <FormLabel htmlFor="name" fontWeight="medium">
+                    Full Name
+                  </FormLabel>
                   <Input
                     id="name"
                     placeholder="Enter your full name"
                     value={formData.name}
                     onChange={handleInputChange}
+                    size="lg"
+                    borderRadius="md"
+                    borderColor={borderColor}
+                    _focus={{
+                      borderColor: accentColor,
+                      boxShadow: "0 0 0 1px " + accentColor,
+                    }}
                   />
                 </FormControl>
 
-                <FormControl isRequired>
-                  <FormLabel htmlFor="phone">Phone Number</FormLabel>
-                  <Input
-                    id="phone"
-                    placeholder="Enter your phone number"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                  />
-                </FormControl>
+                <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                  <GridItem>
+                    <FormControl isRequired>
+                      <FormLabel htmlFor="phone" fontWeight="medium">
+                        Phone Number
+                      </FormLabel>
+                      <Input
+                        id="phone"
+                        placeholder="Enter your phone number"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        size="lg"
+                        borderRadius="md"
+                        borderColor={borderColor}
+                        _focus={{
+                          borderColor: accentColor,
+                          boxShadow: "0 0 0 1px " + accentColor,
+                        }}
+                      />
+                    </FormControl>
+                  </GridItem>
+                  <GridItem>
+                    <FormControl isRequired>
+                      <FormLabel htmlFor="email" fontWeight="medium">
+                        Email Address
+                      </FormLabel>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="Enter your email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        size="lg"
+                        borderRadius="md"
+                        borderColor={borderColor}
+                        _focus={{
+                          borderColor: accentColor,
+                          boxShadow: "0 0 0 1px " + accentColor,
+                        }}
+                      />
+                    </FormControl>
+                  </GridItem>
+                </Grid>
 
-                <FormControl isRequired>
-                  <FormLabel htmlFor="email">Email Address</FormLabel>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                  />
-                </FormControl>
-
-                <FormControl isRequired>
-                  <FormLabel htmlFor="bookingDate">Preferred Date</FormLabel>
-                  <Box position="relative">
-                    <Input
-                      id="bookingDate"
-                      type="date"
-                      value={formData.bookingDate}
-                      onChange={handleInputChange}
-                      min={new Date().toISOString().split("T")[0]}
-                    />
-                    <Box
-                      position="absolute"
-                      right="3"
-                      top="50%"
-                      transform="translateY(-50%)"
-                      color={mutedColor}
-                      pointerEvents="none"
-                    >
-                      <Calendar size={16} />
-                    </Box>
-                  </Box>
-                </FormControl>
-
-                <FormControl isRequired>
-                  <FormLabel htmlFor="bookingTime">Preferred Time</FormLabel>
-                  <Select
-                    id="bookingTime"
-                    placeholder="Select time slot"
-                    value={formData.bookingTime}
-                    onChange={handleInputChange}
-                  >
-                    {availableTimes.map((time) => (
-                      <option key={time} value={time}>
-                        {time}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
+                <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                  <GridItem>
+                    <FormControl isRequired>
+                      <FormLabel htmlFor="bookingDate" fontWeight="medium">
+                        Preferred Date
+                      </FormLabel>
+                      <Box position="relative">
+                        <Input
+                          id="bookingDate"
+                          type="date"
+                          value={formData.bookingDate}
+                          onChange={handleInputChange}
+                          min={new Date().toISOString().split("T")[0]}
+                          size="lg"
+                          borderRadius="md"
+                          borderColor={borderColor}
+                          _focus={{
+                            borderColor: accentColor,
+                            boxShadow: "0 0 0 1px " + accentColor,
+                          }}
+                        />
+                        <Box
+                          position="absolute"
+                          right="4"
+                          top="50%"
+                          transform="translateY(-50%)"
+                          color={mutedColor}
+                          pointerEvents="none"
+                        >
+                          <Calendar size={18} />
+                        </Box>
+                      </Box>
+                    </FormControl>
+                  </GridItem>
+                  <GridItem>
+                    <FormControl isRequired>
+                      <FormLabel htmlFor="bookingTime" fontWeight="medium">
+                        Preferred Time
+                      </FormLabel>
+                      <Box position="relative">
+                        <Select
+                          id="bookingTime"
+                          placeholder="Select time slot"
+                          value={formData.bookingTime}
+                          onChange={handleInputChange}
+                          size="lg"
+                          borderRadius="md"
+                          borderColor={borderColor}
+                          _focus={{
+                            borderColor: accentColor,
+                            boxShadow: "0 0 0 1px " + accentColor,
+                          }}
+                          icon={<Clock size={18} />}
+                        >
+                          {availableTimes.map((time) => (
+                            <option key={time} value={time}>
+                              {time}
+                            </option>
+                          ))}
+                        </Select>
+                      </Box>
+                    </FormControl>
+                  </GridItem>
+                </Grid>
 
                 <FormControl>
-                  <FormLabel htmlFor="notes">
+                  <FormLabel htmlFor="notes" fontWeight="medium">
                     Special Instructions (Optional)
                   </FormLabel>
                   <Textarea
@@ -470,33 +661,64 @@ export function TestDetail() {
                     resize="none"
                     value={formData.notes}
                     onChange={handleInputChange}
+                    size="lg"
+                    borderRadius="md"
+                    borderColor={borderColor}
+                    _focus={{
+                      borderColor: accentColor,
+                      boxShadow: "0 0 0 1px " + accentColor,
+                    }}
+                    h="100px"
                   />
                 </FormControl>
 
-                <FormControl as="fieldset" isRequired>
-                  <FormLabel as="legend" fontWeight="medium">
-                    <Flex align="center">
-                      <Icon as={FaMoneyBillWave} color="green.500" mr={2} />
-                      Payment Method
-                    </Flex>
-                  </FormLabel>
-                  <RadioGroup
-                    onChange={handleRadioChange}
-                    value={formData.paymentMethod}
-                  >
-                    <Stack
-                      direction={{ base: "column", md: "row" }}
-                      spacing={4}
+                <Box bg={highlightColor} p={4} borderRadius="lg">
+                  <FormControl as="fieldset" isRequired>
+                    <FormLabel as="legend" fontWeight="semibold" mb={3}>
+                      <Flex align="center">
+                        <Icon
+                          as={FaMoneyBillWave}
+                          color={accentColor}
+                          mr={2}
+                          boxSize={5}
+                        />
+                        Payment Method
+                      </Flex>
+                    </FormLabel>
+                    <RadioGroup
+                      onChange={handleRadioChange}
+                      value={formData.paymentMethod}
                     >
-                      <Radio value="pay_on_site" colorScheme="blue" size="lg">
-                        Pay at Hospital
-                      </Radio>
-                      <Radio value="pay_now" colorScheme="blue" size="lg">
-                        Pay Now
-                      </Radio>
-                    </Stack>
-                  </RadioGroup>
-                </FormControl>
+                      <Stack
+                        direction={{ base: "column", md: "row" }}
+                        spacing={4}
+                      >
+                        <Radio
+                          value="pay_on_site"
+                          colorScheme="blue"
+                          size="lg"
+                          borderColor={borderColor}
+                        >
+                          <Flex align="center">
+                            <DollarSign size={16} className="mr-1.5" />
+                            Pay at Hospital
+                          </Flex>
+                        </Radio>
+                        <Radio
+                          value="pay_now"
+                          colorScheme="blue"
+                          size="lg"
+                          borderColor={borderColor}
+                        >
+                          <Flex align="center">
+                            <CreditCard size={16} className="mr-1.5" />
+                            Pay Now
+                          </Flex>
+                        </Radio>
+                      </Stack>
+                    </RadioGroup>
+                  </FormControl>
+                </Box>
 
                 <Button
                   colorScheme="blue"
@@ -504,20 +726,38 @@ export function TestDetail() {
                   onClick={handleSubmit}
                   isLoading={isLoading}
                   borderRadius="md"
-                  py={6}
+                  py={7}
                   fontWeight="bold"
-                  _hover={{ transform: "translateY(-2px)", boxShadow: "lg" }}
-                  transition="all 0.2s"
+                  _hover={{ transform: "translateY(-2px)", boxShadow: "xl" }}
+                  _active={{ transform: "translateY(0)" }}
+                  transition="all 0.3s"
+                  mt={2}
+                  loadingText={
+                    formData.paymentMethod === "pay_now"
+                      ? "Processing Payment..."
+                      : "Confirming..."
+                  }
                 >
                   {formData.paymentMethod === "pay_now"
                     ? "Proceed to Payment"
                     : "Confirm Appointment"}
                 </Button>
+
+                <Flex align="center" justify="center" mt={2}>
+                  <AlertCircle
+                    size={14}
+                    className="mr-1.5"
+                    color={mutedColor}
+                  />
+                  <Text fontSize="sm" color={mutedColor}>
+                    You can reschedule up to 24 hours before your appointment
+                  </Text>
+                </Flex>
               </Stack>
             </CardBody>
           </Card>
         </GridItem>
       </Grid>
-    </Box>
+    </Container>
   );
 }

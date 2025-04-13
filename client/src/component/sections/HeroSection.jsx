@@ -4,7 +4,7 @@ import HeroSectionImage from "../../assets/image-removebg 1.png";
 
 const HeroSection = () => {
   return (
-    <div className="bg-[#CDF5FD] min-h-screen">
+    <div className=" min-h-screen">
       <Navbar />
 
       {/* Hero Content */}

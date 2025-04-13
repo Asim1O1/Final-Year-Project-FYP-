@@ -1,4 +1,6 @@
 import hospitalModel from "../../models/hospital.model.js";
+import doctorModel from "../../models/doctor.model.js"
+import medicalTestModel from "../../models/medicalTest.model.js"
 import { validateHospitalInput } from "../../utils/validationUtils.js";
 import createResponse from "../../utils/responseBuilder.js";
 import fs from "fs";
@@ -197,11 +199,13 @@ export const fetchHospitals = async (req, res, next) => {
 /**
  * Handles fetching a specific hospital by ID.
  */
+
+
 export const fetchHospitalById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // Fetch hospital by ID
+    // Fetch hospital
     const hospital = await hospitalModel.findById(id);
     if (!hospital) {
       return res.status(404).json(
@@ -215,12 +219,25 @@ export const fetchHospitalById = async (req, res, next) => {
       );
     }
 
+    // Fetch doctors
+    const doctors = await doctorModel.find({ hospital: id });
+
+    // Fetch medical tests
+    const medicalTests = await medicalTestModel.find({ hospital: id });
+
+    console.log("Doctors found:", doctors);
+    console.log("Medical tests found:", medicalTests);
+
     return res.status(200).json(
       createResponse({
         isSuccess: true,
         statusCode: 200,
-        message: "Hospital fetched successfully.",
-        data: hospital,
+        message: "Hospital, doctors, and medical tests fetched successfully.",
+        data: {
+          hospital,
+          doctors,
+          medicalTests,
+        },
         error: null,
       })
     );

@@ -116,6 +116,7 @@ export const fetchAllHospitals = createAsyncThunk(
 export const fetchSingleHospital = createAsyncThunk(
   "hospital/fetchSingleHospital",
   async (hospitalId, { rejectWithValue }) => {
+    console.log("the hospital id", hospitalId)
     try {
       const response = await hospitalService.fetchSingleHospitalService(
         hospitalId

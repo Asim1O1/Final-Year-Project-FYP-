@@ -9,6 +9,7 @@ import {
   LogOut,
   Calendar,
   MessageSquare,
+  X,
 } from "lucide-react";
 import MedConnectLogo from "../../assets/MedConnect_Logo3-removebg.png";
 import { useSelector, useDispatch } from "react-redux";
@@ -22,6 +23,7 @@ import {
   handleMarkAllNotificationsAsRead,
   handleMarkNotificationAsRead,
 } from "../../features/notification/notificationSlice";
+import { Menu } from "@chakra-ui/react";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -105,18 +107,14 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`sticky top-0 z-50 bg-[#CDF5FD] transition-transform duration-300 ${
+      className={`sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-100 shadow-sm transition-all duration-500 ease-in-out ${
         isNavbarVisible ? "translate-y-0" : "-translate-y-full"
       }`}
     >
-      <div className="container mx-auto px-4 lg:px-12 py-4">
+      <div className="container mx-auto px-4 lg:px-8 py-3.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <img
-              src={MedConnectLogo}
-              alt="MedConnect Logo"
-              className="w-36 h-42"
-            />
+            <img src={MedConnectLogo || "/placeholder.svg"} alt="MedConnect Logo" className="w-36 h-auto" />
           </div>
 
           <div className="hidden md:flex items-center space-x-8">
@@ -124,18 +122,21 @@ const Navbar = () => {
               <a
                 key={link.href}
                 href={link.href}
-                className="flex items-center text-lg font-medium text-gray-600 hover:text-blue-500 transition group relative"
+                className="flex items-center text-base font-medium text-gray-700 hover:text-blue-600 transition-colors duration-300 group py-2 relative"
               >
                 <link.icon
-                  className="mr-2 text-gray-400 group-hover:text-blue-500 transition"
-                  size={20}
+                  className="mr-2 text-gray-500 group-hover:text-blue-600 transition-colors duration-300"
+                  size={18}
                 />
-                {link.label}
+                <span className="relative">
+                  {link.label}
+                  <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-blue-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-full"></span>
+                </span>
               </a>
             ))}
           </div>
 
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-6">
             {isAuthenticated ? (
               <>
                 <Notifications
@@ -146,48 +147,67 @@ const Navbar = () => {
                   markAsRead={markAsRead}
                   markAllAsRead={markAllAsRead}
                   clearNotifications={clearNotifications}
+                  className="relative"
                 />
                 <button
                   onClick={navigateToChat}
-                  className="flex items-center text-blue-500 hover:text-blue-600 text-lg font-medium transition"
+                  className="flex items-center text-gray-700 hover:text-blue-600 text-base font-medium transition-colors duration-300 group py-2 relative"
                 >
-                  <MessageSquare className="mr-1" size={20} />
-                  Messages
+                  <MessageSquare
+                    className="mr-2 text-gray-500 group-hover:text-blue-600 transition-colors duration-300"
+                    size={18}
+                  />
+                  <span className="relative">
+                    Messages
+                    <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-blue-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-full"></span>
+                  </span>
                 </button>
                 <button
                   onClick={() => navigate("/profile")}
-                  className="flex items-center text-blue-500 hover:text-blue-600 text-lg font-medium transition"
+                  className="flex items-center text-gray-700 hover:text-blue-600 text-base font-medium transition-colors duration-300 group py-2 relative"
                 >
-                  <User className="mr-1" size={20} />
-                  Profile
+                  <User
+                    className="mr-2 text-gray-500 group-hover:text-blue-600 transition-colors duration-300"
+                    size={18}
+                  />
+                  <span className="relative">
+                    Profile
+                    <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-blue-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-full"></span>
+                  </span>
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-8 py-2 rounded-full hover:shadow-xl transition flex items-center text-lg"
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2.5 rounded-lg hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center text-sm font-medium transform hover:translate-y-[-2px] active:translate-y-[0px]"
                 >
-                  Logout <LogOut className="ml-2" size={20} />
+                  Logout <LogOut className="ml-1.5" size={16} />
                 </button>
               </>
             ) : (
               <>
                 <a
                   href="/register"
-                  className="flex items-center text-blue-500 hover:text-blue-600 text-lg font-medium transition"
+                  className="flex items-center text-gray-700 hover:text-blue-600 text-base font-medium transition-colors duration-300 group py-2 relative"
                 >
-                  <User className="mr-1" size={20} />
-                  SignUp
+                  <User
+                    className="mr-2 text-gray-500 group-hover:text-blue-600 transition-colors duration-300"
+                    size={18}
+                  />
+                  <span className="relative">
+                    Sign Up
+                    <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-blue-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-full"></span>
+                  </span>
                 </a>
                 <a
                   href="/login"
-                  className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-2 rounded-full hover:shadow-xl transition flex items-center text-lg"
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2.5 rounded-lg hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center text-sm font-medium transform hover:translate-y-[-2px] active:translate-y-[0px]"
                 >
-                  Login <LogIn className="ml-2" size={20} />
+                  Login <LogIn className="ml-1.5" size={16} />
                 </a>
               </>
             )}
           </div>
 
-          <div className="md:hidden flex items-center space-x-2">
+          <div className="md:hidden flex items-center space-x-4">
             {isAuthenticated && (
               <>
                 <Notifications
@@ -201,91 +221,85 @@ const Navbar = () => {
                 />
                 <button
                   onClick={navigateToChat}
-                  className="p-2 rounded-md hover:bg-blue-100 transition"
+                  className="p-2 rounded-full text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200"
                 >
-                  <MessageSquare className="w-6 h-6 text-blue-500" />
+                  <MessageSquare className="w-5 h-5" />
                 </button>
               </>
             )}
             <button
-              className="p-2 rounded-md hover:bg-blue-100 transition"
+              className="p-2.5 rounded-full text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
               onClick={toggleMenu}
+              aria-label="Toggle menu"
             >
-              <svg
-                className="w-6 h-6 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16m-7 6h7"
-                />
-              </svg>
+              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
+      </div>
 
-        <div
-          className={`${
-            isMenuOpen ? "flex" : "hidden"
-          } md:hidden absolute left-0 right-0 top-full bg-[#CDF5FD] shadow-lg flex-col w-full py-4 px-4 mt-2 space-y-2 z-40`}
-        >
+      {/* Mobile Menu */}
+      <div
+        className={`${
+          isMenuOpen ? "max-h-[500px] opacity-100 border-b border-gray-100" : "max-h-0 opacity-0"
+        } md:hidden absolute left-0 right-0 top-full bg-white/95 backdrop-blur-md shadow-lg flex flex-col w-full overflow-hidden transition-all duration-400 ease-in-out z-40`}
+      >
+        <div className="px-5 py-4 space-y-2.5">
           {NavLinks.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="flex items-center text-lg font-medium px-4 py-2 rounded-md text-gray-600 hover:bg-blue-50 transition"
+              className="flex items-center text-base font-medium px-4 py-3 rounded-xl text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200"
             >
-              <link.icon className="mr-3 text-gray-400 transition" size={20} />
+              <link.icon className="mr-3.5 text-gray-500" size={18} />
               {link.label}
             </a>
           ))}
 
-          <div className="border-t border-gray-200 pt-4 space-y-2">
+          <div className="border-t border-gray-100 my-3 pt-3 space-y-2.5">
             {isAuthenticated ? (
               <>
                 <button
-                  onClick={navigateToChat}
-                  className="flex items-center text-blue-500 hover:bg-blue-50 px-4 py-2 rounded-md text-lg font-medium transition w-full"
+                  onClick={() => {
+                    navigateToChat()
+                    setIsMenuOpen(false)
+                  }}
+                  className="flex items-center text-gray-700 hover:bg-blue-50 hover:text-blue-600 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 w-full"
                 >
-                  <MessageSquare className="mr-3" size={20} />
+                  <MessageSquare className="mr-3.5 text-gray-500" size={18} />
                   Messages
                 </button>
                 <button
                   onClick={() => {
-                    setIsMenuOpen(false);
-                    navigate("/profile");
+                    setIsMenuOpen(false)
+                    navigate("/profile")
                   }}
-                  className="flex items-center text-blue-500 hover:bg-blue-50 px-4 py-2 rounded-md text-lg font-medium transition w-full"
+                  className="flex items-center text-gray-700 hover:bg-blue-50 hover:text-blue-600 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 w-full"
                 >
-                  <User className="mr-3" size={20} />
+                  <User className="mr-3.5 text-gray-500" size={18} />
                   Profile
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2 rounded-full hover:shadow-lg transition flex items-center justify-center text-lg w-full"
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-xl hover:shadow-md transition-all duration-300 flex items-center justify-center text-base font-medium w-full mt-4"
                 >
-                  Logout <LogOut className="ml-2" size={20} />
+                  Logout <LogOut className="ml-2.5" size={18} />
                 </button>
               </>
             ) : (
               <>
                 <a
                   href="/register"
-                  className="flex items-center text-blue-500 hover:bg-blue-50 px-4 py-2 rounded-md text-lg font-medium transition"
+                  className="flex items-center text-gray-700 hover:bg-blue-50 hover:text-blue-600 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 w-full"
                 >
-                  <User className="mr-3" size={20} />
-                  SignUp
+                  <User className="mr-3.5 text-gray-500" size={18} />
+                  Sign Up
                 </a>
                 <a
                   href="/login"
-                  className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-2 rounded-full hover:shadow-lg transition flex items-center justify-center text-lg"
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-xl hover:shadow-md transition-all duration-300 flex items-center justify-center text-base font-medium w-full mt-3"
                 >
-                  Login <LogIn className="ml-2" size={20} />
+                  Login <LogIn className="ml-2.5" size={18} />
                 </a>
               </>
             )}

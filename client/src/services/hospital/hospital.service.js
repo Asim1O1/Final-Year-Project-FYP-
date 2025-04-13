@@ -112,8 +112,8 @@ const fetchHospitalsService = async ({
         ...(page && { page }),
         ...(limit && { limit }),
         ...(sort && { sort }),
-        ...(search && { search }), 
-        ...(speciality && { speciality }), 
+        ...(search && { search }),
+        ...(speciality && { speciality }),
       },
     });
 
@@ -145,47 +145,43 @@ const fetchHospitalsService = async ({
   }
 };
 
-const fetchSingleHospitalService = async (req, res) => {
+const fetchSingleHospitalService = async (hospitalId) => {
   try {
-    // Extract the hospital ID from the request parameters
-    const { id } = req.params;
+    // Validate input
+    if (!hospitalId || typeof hospitalId !== "string") {
+      throw new Error("Invalid hospital ID provided");
+    }
 
-    // Send a request to your backend API to fetch the hospital by ID
-    const response = await axios.get(`${BASE_BACKEND_URL}/api/hospitals/${id}`);
+    const response = await axios.get(
+      `${BASE_BACKEND_URL}/api/hospitals/${hospitalId}`
+    );
 
     // Check if the response was successful
     if (!response.data?.isSuccess) {
-      return res.status(400).json(
-        createApiResponse({
-          isSuccess: false,
-          message: response.data?.message || "Failed to fetch hospital details",
-          error: response.data?.error || null,
-        })
+      throw new Error(
+        response.data?.message || "Failed to fetch hospital details"
       );
     }
 
-    // Return the hospital data in the response if successful
-    return res.status(200).json(
-      createApiResponse({
-        isSuccess: true,
-        message:
-          response.data?.message || "Hospital details fetched successfully",
-        data: response.data?.data, // Hospital data
-      })
-    );
+    // Return the data directly (no res.status.json() for service functions)
+    return {
+      isSuccess: true,
+      message:
+        response.data?.message || "Hospital details fetched successfully",
+      data: response.data?.data,
+    };
   } catch (error) {
-    console.error("Error in fetchSingleHospitalService function:", error);
-    const errorMessage =
-      error?.response?.data?.error ||
-      error?.response?.data?.message ||
-      "An error occurred while fetching hospital details.";
+    console.error("Error in fetchSingleHospitalService:", error);
 
-    return res.status(500).json(
-      createApiResponse({
-        isSuccess: false,
-        message: errorMessage,
-      })
-    );
+    // Throw error to be handled by the caller
+    throw {
+      isSuccess: false,
+      message:
+        error.response?.data?.message ||
+        error.message ||
+        "An error occurred while fetching hospital details",
+      error: error.response?.data?.error || null,
+    };
   }
 };
 

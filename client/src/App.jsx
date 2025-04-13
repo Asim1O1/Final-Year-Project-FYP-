@@ -50,6 +50,7 @@ import { TestDetail } from "./pages/public/TestDetail.jsx";
 import TestBookingList from "./component/hospital_admin/test_booking/test_bookingList.jsx";
 import MedicalReportUpload from "./component/hospital_admin/test_report/UploadReport.jsx";
 import MedicalReports from "./component/hospital_admin/test_report/MedicalReports.jsx";
+import HospitalDetailPage from "./pages/public/HospitalDetail.jsx";
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
@@ -64,7 +65,23 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
-        <Route path="/hospitals" element={<HospitalsPage />} />
+        <Route
+          path="/hospitals"
+          element={
+            <MainLayout>
+              <HospitalsPage />
+            </MainLayout>
+          }
+        />
+
+        <Route
+          path="/hospitals/:id"
+          element={
+            <MainLayout>
+              <HospitalDetailPage />
+            </MainLayout>
+          }
+        />
         <Route
           path="/medicalTests"
           element={
@@ -252,10 +269,7 @@ function App() {
             element={<MedicalReportUpload />}
           />
 
-          <Route
-            path="medical-reports/"
-            element={<MedicalReports />}
-          />
+          <Route path="medical-reports/" element={<MedicalReports />} />
 
           <Route
             path="volunteer-requests"

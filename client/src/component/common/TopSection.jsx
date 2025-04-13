@@ -1,23 +1,4 @@
-// import React from "react";
-// import { Box, Heading } from "@chakra-ui/react";
-// import { SearchBar } from "./SearchBar";
-// import { FilterTags } from "./FilterTags";
 import Navbar from "../layout/NavBar";
-
-// export const TopSection = () => {
-//   return (
-//     <Box className="w-full bg-[#CDF5FD]">
-//       <Navbar bgColor="#CDF5FD" /> {/* Pass background color prop */}
-//       <Box className="max-w-7xl mx-auto px-4 py-8">
-//         <Heading textAlign="center" mb={8} color="blue.600">
-//           Find Hospitals Near You
-//         </Heading>
-//         <SearchBar />
-//         <FilterTags />
-//       </Box>
-//     </Box>
-//   );
-// };
 
 import { useState } from "react";
 import { MapPin } from "lucide-react";
@@ -32,9 +13,8 @@ function TopSection() {
   };
 
   return (
-    <div className="w-full bg-[#CDF5FD] py-8 px-4">
+    <div className="w-full] py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <Navbar />
         <h1 className="text-2xl md:text-3xl font-bold text-blue-600 text-center mb-6">
           Find Hospitals Near You
         </h1>
