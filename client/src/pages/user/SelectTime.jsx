@@ -55,16 +55,23 @@ import {
 } from "react-icons/fa";
 import { fetchAvailableTimeSlots } from "../../features/appointment/appointmentSlice";
 import StepIndicator from "../../component/common/StepIndicator";
+import { notification } from "antd";
+import { fetchSingleDoctor } from "../../features/doctor/doctorSlice";
 
 const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const SelectTime = () => {
   const { doctorId } = useParams();
+  const [isLoadingDoctor, setIsLoadingDoctor] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+
+  console.log("The doctor is", doctorId);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const toast = useToast();
 
   const [selectedDay, setSelectedDay] = useState(null);
+
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
@@ -73,9 +80,33 @@ const SelectTime = () => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [appointmentType, setAppointmentType] = useState("in-person");
 
+  const userId = useSelector((state) => state?.auth?.user?.data?._id);
+  const doctor = useSelector((state) => state?.doctorSlice?.doctor);
+  const [doctorError, setDoctorError] = useState(null);
   const { availableSlots, loading, error } = useSelector(
     (state) => state.appointmentSlice
   );
+
+  useEffect(() => {
+    const loadDoctorInfo = async () => {
+      setIsLoadingDoctor(true);
+      try {
+        await dispatch(fetchSingleDoctor(doctorId)).unwrap();
+      } catch (error) {
+        notification.error({
+          title: "Error Loading Doctor Information",
+          description: error.message || "Could not fetch doctor details",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      } finally {
+        setIsLoadingDoctor(false);
+      }
+    };
+
+    loadDoctorInfo();
+  }, [dispatch, doctorId, toast]);
 
   // Colors
   const bgColor = useColorModeValue("gray.50", "gray.900");
@@ -121,10 +152,13 @@ const SelectTime = () => {
   // Handle month navigation
   const handlePreviousMonth = () => {
     // Don't allow navigating to past months
-    if (currentMonth === currentMonthIndex && currentYear === currentYearValue) {
+    if (
+      currentMonth === currentMonthIndex &&
+      currentYear === currentYearValue
+    ) {
       return;
     }
-    
+
     setCurrentMonth((prev) => (prev === 0 ? 11 : prev - 1));
     if (currentMonth === 0) {
       setCurrentYear((prev) => prev - 1);
@@ -192,8 +226,9 @@ const SelectTime = () => {
 
   // Group time slots into morning, afternoon, and evening
   const groupTimeSlots = (slots) => {
-    if (!slots || !Array.isArray(slots)) return { morning: [], afternoon: [], evening: [] };
-    
+    if (!slots || !Array.isArray(slots))
+      return { morning: [], afternoon: [], evening: [] };
+
     const morning = slots.filter((slot) => {
       const hour = parseInt(slot.split(":")[0]);
       return hour >= 8 && hour < 12; // 8:00 AM - 11:59 AM
@@ -217,10 +252,10 @@ const SelectTime = () => {
   // Check if a time slot is in the past
   const isPastTimeSlot = (slot) => {
     if (!selectedDate) return false;
-    
+
     const [hour, minute] = slot.split(":").map(Number);
     const selectedDateParts = selectedDate.split("-").map(Number);
-    
+
     const slotTime = new Date(
       selectedDateParts[0],
       selectedDateParts[1] - 1,
@@ -228,7 +263,7 @@ const SelectTime = () => {
       hour,
       minute
     );
-    
+
     const now = new Date();
     return slotTime < now;
   };
@@ -244,22 +279,22 @@ const SelectTime = () => {
   // Get day of week for selected date
   const getDayOfWeek = () => {
     if (!selectedDate) return "";
-    
+
     const dateParts = selectedDate.split("-");
     const date = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-    return date.toLocaleDateString('en-US', { weekday: 'long' });
+    return date.toLocaleDateString("en-US", { weekday: "long" });
   };
 
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "";
-    
+
     const dateParts = dateString.split("-");
     const date = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-    return date.toLocaleDateString('en-US', { 
-      month: 'long', 
-      day: 'numeric',
-      year: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
@@ -267,31 +302,36 @@ const SelectTime = () => {
     <Box bg={bgColor} minH="100vh">
       <Container maxW="container.lg" py={8}>
         {/* Header Section */}
-        <Box 
-          bg={cardBgColor} 
-          p={6} 
-          borderRadius="xl" 
+        <Box
+          bg={cardBgColor}
+          p={6}
+          borderRadius="xl"
           boxShadow="sm"
           borderWidth="1px"
           borderColor={borderColor}
           mb={8}
         >
-          <Flex 
-            direction={{ base: "column", md: "row" }} 
-            justify="space-between" 
+          <Flex
+            direction={{ base: "column", md: "row" }}
+            justify="space-between"
             align={{ base: "start", md: "center" }}
             mb={4}
           >
             <HStack mb={{ base: 4, md: 0 }}>
-              <Icon as={FaRegCalendarAlt} color={primaryColor} boxSize={6} mr={2} />
+              <Icon
+                as={FaRegCalendarAlt}
+                color={primaryColor}
+                boxSize={6}
+                mr={2}
+              />
               <Heading size="lg" color={primaryColor} fontWeight="bold">
                 Book Your Appointment
               </Heading>
             </HStack>
-            <Button 
-              leftIcon={<ChevronLeftIcon />} 
-              variant="outline" 
-              colorScheme="blue" 
+            <Button
+              leftIcon={<ChevronLeftIcon />}
+              variant="outline"
+              colorScheme="blue"
               size="sm"
               onClick={() => navigate(-1)}
             >
@@ -300,45 +340,51 @@ const SelectTime = () => {
           </Flex>
 
           {/* Breadcrumbs */}
-          <Breadcrumb 
-            separator={<ChevronRightIcon color={mutedColor} />} 
-            fontSize="sm" 
+          <Breadcrumb
+            separator={<ChevronRightIcon color={mutedColor} />}
+            fontSize="sm"
             mb={6}
             spacing="8px"
             fontWeight="medium"
           >
             <BreadcrumbItem>
-              <BreadcrumbLink 
+              <BreadcrumbLink
                 href="/select-specialty"
                 color={mutedColor}
                 _hover={{ color: textColor, textDecoration: "none" }}
               >
                 <HStack>
-                  <Badge colorScheme="green" borderRadius="full">1</Badge>
+                  <Badge colorScheme="green" borderRadius="full">
+                    1
+                  </Badge>
                   <Text>Select Specialty</Text>
                 </HStack>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbItem>
-              <BreadcrumbLink 
+              <BreadcrumbLink
                 href="/select-doctor"
                 color={mutedColor}
                 _hover={{ color: textColor, textDecoration: "none" }}
               >
                 <HStack>
-                  <Badge colorScheme="green" borderRadius="full">2</Badge>
+                  <Badge colorScheme="green" borderRadius="full">
+                    2
+                  </Badge>
                   <Text>Choose Doctor</Text>
                 </HStack>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbItem isCurrentPage>
-              <BreadcrumbLink 
-                color={primaryColor} 
+              <BreadcrumbLink
+                color={primaryColor}
                 fontWeight="bold"
                 _hover={{ textDecoration: "none" }}
               >
                 <HStack>
-                  <Badge colorScheme="blue" borderRadius="full">3</Badge>
+                  <Badge colorScheme="blue" borderRadius="full">
+                    3
+                  </Badge>
                   <Text>Book Appointment</Text>
                 </HStack>
               </BreadcrumbLink>
@@ -346,7 +392,9 @@ const SelectTime = () => {
             <BreadcrumbItem>
               <BreadcrumbLink color={mutedColor} _hover={{ color: textColor }}>
                 <HStack>
-                  <Badge colorScheme="gray" borderRadius="full">4</Badge>
+                  <Badge colorScheme="gray" borderRadius="full">
+                    4
+                  </Badge>
                   <Text>Patient Details</Text>
                 </HStack>
               </BreadcrumbLink>
@@ -354,7 +402,9 @@ const SelectTime = () => {
             <BreadcrumbItem>
               <BreadcrumbLink color={mutedColor} _hover={{ color: textColor }}>
                 <HStack>
-                  <Badge colorScheme="gray" borderRadius="full">5</Badge>
+                  <Badge colorScheme="gray" borderRadius="full">
+                    5
+                  </Badge>
                   <Text>Confirmation</Text>
                 </HStack>
               </BreadcrumbLink>
@@ -377,56 +427,104 @@ const SelectTime = () => {
                 bg={cardBgColor}
                 borderColor={borderColor}
               >
-                <Box bg={highlightColor} p={4} borderBottom="1px" borderColor={borderColor}>
-                  <Heading size="sm" color={secondaryColor}>
-                    Doctor Information
-                  </Heading>
-                </Box>
-                <CardBody>
-                  <VStack align="center" spacing={4} mb={4}>
-                    <Avatar 
-                      src="/doctor-placeholder-1.jpg" 
-                      size="xl" 
-                      border="3px solid"
-                      borderColor={primaryColor}
-                    />
-                    <Box textAlign="center">
-                      <Heading size="md" color={textColor}>
-                        Dr. Sarah Wilson
-                      </Heading>
-                      <Text fontSize="sm" color={mutedColor}>
-                        Cardiologist, MD
+                {/* Doctor Card */}
+                <Card
+                  borderWidth="1px"
+                  borderRadius="xl"
+                  overflow="hidden"
+                  boxShadow="sm"
+                  bg={cardBgColor}
+                  borderColor={borderColor}
+                >
+                  <Box
+                    bg={highlightColor}
+                    p={4}
+                    borderBottom="1px"
+                    borderColor={borderColor}
+                  >
+                    <Heading size="sm" color={secondaryColor}>
+                      Doctor Information
+                    </Heading>
+                  </Box>
+                  <CardBody>
+                    {isLoadingDoctor ? (
+                      <VStack spacing={4}>
+                        <Skeleton
+                          borderRadius="full"
+                          boxSize="120px"
+                          mx="auto"
+                        />
+                        <Skeleton height="20px" width="80%" mx="auto" />
+                        <Skeleton height="16px" width="60%" mx="auto" />
+                        <Skeleton height="16px" width="40%" mx="auto" />
+                      </VStack>
+                    ) : doctorError ? (
+                      <Alert status="error" borderRadius="md">
+                        <AlertIcon />
+                        <Text>{doctorError?.message || doctorError?.error || "An unexpected error occurred"}</Text>
+                      </Alert>
+                    ) : doctor ? (
+                      <>
+                        <VStack align="center" spacing={4} mb={4}>
+                          <Avatar
+                            src={
+                              doctor?.doctorProfileImage ||
+                              "/doctor-placeholder-1.jpg"
+                            }
+                            size="xl"
+                            border="3px solid"
+                            borderColor={primaryColor}
+                          />
+                          <Box textAlign="center">
+                            <Heading size="md" color={textColor}>
+                              Dr. {doctor.fullName}
+                            </Heading>
+                            <Text fontSize="sm" color={mutedColor}>
+                              {doctor.specialty}, {doctor.qualification}
+                            </Text>
+                          </Box>
+                        </VStack>
+
+                        <Divider mb={4} />
+
+                        <VStack align="start" spacing={3}>
+                          <HStack>
+                            <Icon as={FaMapMarkerAlt} color={primaryColor} />
+                            <Text fontSize="sm">
+                              {doctor.hospital?.name ||
+                                "Medical Center, 123 Health St."}
+                            </Text>
+                          </HStack>
+                          <HStack>
+                            <Icon as={FaMapMarkerAlt} color={primaryColor} />
+                            <Text fontSize="sm">
+                              {doctor.hospital?.location ||
+                                "Medical Center, 123 Health St."}
+                            </Text>
+                          </HStack>
+
+                          <HStack>
+                            <Icon as={FaRegClock} color={primaryColor} />
+                            <Text fontSize="sm">
+                              {doctor.yearsOfExperience}+ years experience
+                            </Text>
+                          </HStack>
+                          <HStack>
+                            <Icon as={FaPhoneAlt} color={primaryColor} />
+                            <Text fontSize="sm">
+                              Consultation Fee: Rs{" "}
+                              {doctor.consultationFee || 100}
+                            </Text>
+                          </HStack>
+                        </VStack>
+                      </>
+                    ) : (
+                      <Text color={mutedColor}>
+                        No doctor information available
                       </Text>
-                      <HStack justify="center" mt={2}>
-                        <Badge colorScheme="green">4.9 ★</Badge>
-                        <Text fontSize="xs" color={mutedColor}>(120 reviews)</Text>
-                      </HStack>
-                    </Box>
-                  </VStack>
-                  
-                  <Divider mb={4} />
-                  
-                  <VStack align="start" spacing={3}>
-                    <HStack>
-                      <Icon as={FaMapMarkerAlt} color={primaryColor} />
-                      <Text fontSize="sm">
-                        Medical Center, 123 Health St.
-                      </Text>
-                    </HStack>
-                    <HStack>
-                      <Icon as={FaRegClock} color={primaryColor} />
-                      <Text fontSize="sm">
-                        10+ years experience
-                      </Text>
-                    </HStack>
-                    <HStack>
-                      <Icon as={FaPhoneAlt} color={primaryColor} />
-                      <Text fontSize="sm">
-                        Consultation Fee: $100
-                      </Text>
-                    </HStack>
-                  </VStack>
-                </CardBody>
+                    )}
+                  </CardBody>
+                </Card>
               </Card>
 
               {/* Appointment Type */}
@@ -438,7 +536,12 @@ const SelectTime = () => {
                 bg={cardBgColor}
                 borderColor={borderColor}
               >
-                <Box bg={highlightColor} p={4} borderBottom="1px" borderColor={borderColor}>
+                <Box
+                  bg={highlightColor}
+                  p={4}
+                  borderBottom="1px"
+                  borderColor={borderColor}
+                >
                   <Heading size="sm" color={secondaryColor}>
                     Appointment Type
                   </Heading>
@@ -446,7 +549,9 @@ const SelectTime = () => {
                 <CardBody>
                   <VStack spacing={3}>
                     <Button
-                      variant={appointmentType === "in-person" ? "solid" : "outline"}
+                      variant={
+                        appointmentType === "in-person" ? "solid" : "outline"
+                      }
                       colorScheme="blue"
                       size="md"
                       width="full"
@@ -455,28 +560,6 @@ const SelectTime = () => {
                       justifyContent="flex-start"
                     >
                       In-Person Visit
-                    </Button>
-                    <Button
-                      variant={appointmentType === "video" ? "solid" : "outline"}
-                      colorScheme="blue"
-                      size="md"
-                      width="full"
-                      leftIcon={<FaVideo />}
-                      onClick={() => setAppointmentType("video")}
-                      justifyContent="flex-start"
-                    >
-                      Video Consultation
-                    </Button>
-                    <Button
-                      variant={appointmentType === "phone" ? "solid" : "outline"}
-                      colorScheme="blue"
-                      size="md"
-                      width="full"
-                      leftIcon={<FaPhoneAlt />}
-                      onClick={() => setAppointmentType("phone")}
-                      justifyContent="flex-start"
-                    >
-                      Phone Consultation
                     </Button>
                   </VStack>
                 </CardBody>
@@ -492,9 +575,13 @@ const SelectTime = () => {
                     boxShadow="sm"
                     bg={cardBgColor}
                     borderColor={primaryColor}
-                    borderWidth="2px"
                   >
-                    <Box bg={highlightColor} p={4} borderBottom="1px" borderColor={borderColor}>
+                    <Box
+                      bg={highlightColor}
+                      p={4}
+                      borderBottom="1px"
+                      borderColor={borderColor}
+                    >
                       <Heading size="sm" color={secondaryColor}>
                         Selected Appointment
                       </Heading>
@@ -514,21 +601,21 @@ const SelectTime = () => {
                           </Text>
                         </HStack>
                         <HStack>
-                          <Icon 
+                          <Icon
                             as={
-                              appointmentType === "in-person" 
-                                ? FaUserMd 
-                                : appointmentType === "video" 
-                                ? FaVideo 
+                              appointmentType === "in-person"
+                                ? FaUserMd
+                                : appointmentType === "video"
+                                ? FaVideo
                                 : FaPhoneAlt
-                            } 
-                            color={primaryColor} 
+                            }
+                            color={primaryColor}
                           />
                           <Text fontWeight="medium">
-                            {appointmentType === "in-person" 
-                              ? "In-Person Visit" 
-                              : appointmentType === "video" 
-                              ? "Video Consultation" 
+                            {appointmentType === "in-person"
+                              ? "In-Person Visit"
+                              : appointmentType === "video"
+                              ? "Video Consultation"
                               : "Phone Consultation"}
                           </Text>
                         </HStack>
@@ -550,26 +637,40 @@ const SelectTime = () => {
               bg={cardBgColor}
               borderColor={borderColor}
             >
-              <Box bg={highlightColor} p={4} borderBottom="1px" borderColor={borderColor}>
+              <Box
+                bg={highlightColor}
+                p={4}
+                borderBottom="1px"
+                borderColor={borderColor}
+              >
                 <Flex justify="space-between" align="center">
                   <Heading size="sm" color={secondaryColor}>
                     Select Date & Time
                   </Heading>
-                  <Badge colorScheme="blue" px={3} py={1} borderRadius="full" fontSize="sm">
+                  <Badge
+                    colorScheme="blue"
+                    px={3}
+                    py={1}
+                    borderRadius="full"
+                    fontSize="sm"
+                  >
                     Step 3 of 5
                   </Badge>
                 </Flex>
               </Box>
-              
+
               <CardBody>
                 {/* Calendar Section */}
                 <Box mb={6}>
                   <Flex justify="space-between" align="center" mb={4}>
                     <Text fontWeight="bold" color={textColor} fontSize="lg">
-                      {new Date(currentYear, currentMonth).toLocaleString("default", {
-                        month: "long",
-                        year: "numeric",
-                      })}
+                      {new Date(currentYear, currentMonth).toLocaleString(
+                        "default",
+                        {
+                          month: "long",
+                          year: "numeric",
+                        }
+                      )}
                     </Text>
                     <HStack>
                       <Tooltip label="Previous Month" hasArrow>
@@ -579,7 +680,10 @@ const SelectTime = () => {
                           colorScheme="blue"
                           aria-label="Previous month"
                           onClick={handlePreviousMonth}
-                          isDisabled={currentMonth === currentMonthIndex && currentYear === currentYearValue}
+                          isDisabled={
+                            currentMonth === currentMonthIndex &&
+                            currentYear === currentYearValue
+                          }
                         />
                       </Tooltip>
                       <Tooltip label="Next Month" hasArrow>
@@ -613,7 +717,11 @@ const SelectTime = () => {
                       const isPastDate =
                         date.day &&
                         new Date(currentYear, date.month, date.day) <
-                          new Date(currentYearValue, currentMonthIndex, currentDate);
+                          new Date(
+                            currentYearValue,
+                            currentMonthIndex,
+                            currentDate
+                          );
                       const isCurrentDate =
                         date.day === currentDate &&
                         currentMonth === currentMonthIndex &&
@@ -641,7 +749,11 @@ const SelectTime = () => {
                           onClick={() => handleDateSelection(index)}
                           isDisabled={!date.day || isPastDate}
                           opacity={!date.day ? 0 : isPastDate ? 0.5 : 1}
-                          _hover={!date.day || isPastDate ? {} : { bg: highlightColor }}
+                          _hover={
+                            !date.day || isPastDate
+                              ? {}
+                              : { bg: highlightColor }
+                          }
                           position="relative"
                         >
                           {date.day || ""}
@@ -676,9 +788,21 @@ const SelectTime = () => {
 
                   {/* Loading State */}
                   {loading && (
-                    <Flex direction="column" align="center" justify="center" py={8}>
-                      <Spinner size="xl" color={primaryColor} thickness="4px" mb={4} />
-                      <Text color={mutedColor}>Loading available time slots...</Text>
+                    <Flex
+                      direction="column"
+                      align="center"
+                      justify="center"
+                      py={8}
+                    >
+                      <Spinner
+                        size="xl"
+                        color={primaryColor}
+                        thickness="4px"
+                        mb={4}
+                      />
+                      <Text color={mutedColor}>
+                        Loading available time slots...
+                      </Text>
                     </Flex>
                   )}
 
@@ -690,145 +814,224 @@ const SelectTime = () => {
                         <Text fontWeight="bold">Error Loading Time Slots</Text>
                         <Text fontSize="sm">{error}</Text>
                       </Box>
-                      <Button size="sm" colorScheme="red" onClick={() => dispatch(fetchAvailableTimeSlots({ doctorId, date: selectedDate }))}>
+                      <Button
+                        size="sm"
+                        colorScheme="red"
+                        onClick={() =>
+                          dispatch(
+                            fetchAvailableTimeSlots({
+                              doctorId,
+                              date: selectedDate,
+                            })
+                          )
+                        }
+                      >
                         Retry
                       </Button>
                     </Alert>
                   )}
 
                   {/* No Slots Available */}
-                  {!loading && !error && 
-                   (!availableSlots || availableSlots.length === 0) && (
-                    <Alert status="info" mb={6} borderRadius="lg">
-                      <AlertIcon />
-                      <Box flex="1">
-                        <Text fontWeight="bold">No Time Slots Available</Text>
-                        <Text fontSize="sm">
-                          There are no available appointments on {formatDate(selectedDate)}. 
-                          Please select another date.
-                        </Text>
-                      </Box>
-                    </Alert>
-                  )}
+                  {!loading &&
+                    !error &&
+                    (!availableSlots || availableSlots.length === 0) && (
+                      <Alert status="info" mb={6} borderRadius="lg">
+                        <AlertIcon />
+                        <Box flex="1">
+                          <Text fontWeight="bold">No Time Slots Available</Text>
+                          <Text fontSize="sm">
+                            There are no available appointments on{" "}
+                            {formatDate(selectedDate)}. Please select another
+                            date.
+                          </Text>
+                        </Box>
+                      </Alert>
+                    )}
 
                   {/* Time Slots */}
-                  {!loading && !error && availableSlots && availableSlots.length > 0 && (
-                    <VStack spacing={6} align="stretch">
-                      {/* Morning Slots */}
-                      <Box>
-                        <Flex align="center" mb={4}>
-                          <Icon as={FaSun} color="orange.400" mr={2} />
-                          <Text fontWeight="bold" color={textColor}>
-                            Morning
-                          </Text>
-                          <Text fontSize="sm" color={mutedColor} ml={2}>
-                            (8:00 AM - 11:59 AM)
-                          </Text>
-                        </Flex>
-                        <Flex wrap="wrap" gap={3}>
-                          {morning.length > 0 ? (
-                            morning.map((slot) => {
-                              const isPast = isPastTimeSlot(slot);
-                              return (
-                                <Button
-                                  key={slot}
-                                  size="md"
-                                  variant={selectedSlot === slot ? "solid" : "outline"}
-                                  colorScheme={selectedSlot === slot ? "blue" : "gray"}
-                                  onClick={() => !isPast && setSelectedSlot(slot)}
-                                  borderRadius="md"
-                                  isDisabled={isPast}
-                                  _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-                                  _hover={!isPast ? { bg: highlightColor } : {}}
-                                  leftIcon={selectedSlot === slot ? <CheckIcon /> : <TimeIcon />}
-                                >
-                                  {formatTime(slot)}
-                                </Button>
-                              );
-                            })
-                          ) : (
-                            <Text color={mutedColor}>No morning slots available</Text>
-                          )}
-                        </Flex>
-                      </Box>
+                  {!loading &&
+                    !error &&
+                    availableSlots &&
+                    availableSlots.length > 0 && (
+                      <VStack spacing={6} align="stretch">
+                        {/* Morning Slots */}
+                        <Box>
+                          <Flex align="center" mb={4}>
+                            <Icon as={FaSun} color="orange.400" mr={2} />
+                            <Text fontWeight="bold" color={textColor}>
+                              Morning
+                            </Text>
+                            <Text fontSize="sm" color={mutedColor} ml={2}>
+                              (8:00 AM - 11:59 AM)
+                            </Text>
+                          </Flex>
+                          <Flex wrap="wrap" gap={3}>
+                            {morning.length > 0 ? (
+                              morning.map((slot) => {
+                                const isPast = isPastTimeSlot(slot);
+                                return (
+                                  <Button
+                                    key={slot}
+                                    size="md"
+                                    variant={
+                                      selectedSlot === slot
+                                        ? "solid"
+                                        : "outline"
+                                    }
+                                    colorScheme={
+                                      selectedSlot === slot ? "blue" : "gray"
+                                    }
+                                    onClick={() =>
+                                      !isPast && setSelectedSlot(slot)
+                                    }
+                                    borderRadius="md"
+                                    isDisabled={isPast}
+                                    _disabled={{
+                                      opacity: 0.5,
+                                      cursor: "not-allowed",
+                                    }}
+                                    _hover={
+                                      !isPast ? { bg: highlightColor } : {}
+                                    }
+                                    leftIcon={
+                                      selectedSlot === slot ? (
+                                        <CheckIcon />
+                                      ) : (
+                                        <TimeIcon />
+                                      )
+                                    }
+                                  >
+                                    {formatTime(slot)}
+                                  </Button>
+                                );
+                              })
+                            ) : (
+                              <Text color={mutedColor}>
+                                No morning slots available
+                              </Text>
+                            )}
+                          </Flex>
+                        </Box>
 
-                      {/* Afternoon Slots */}
-                      <Box>
-                        <Flex align="center" mb={4}>
-                          <Icon as={FaCloudSun} color="yellow.500" mr={2} />
-                          <Text fontWeight="bold" color={textColor}>
-                            Afternoon
-                          </Text>
-                          <Text fontSize="sm" color={mutedColor} ml={2}>
-                            (12:00 PM - 4:59 PM)
-                          </Text>
-                        </Flex>
-                        <Flex wrap="wrap" gap={3}>
-                          {afternoon.length > 0 ? (
-                            afternoon.map((slot) => {
-                              const isPast = isPastTimeSlot(slot);
-                              return (
-                                <Button
-                                  key={slot}
-                                  size="md"
-                                  variant={selectedSlot === slot ? "solid" : "outline"}
-                                  colorScheme={selectedSlot === slot ? "blue" : "gray"}
-                                  onClick={() => !isPast && setSelectedSlot(slot)}
-                                  borderRadius="md"
-                                  isDisabled={isPast}
-                                  _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-                                  _hover={!isPast ? { bg: highlightColor } : {}}
-                                  leftIcon={selectedSlot === slot ? <CheckIcon /> : <TimeIcon />}
-                                >
-                                  {formatTime(slot)}
-                                </Button>
-                              );
-                            })
-                          ) : (
-                            <Text color={mutedColor}>No afternoon slots available</Text>
-                          )}
-                        </Flex>
-                      </Box>
+                        {/* Afternoon Slots */}
+                        <Box>
+                          <Flex align="center" mb={4}>
+                            <Icon as={FaCloudSun} color="yellow.500" mr={2} />
+                            <Text fontWeight="bold" color={textColor}>
+                              Afternoon
+                            </Text>
+                            <Text fontSize="sm" color={mutedColor} ml={2}>
+                              (12:00 PM - 4:59 PM)
+                            </Text>
+                          </Flex>
+                          <Flex wrap="wrap" gap={3}>
+                            {afternoon.length > 0 ? (
+                              afternoon.map((slot) => {
+                                const isPast = isPastTimeSlot(slot);
+                                return (
+                                  <Button
+                                    key={slot}
+                                    size="md"
+                                    variant={
+                                      selectedSlot === slot
+                                        ? "solid"
+                                        : "outline"
+                                    }
+                                    colorScheme={
+                                      selectedSlot === slot ? "blue" : "gray"
+                                    }
+                                    onClick={() =>
+                                      !isPast && setSelectedSlot(slot)
+                                    }
+                                    borderRadius="md"
+                                    isDisabled={isPast}
+                                    _disabled={{
+                                      opacity: 0.5,
+                                      cursor: "not-allowed",
+                                    }}
+                                    _hover={
+                                      !isPast ? { bg: highlightColor } : {}
+                                    }
+                                    leftIcon={
+                                      selectedSlot === slot ? (
+                                        <CheckIcon />
+                                      ) : (
+                                        <TimeIcon />
+                                      )
+                                    }
+                                  >
+                                    {formatTime(slot)}
+                                  </Button>
+                                );
+                              })
+                            ) : (
+                              <Text color={mutedColor}>
+                                No afternoon slots available
+                              </Text>
+                            )}
+                          </Flex>
+                        </Box>
 
-                      {/* Evening Slots */}
-                      <Box>
-                        <Flex align="center" mb={4}>
-                          <Icon as={FaMoon} color="purple.400" mr={2} />
-                          <Text fontWeight="bold" color={textColor}>
-                            Evening
-                          </Text>
-                          <Text fontSize="sm" color={mutedColor} ml={2}>
-                            (5:00 PM - 8:59 PM)
-                          </Text>
-                        </Flex>
-                        <Flex wrap="wrap" gap={3}>
-                          {evening.length > 0 ? (
-                            evening.map((slot) => {
-                              const isPast = isPastTimeSlot(slot);
-                              return (
-                                <Button
-                                  key={slot}
-                                  size="md"
-                                  variant={selectedSlot === slot ? "solid" : "outline"}
-                                  colorScheme={selectedSlot === slot ? "blue" : "gray"}
-                                  onClick={() => !isPast && setSelectedSlot(slot)}
-                                  borderRadius="md"
-                                  isDisabled={isPast}
-                                  _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-                                  _hover={!isPast ? { bg: highlightColor } : {}}
-                                  leftIcon={selectedSlot === slot ? <CheckIcon /> : <TimeIcon />}
-                                >
-                                  {formatTime(slot)}
-                                </Button>
-                              );
-                            })
-                          ) : (
-                            <Text color={mutedColor}>No evening slots available</Text>
-                          )}
-                        </Flex>
-                      </Box>
-                    </VStack>
-                  )}
+                        {/* Evening Slots */}
+                        <Box>
+                          <Flex align="center" mb={4}>
+                            <Icon as={FaMoon} color="purple.400" mr={2} />
+                            <Text fontWeight="bold" color={textColor}>
+                              Evening
+                            </Text>
+                            <Text fontSize="sm" color={mutedColor} ml={2}>
+                              (5:00 PM - 8:59 PM)
+                            </Text>
+                          </Flex>
+                          <Flex wrap="wrap" gap={3}>
+                            {evening.length > 0 ? (
+                              evening.map((slot) => {
+                                const isPast = isPastTimeSlot(slot);
+                                return (
+                                  <Button
+                                    key={slot}
+                                    size="md"
+                                    variant={
+                                      selectedSlot === slot
+                                        ? "solid"
+                                        : "outline"
+                                    }
+                                    colorScheme={
+                                      selectedSlot === slot ? "blue" : "gray"
+                                    }
+                                    onClick={() =>
+                                      !isPast && setSelectedSlot(slot)
+                                    }
+                                    borderRadius="md"
+                                    isDisabled={isPast}
+                                    _disabled={{
+                                      opacity: 0.5,
+                                      cursor: "not-allowed",
+                                    }}
+                                    _hover={
+                                      !isPast ? { bg: highlightColor } : {}
+                                    }
+                                    leftIcon={
+                                      selectedSlot === slot ? (
+                                        <CheckIcon />
+                                      ) : (
+                                        <TimeIcon />
+                                      )
+                                    }
+                                  >
+                                    {formatTime(slot)}
+                                  </Button>
+                                );
+                              })
+                            ) : (
+                              <Text color={mutedColor}>
+                                No evening slots available
+                              </Text>
+                            )}
+                          </Flex>
+                        </Box>
+                      </VStack>
+                    )}
                 </Box>
 
                 {/* Navigation Buttons */}
@@ -854,7 +1057,6 @@ const SelectTime = () => {
                 </Flex>
               </CardBody>
             </Card>
-
           </GridItem>
         </Grid>
       </Container>

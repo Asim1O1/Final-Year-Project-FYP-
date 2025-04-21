@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Box,
@@ -71,6 +71,7 @@ import { fetchSingleHospital } from "../../features/hospital/hospitalSlice";
 const HospitalDetailPage = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -727,7 +728,7 @@ const HospitalDetailPage = () => {
                         </Stat>
                       </SimpleGrid>
                     </Box>
-                    {/* Featured Doctors */}
+                   
                     <Box
                       bg={cardBgColor}
                       p={6}
@@ -747,7 +748,17 @@ const HospitalDetailPage = () => {
                       ) : (
                         <VStack spacing={4} align="stretch">
                           {doctors.map((doctor, index) => (
-                            <HStack key={index} spacing={3}>
+                            <HStack
+                              key={index}
+                              spacing={3}
+                              cursor="pointer"
+                              _hover={{ bg: "gray.50" }}
+                              p={2}
+                              borderRadius="md"
+                              onClick={() =>
+                                navigate(`/doctor-profile/${doctor._id}`)
+                              } // 👈 Navigate on click
+                            >
                               <Avatar
                                 size="md"
                                 src={doctor.doctorProfileImage}

@@ -59,12 +59,36 @@ export const completePayment = createAsyncThunk(
   }
 );
 
+// **Get Logged-In User's Payment Transactions**
+export const getUserPayments = createAsyncThunk(
+  "payment/getUserPayments",
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await paymentService.getUserPaymentsService(params);
+      console.log("User payment history response:", response);
+
+      if (!response.isSuccess) {
+        throw new Error(response.message || "Failed to fetch user payments");
+      }
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue({
+        isSuccess: false,
+        message:
+          error.message || "An error occurred while fetching user payments",
+        error: error.response?.data || error.message,
+      });
+    }
+  }
+);
 
 const paymentSlice = createSlice({
   name: "payment",
   initialState: {
-    payment: null, 
+    payment: null,
     transactionDetails: null,
+    userPayments: [],
     isLoading: false,
     error: null,
   },
@@ -76,7 +100,7 @@ const paymentSlice = createSlice({
       state.error = null;
     },
     setTransactionDetails: (state, action) => {
-      state.transactionDetails = action.payload; 
+      state.transactionDetails = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -109,12 +133,21 @@ const paymentSlice = createSlice({
           transactionId: action.payload.transaction_id,
           amount: action.payload.amount,
           date: new Date().toLocaleString(),
-          paymentMethod: "Khalti Wallet", // You can dynamically set this based on the payment method
-          merchantName: "Med Connect", // Replace with your business name
+          paymentMethod: "Khalti Wallet",
+          merchantName: "Med Connect",
         };
         state.error = null;
       })
-      .addCase(completePayment.rejected, handleRejected);
+      .addCase(completePayment.rejected, handleRejected)
+
+      // Get User Payments
+      .addCase(getUserPayments.pending, handlePending)
+      .addCase(getUserPayments.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.userPayments = action.payload;
+        state.error = null;
+      })
+      .addCase(getUserPayments.rejected, handleRejected);
   },
 });
 

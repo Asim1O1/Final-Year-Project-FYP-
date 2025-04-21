@@ -72,34 +72,34 @@ const sendMessageService = async (receiverId, text, image) => {
   }
 };
 
-const getMessagesService = async (otherUserId) => {
-  try {
-    const response = await axiosInstance.get(
-      `/api/messages/messages/${otherUserId}`
-    );
-    console.log("Response while fetching messages:", response);
+  const getMessagesService = async (otherUserId) => {
+    try {
+      const response = await axiosInstance.get(
+        `/api/messages/messages/${otherUserId}`
+      );
+      console.log("Response while fetching messages:", response);
 
-    if (!response?.data?.isSuccess) {
-      throw createApiResponse({
+      if (!response?.data?.isSuccess) {
+        throw createApiResponse({
+          isSuccess: false,
+          message: response?.data?.message || "Failed to fetch messages",
+          error: response?.data?.error || null,
+        });
+      }
+
+      return createApiResponse({
+        isSuccess: true,
+        data: response.data?.data,
+      });
+    } catch (error) {
+      console.error("Error while fetching messages:", error);
+      return createApiResponse({
         isSuccess: false,
-        message: response?.data?.message || "Failed to fetch messages",
-        error: response?.data?.error || null,
+        message: "Failed to fetch messages",
+        error: error.message,
       });
     }
-
-    return createApiResponse({
-      isSuccess: true,
-      data: response.data?.data,
-    });
-  } catch (error) {
-    console.error("Error while fetching messages:", error);
-    return createApiResponse({
-      isSuccess: false,
-      message: "Failed to fetch messages",
-      error: error.message,
-    });
-  }
-};
+  };
 const markMessagesAsReadService = async (senderId, receiverId) => {
   try {
     const response = await axiosInstance.post("/api/messages/mark-read", {

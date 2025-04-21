@@ -5,7 +5,7 @@ export const emailTemplates = {
     body: `
         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
           <div style="text-align: center; margin-bottom: 25px;">
-            <h1 style="color: #4a6ee0; margin-bottom: 5px;">Welcome to Our Community!</h1>
+            <h1 style="color: #4a6ee0; margin-bottom: 5px;">Welcome to Our Amazing Platform!</h1>
             <div style="height: 3px; background: linear-gradient(to right, #4a6ee0, #7eb6ff); width: 100px; margin: 0 auto;"></div>
           </div>
           
@@ -24,7 +24,7 @@ export const emailTemplates = {
           
           <p style="font-size: 16px; line-height: 1.5;">If you have any questions or need assistance, our support team is always ready to help!</p>
           
-          <p style="font-size: 16px; line-height: 1.5; margin-top: 25px;">Warm regards,<br><strong style="color: #4a6ee0;">The Team at Your Company</strong></p>
+          <p style="font-size: 16px; line-height: 1.5; margin-top: 25px;">Warm regards,<br><strong style="color: #4a6ee0;">Team MedConnect</strong></p>
           
           <div style="border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px; font-size: 12px; color: #777; text-align: center;">
             <p>© 2025 Your Company Name. All rights reserved.</p>

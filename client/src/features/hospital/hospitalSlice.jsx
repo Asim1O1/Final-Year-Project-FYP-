@@ -101,22 +101,57 @@ export const fetchAllHospitals = createAsyncThunk(
   "hospital/fetchAllHospitals",
   async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await hospitalService.fetchHospitalsService(params);
+      // Default parameters
+      const defaultParams = {
+        page: 1,
+        limit: 10,
+        sort: "createdAt_desc",
+        ...params,
+      };
+
+      console.log("Fetching hospitals with params:", defaultParams);
+
+      const response = await hospitalService.fetchHospitalsService(
+        defaultParams
+      );
 
       if (!response.isSuccess) {
-        throw response;
+        console.error("API Error:", response);
+        throw {
+          message: response.message,
+          error: response.error,
+          status: response.status,
+        };
       }
 
-      return response.data;
+      return {
+        hospitals: response.data?.hospitals || [],
+        pagination: response.data?.pagination || {
+          totalCount: 0,
+          currentPage: 1,
+          totalPages: 1,
+        },
+        filters: params, // Return applied filters to store in state
+      };
     } catch (error) {
-      return rejectWithValue(error.message);
+      console.error("Failed to fetch hospitals:", {
+        message: error.message,
+        error: error.error,
+        status: error.status,
+      });
+
+      return rejectWithValue({
+        message: error.message || "Failed to fetch hospitals",
+        error: error.error || error,
+        status: error.status,
+      });
     }
   }
 );
 export const fetchSingleHospital = createAsyncThunk(
   "hospital/fetchSingleHospital",
   async (hospitalId, { rejectWithValue }) => {
-    console.log("the hospital id", hospitalId)
+    console.log("the hospital id", hospitalId);
     try {
       const response = await hospitalService.fetchSingleHospitalService(
         hospitalId

@@ -7,6 +7,8 @@ import hospitalModel from "../../models/hospital.model.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 import { emailTemplates } from "../../utils/emailTemplates.js";
 import Notification from "../../models/notification.model.js";
+import { onlineUsers } from "../../server.js";
+import { paginate } from "../../utils/paginationUtil.js";
 
 export const bookDoctorAppointment = async (req, res, next) => {
   const {
@@ -19,6 +21,8 @@ export const bookDoctorAppointment = async (req, res, next) => {
     paymentMethod,
   } = req.body;
 
+  console.log("📥 Incoming Request Body:", req.body);
+
   try {
     if (
       !userId ||
@@ -29,6 +33,7 @@ export const bookDoctorAppointment = async (req, res, next) => {
       !hospitalId ||
       !paymentMethod
     ) {
+      console.warn("⚠️ Missing required fields");
       return res.status(400).json(
         createResponse({
           isSuccess: false,
@@ -41,6 +46,7 @@ export const bookDoctorAppointment = async (req, res, next) => {
     }
 
     if (!["pay_on_site", "pay_now"].includes(paymentMethod)) {
+      console.warn("⚠️ Invalid payment method:", paymentMethod);
       return res.status(400).json(
         createResponse({
           isSuccess: false,
@@ -52,9 +58,11 @@ export const bookDoctorAppointment = async (req, res, next) => {
       );
     }
 
-    // Check if user, doctor, and hospital exist
+    console.log("🔍 Verifying user, doctor, and hospital...");
+
     const user = await userModel.findById(userId);
-    if (!user)
+    if (!user) {
+      console.warn("❌ User not found:", userId);
       return res.status(404).json(
         createResponse({
           isSuccess: false,
@@ -62,9 +70,11 @@ export const bookDoctorAppointment = async (req, res, next) => {
           message: "User not found",
         })
       );
+    }
 
     const doctor = await doctorModel.findById(doctorId);
-    if (!doctor)
+    if (!doctor) {
+      console.warn("❌ Doctor not found:", doctorId);
       return res.status(404).json(
         createResponse({
           isSuccess: false,
@@ -72,9 +82,12 @@ export const bookDoctorAppointment = async (req, res, next) => {
           message: "Doctor not found",
         })
       );
+    }
+    console.log("✅ Doctor found:", doctor.fullName); // Added log to confirm doctor is found
 
     const hospital = await hospitalModel.findById(hospitalId);
-    if (!hospital)
+    if (!hospital) {
+      console.warn("❌ Hospital not found:", hospitalId);
       return res.status(404).json(
         createResponse({
           isSuccess: false,
@@ -82,9 +95,12 @@ export const bookDoctorAppointment = async (req, res, next) => {
           message: "Hospital not found",
         })
       );
+    }
 
     const allSlots = generateTimeSlots();
+    console.log("⏰ Available Slots:", allSlots);
     if (!allSlots.includes(startTime)) {
+      console.warn("❌ Invalid startTime:", startTime);
       return res.status(400).json(
         createResponse({
           isSuccess: false,
@@ -94,6 +110,7 @@ export const bookDoctorAppointment = async (req, res, next) => {
       );
     }
 
+    console.log("🔎 Checking for existing appointment...");
     const existingAppointment = await appointmentModel.findOne({
       doctor: doctorId,
       date: new Date(date),
@@ -101,6 +118,7 @@ export const bookDoctorAppointment = async (req, res, next) => {
     });
 
     if (existingAppointment) {
+      console.warn("⚠️ Time slot already booked:", startTime);
       return res.status(400).json(
         createResponse({
           isSuccess: false,
@@ -110,7 +128,18 @@ export const bookDoctorAppointment = async (req, res, next) => {
       );
     }
 
-    // Create a new appointment
+    const endTime = allSlots[allSlots.indexOf(startTime) + 1];
+    console.log("🆕 Creating new appointment:", {
+      userId,
+      doctorId,
+      date,
+      startTime,
+      endTime,
+      hospitalId,
+      reason,
+      paymentMethod,
+    });
+
     const newAppointment = new appointmentModel({
       user: userId,
       doctor: doctorId,
@@ -118,7 +147,7 @@ export const bookDoctorAppointment = async (req, res, next) => {
       startTime,
       reason,
       hospital: hospitalId,
-      endTime: allSlots[allSlots.indexOf(startTime) + 1],
+      endTime,
       status: "pending",
       paymentMethod: paymentMethod,
       paymentStatus: paymentMethod === "pay_now" ? "pending" : "not_required",
@@ -126,69 +155,122 @@ export const bookDoctorAppointment = async (req, res, next) => {
     });
 
     await newAppointment.save();
-
-    const patientNotification = new Notification({
-      user: userId, // patient's user ID
-      message: `Your appointment with Dr. ${doctor.fullName} on ${new Date(
-        date
-      ).toLocaleDateString()} at ${startTime} has been booked.`,
-      type: "appointment",
-      relatedId: newAppointment._id,
-    });
-    await patientNotification.save();
+    console.log("✅ Appointment saved with ID:", newAppointment._id);
 
     const io = req.app.get("socketio");
 
-    // ✅ 2. Send Notification to DOCTOR (if linked to a User account)
-    if (doctor.user) {
-      // Assuming `doctor.user` is the reference to User model
-      const doctorNotification = new Notification({
-        user: doctor.user, // doctor's linked user ID
-        message: `New appointment booked with you on ${new Date(
-          date
-        ).toLocaleDateString()} at ${startTime} by ${user.fullName}.`,
-        type: "appointment",
-        relatedId: newAppointment._id,
-      });
-      await doctorNotification.save();
+    // ================= PATIENT =================
+    const patientMessage = `Your appointment with Dr. ${
+      doctor.fullName
+    } on ${new Date(
+      date
+    ).toLocaleDateString()} at ${startTime} has been booked.`;
 
-      // Real-time Socket.io notification to doctor
-      io.to(doctor.user.toString()).emit("new-notification", {
-        message: `New appointment booked with you by ${user.fullName}.`,
-      });
-    } else {
-      console.warn(
-        "Doctor is not linked to a User account. Notification skipped."
-      );
-    }
+    // Save patient notification
+    const patientNotification = new Notification({
+      user: userId,
+      message: patientMessage,
+      type: "appointment",
+      relatedId: newAppointment._id,
+      createdAt: new Date().toISOString(),
+    });
+    await patientNotification.save();
+    console.log("📩 Patient notification saved to DB for user:", userId);
 
-    // ✅ 3. Send Notifications to HOSPITAL ADMINS (if any exist)
+    // Real-time via room
+    console.log(
+      "📶 Sending real-time appointment notification to patient room:",
+      userId
+    );
+    io.to(userId.toString()).emit("appointment", {
+      id: newAppointment._id,
+      message: patientMessage,
+      type: "appointment",
+      createdAt: new Date().toISOString(),
+    });
+    console.log("📡 Real-time appointment sent to patient room");
+
+    // ================= DOCTOR =================
+    const doctorMessage =
+      paymentMethod === "pay_now"
+        ? `New paid appointment by ${user.fullName} on ${new Date(
+            date
+          ).toLocaleDateString()} at ${startTime}`
+        : `New appointment request from ${user.fullName} on ${new Date(
+            date
+          ).toLocaleDateString()} at ${startTime}`;
+
+    // Save doctor notification
+    const doctorNotification = new Notification({
+      user: doctor._id,
+      message: doctorMessage,
+      type: "appointment",
+      relatedId: newAppointment._id,
+      createdAt: new Date().toISOString(),
+    });
+    await doctorNotification.save();
+    console.log("📩 Doctor notification saved to DB for doctor:", doctor._id);
+
+    // Real-time via room
+    console.log(
+      "📶 Sending real-time appointment notification to doctor room:",
+      doctor._id
+    );
+    io.to(doctor._id.toString()).emit("appointment", {
+      id: newAppointment._id,
+      message: doctorMessage,
+      type: "appointment",
+      urgent: paymentMethod === "pay_now",
+      createdAt: new Date().toISOString(),
+    });
+    console.log("📡 Real-time appointment sent to doctor room");
+
+    // ================= HOSPITAL ADMINS =================
     const hospitalAdmins = await userModel.find({
       role: "hospital_admin",
       hospital: hospitalId,
     });
 
     if (hospitalAdmins?.length > 0) {
+      console.log(`📢 Notifying ${hospitalAdmins.length} hospital admins...`);
+
+      const adminMessage = `New appointment with Dr. ${
+        doctor.fullName
+      } on ${new Date(date).toLocaleDateString()} at ${startTime}`;
+
       for (const admin of hospitalAdmins) {
         const adminNotification = new Notification({
-          user: admin._id, // admin's user ID
-          message: `New appointment booked with Dr. ${
-            doctor.fullName
-          } on ${new Date(date).toLocaleDateString()} at ${startTime}.`,
+          user: admin._id,
+          message: adminMessage,
           type: "appointment",
           relatedId: newAppointment._id,
+          createdAt: new Date().toISOString(),
         });
-        await adminNotification.save();
 
-        // Real-time Socket.io notification to admin
-        io.to(admin._id.toString()).emit("new-notification", {
-          message: `New appointment booked with Dr. ${doctor.fullName}.`,
+        await adminNotification.save();
+        console.log(`📩 Notification saved to DB for admin: ${admin._id}`);
+
+        // Real-time via room
+        console.log(
+          `📶 Sending real-time notification to admin room: ${admin._id}`
+        );
+        io.to(admin._id.toString()).emit("appointment", {
+          id: newAppointment._id,
+          message: adminMessage,
+          type: "appointment",
+          doctorId: doctor._id,
+          createdAt: new Date().toISOString(),
         });
+        console.log(
+          `📡 Real-time notification sent to admin room: ${admin._id}`
+        );
       }
     } else {
-      console.warn("No hospital admins found. Notifications skipped.");
+      console.warn("⚠️ No hospital admins found for this hospital");
     }
-    // ✅ **Send Confirmation Email**
+
+    console.log("📧 Sending confirmation email to:", user.email);
+
     const subject = emailTemplates.appointmentBooking.subject;
     const template = emailTemplates.appointmentBooking;
 
@@ -201,6 +283,7 @@ export const bookDoctorAppointment = async (req, res, next) => {
     };
 
     await sendEmail(user.email, subject, template, data);
+    console.log("✅ Email sent");
 
     res.status(201).json(
       createResponse({
@@ -215,7 +298,7 @@ export const bookDoctorAppointment = async (req, res, next) => {
       })
     );
   } catch (error) {
-    console.error("Error booking doctor appointment:", error.message);
+    console.error("❌ Error booking doctor appointment:", error.message);
     next(error);
   }
 };
@@ -291,28 +374,53 @@ export const updateAppointmentStatus = async (req, res, next) => {
     // ✅ Send Email Notification
     await sendEmail(user.email, subject, template, data);
 
-    // ✅ Send In-App Notification
-    const notification = new Notification({
+    const io = req.app.get("socketio");
+
+    // ✅ Send in-app + real-time to user
+    const userNotification = new Notification({
       user: user._id,
       message:
         status === "confirmed"
-          ? `Your appointment with Dr. ${doctor.fullName} on ${data.date} has been confirmed.`
+          ? `Your appointment with Dr. ${doctor.fullName} on ${new Date(
+              appointment.date
+            ).toLocaleDateString()} at ${
+              appointment.startTime
+            } has been confirmed.`
           : status === "canceled"
           ? `Your appointment with Dr. ${doctor.fullName} was canceled. Reason: ${data.rejectionReason}`
-          : `Your appointment with Dr. ${doctor.fullName} has been updated.`, // Fallback message
+          : `Your appointment with Dr. ${doctor.fullName} has been marked as completed.`,
       type: "appointment",
       relatedId: appointment._id,
+      createdAt: new Date(),
     });
-
-    await notification.save();
-
-    // ✅ Emit Real-Time Event
-    const io = req.app.get("socketio");
-    io.to(user._id.toString()).emit("appointment-status-update", {
+    await userNotification.save();
+    io.to(user._id.toString()).emit("appointment", {
       appointmentId: appointment._id,
       status,
-      message: notification.message,
+      message: userNotification.message,
+      createdAt: new Date().toISOString(),
     });
+
+    // ✅ If canceled, notify doctor as well
+    if (status === "canceled") {
+      const doctorMessage = `Appointment with ${user.fullName} on ${new Date(
+        appointment.date
+      ).toLocaleDateString()} at ${appointment.startTime} was canceled by the user.`;
+      const doctorNotification = new Notification({
+        user: doctor._id,
+        message: doctorMessage,
+        type: "appointment",
+        relatedId: appointment._id,
+        createdAt: new Date(),
+      });
+      await doctorNotification.save();
+      io.to(doctor._id.toString()).emit("appointment", {
+        appointmentId: appointment._id,
+        status,
+        message: doctorMessage,
+        createdAt: new Date().toISOString(),
+      });
+    }
 
     res.status(200).json(
       createResponse({
@@ -363,6 +471,8 @@ export const getAvailableTimeSlots = async (req, res, next) => {
 
 export const getUserAppointments = async (req, res, next) => {
   const { userId } = req.params;
+  const { page, limit } = req.query; // Get pagination query params
+
   try {
     const user = await userModel.findById(userId);
     if (!user) {
@@ -377,14 +487,22 @@ export const getUserAppointments = async (req, res, next) => {
       );
     }
 
-    // Fetch appointments related to this user
-    const appointments = await appointmentModel
-      .find({ user: userId })
-      .populate("doctor", "name specialty") // Populate doctor details
-      .populate("hospital", "name location") // Populate hospital details
-      .sort({ date: 1 }); // Sort by appointment date
+    // Use the paginate function
+    const result = await paginate(
+      appointmentModel,
+      { user: userId },
+      {
+        page,
+        limit,
+        sort: { date: 1 },
+        populate: [
+          { path: "doctor", select: "fullName specialization" },
+          { path: "hospital", select: "name location" },
+        ],
+      }
+    );
 
-    if (appointments.length === 0) {
+    if (result.totalCount === 0) {
       return res.status(404).json(
         createResponse({
           isSuccess: false,
@@ -396,13 +514,19 @@ export const getUserAppointments = async (req, res, next) => {
       );
     }
 
-    // Return the user's appointments
     res.status(200).json(
       createResponse({
         isSuccess: true,
         statusCode: 200,
         message: "Appointments fetched successfully",
-        data: appointments,
+        data: {
+          appointments: result.data,
+          pagination: {
+            totalCount: result.totalCount,
+            currentPage: result.currentPage,
+            totalPages: result.totalPages,
+          },
+        },
         error: null,
       })
     );
@@ -501,17 +625,43 @@ export const getDoctorAppointments = async (req, res, next) => {
 
 export const cancelAppointment = async (req, res, next) => {
   const { appointmentId } = req.params;
+  const userId = req.user._id; // Authenticated user ID
+
+  const io = req.app.get("socketio"); // Socket.io instance
 
   try {
-    const appointment = await appointmentModel.findById(appointmentId);
+    const appointment = await appointmentModel
+      .findById(appointmentId)
+      .populate("user doctor");
+
     if (!appointment) {
       return res.status(404).json(
         createResponse({
           isSuccess: false,
           statusCode: 404,
           message: "Appointment not found",
-          data: null,
-          error: null,
+        })
+      );
+    }
+
+    // Authorization check
+    if (appointment.user._id.toString() !== userId.toString()) {
+      return res.status(403).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 403,
+          message: "You are not authorized to cancel this appointment",
+        })
+      );
+    }
+
+    // Already canceled?
+    if (appointment.status === "canceled") {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "Appointment is already canceled",
         })
       );
     }
@@ -519,19 +669,59 @@ export const cancelAppointment = async (req, res, next) => {
     appointment.status = "canceled";
     await appointment.save();
 
+    // ===== EMAIL Notification to User =====
     const subject = "🚫 Appointment Canceled";
     const html = `<p>Dear ${appointment.user.name},</p>
       <p>Your appointment with Dr. ${appointment.doctor.name} on ${appointment.date} at ${appointment.startTime} has been canceled.</p>`;
-
     await sendEmail(appointment.user.email, subject, html);
 
+    const formattedDate = new Date(appointment.date).toLocaleDateString();
+
+    // ===== DB + Real-time Notification: Patient =====
+    const patientMessage = `Your appointment with Dr. ${appointment.doctor.name} on ${formattedDate} at ${appointment.startTime} has been canceled.`;
+
+    const patientNotification = new Notification({
+      user: appointment.user._id,
+      message: patientMessage,
+      type: "appointment",
+      relatedId: appointment._id,
+      createdAt: new Date().toISOString(),
+    });
+    await patientNotification.save();
+
+    io.to(appointment.user._id.toString()).emit("appointment_cancellation", {
+      id: appointment._id,
+      message: patientMessage,
+      type: "appointment",
+      createdAt: new Date().toISOString(),
+    });
+
+    // ===== DB + Real-time Notification: Doctor =====
+    const doctorMessage = `Appointment with ${appointment.user.name} on ${formattedDate} at ${appointment.startTime} has been canceled.`;
+
+    const doctorNotification = new Notification({
+      user: appointment.doctor._id,
+      message: doctorMessage,
+      type: "appointment",
+      relatedId: appointment._id,
+      createdAt: new Date().toISOString(),
+    });
+    await doctorNotification.save();
+
+    io.to(appointment.doctor._id.toString()).emit("appointment_cancellation", {
+      id: appointment._id,
+      message: doctorMessage,
+      type: "appointment",
+      createdAt: new Date().toISOString(),
+    });
+
+    // ===== Final Response =====
     res.status(200).json(
       createResponse({
         isSuccess: true,
         statusCode: 200,
         message: "Appointment canceled successfully",
         data: appointment,
-        error: null,
       })
     );
   } catch (error) {
@@ -666,7 +856,7 @@ export const getAppointmentById = async (req, res, next) => {
 
 export const deleteAppointments = async (req, res, next) => {
   try {
-    const { appointmentIds } = req.body; // Accepts single ID or multiple IDs in an array
+    const { appointmentIds } = req.body;
 
     if (
       !appointmentIds ||

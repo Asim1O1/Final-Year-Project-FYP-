@@ -29,13 +29,57 @@ export const fetchAllMedicalTests = createAsyncThunk(
   "medicalTest/fetchAllMedicalTests",
   async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await medicalTestService.getMedicalTestsService(params);
-      if (!response.isSuccess) throw response?.data;
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        createApiResponse(error, "Failed to fetch medical tests")
+      // Extract isAdmin flag from params (default to false) and remove it from params object
+      const { isAdmin = false, ...otherParams } = params;
+
+      // Only set defaults for pagination and sorting
+      const requestParams = {
+        page: 1,
+        limit: 10,
+        sort: "createdAt_desc",
+        ...otherParams, // Override with provided params
+      };
+
+      // Remove empty/undefined filter values
+      const cleanParams = Object.fromEntries(
+        Object.entries(requestParams).filter(
+          ([_, value]) => value !== "" && value !== undefined
+        )
       );
+
+      console.log(
+        `Fetching medical tests (${isAdmin ? "Admin" : "Public"}) with params:`,
+        cleanParams
+      );
+
+      const response = await medicalTestService.getMedicalTestsService(
+        cleanParams,
+        isAdmin // Pass the isAdmin flag to the service
+      );
+
+      if (!response.isSuccess) {
+        console.error("API Error:", response);
+        throw response;
+      }
+
+      return {
+        tests: response.data.tests,
+        pagination: response.data.pagination,
+        filters: cleanParams,
+        isAdmin, // Include this in the returned data so your reducers know the context
+      };
+    } catch (error) {
+      console.error("Failed to fetch medical tests:", {
+        message: error.message,
+        error: error.error,
+        status: error.status,
+      });
+
+      return rejectWithValue({
+        message: error.message || "Failed to fetch medical tests",
+        error: error.error || error,
+        status: error.status,
+      });
     }
   }
 );
@@ -265,13 +309,41 @@ const medicalTestSlice = createSlice({
       .addCase(fetchAllMedicalTests.pending, handlePending)
       .addCase(fetchAllMedicalTests.fulfilled, (state, action) => {
         state.isLoading = false;
-        console.log("The action.payload is", action.payload);
-        state.medicalTests = Array.isArray(action?.payload?.data)
-          ? action?.payload
+        state.isLoaded = true;
+        console.log("Fetched medical tests payload:", action.payload);
+
+        // Update tests data
+        state.medicalTests = Array.isArray(action.payload?.tests)
+          ? action.payload.tests
           : [];
+
+        // Update pagination info
+        if (action.payload?.pagination) {
+          state.pagination = {
+            totalCount: action.payload.pagination.totalCount || 0,
+            currentPage: action.payload.pagination.currentPage || 1,
+            totalPages: action.payload.pagination.totalPages || 1,
+          };
+        }
+
+        // Update active filters in state
+        if (action.payload?.filters) {
+          state.activeFilters = {
+            search: action.payload.filters.search || "",
+            testType: action.payload.filters.testType || "",
+            minPrice: action.payload.filters.minPrice || null,
+            maxPrice: action.payload.filters.maxPrice || null,
+            hospital: action.payload.filters.hospital || null,
+          };
+        }
+
         state.error = null;
       })
-      .addCase(fetchAllMedicalTests.rejected, handleRejected);
+      .addCase(fetchAllMedicalTests.rejected, (state, action) => {
+        handleRejected(state, action);
+        // Additional error handling if needed
+        state.isLoaded = false;
+      });
 
     builder
       .addCase(fetchSingleMedicalTest.pending, handlePending)

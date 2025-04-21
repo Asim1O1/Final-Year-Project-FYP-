@@ -6,10 +6,9 @@ import initializeDbConnection, {
   closeDbConnection,
 } from "./config/connectToDB.js";
 
-
 const port = appConfig.port;
 
-const onlineUsers = new Map(); // To track online users
+export const onlineUsers = new Map();
 
 const initializeServer = async () => {
   try {
@@ -18,7 +17,7 @@ const initializeServer = async () => {
 
     const io = new Server(server, {
       cors: {
-        origin: "http://localhost:5173", // Adjust to your frontend
+        origin: "http://localhost:5173",
         methods: ["GET", "POST"],
         credentials: true,
       },
@@ -30,11 +29,22 @@ const initializeServer = async () => {
       console.log("🔗 A user connected:", socket.id);
 
       // User joins the chat
-      socket.on("join-room", (userId) => {
-        socket.join(userId);
-        onlineUsers.set(userId, socket.id);
-        io.emit("update-online-users", Array.from(onlineUsers.keys()));
-        console.log(`✅ User ${userId} is online`);
+
+      // Handle user authentication and room joining
+      socket.on("join-room", ({ id, role }) => {
+        if (!id || !role) {
+          console.error("NO ID AND ROLE PROVIDED");
+          return;
+        }
+        try {
+          const userId = id.toString();
+          onlineUsers.set(userId, socket.id);
+          socket.join(userId);
+          console.log(`🏠 ${role} ${userId} connected (Socket: ${socket.id})`);
+          io.emit("update-online-users", Array.from(onlineUsers.keys()));
+        } catch (error) {
+          console.error("Error in join-room:", error);
+        }
       });
 
       // Handle typing event

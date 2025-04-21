@@ -1,6 +1,22 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { User, Mail, Phone, Calendar, Edit, Save, X, AlertCircle, Eye, FileText, ArrowRight, Clock, MapPin, Shield, Award, Activity, Bell, Settings, Download, ChevronRight, CheckCircle, XCircle, AlertTriangle, Clipboard, Heart } from 'lucide-react';
+import {
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  Edit,
+  Save,
+  X,
+  AlertCircle,
+  Eye,
+  FileText,
+  MapPin,
+  Download,
+  CheckCircle,
+  CreditCard,
+  Currency,
+} from "lucide-react";
 import {
   Box,
   Flex,
@@ -21,14 +37,12 @@ import {
   VStack,
   HStack,
   Heading,
-  Divider,
   useToast,
   SimpleGrid,
   Icon,
   Card,
   CardBody,
   CardHeader,
-  CardFooter,
   Table,
   Thead,
   Tbody,
@@ -38,46 +52,22 @@ import {
   TableContainer,
   Skeleton,
   Tag,
-  Center,
   Spinner,
-  Badge,
-  Tooltip,
-  Image,
-  Grid,
-  GridItem,
-  Stack,
   AvatarBadge,
-  useDisclosure,
   Stat,
   StatLabel,
   StatNumber,
   StatHelpText,
   StatArrow,
-  Progress,
-  InputGroup,
-  InputLeftElement,
-  InputRightElement,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverHeader,
-  PopoverBody,
-  PopoverArrow,
-  PopoverCloseButton,
-  Drawer,
-  DrawerBody,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerOverlay,
-  DrawerContent,
-  DrawerCloseButton,
 } from "@chakra-ui/react";
 
-import { fetchUserById } from "../../features/user/userSlice";
+import { fetchUserById, fetchUserStats } from "../../features/user/userSlice";
 import { fetchUserAppointments } from "../../features/appointment/appointmentSlice";
 import { fetchUserMedicalReports } from "../../features/test_report/testReportSlice";
 import { handleDownloadMedicalReport } from "../../features/test_report/testReportSlice";
 import { useNavigate } from "react-router-dom";
+import TransactionsTab from "../../component/payment/PaymentTabUsers";
+import AppointmentsTab from "./UserAppointments";
 
 const UserProfile = () => {
   const dispatch = useDispatch();
@@ -86,15 +76,19 @@ const UserProfile = () => {
   const { user, isAuthenticated } = useSelector((state) => state?.auth);
   const userData = user?.data;
 
+  const { userStats, isLoading, error } = useSelector(
+    (state) => state.userSlice
+  );
+
   const { reports, isLoading: reportsLoading } = useSelector(
     (state) => state?.testReportSlice || { reports: [], loading: false }
   );
 
-  // Get appointments from Redux store
-  const { appointments, loading: appointmentsLoading } = useSelector(
-    (state) => state?.appointmentSlice
-  );
-
+  useEffect(() => {
+    if (userData?._id) {
+      dispatch(fetchUserStats(userData._id)); // Dispatching to fetch user stats
+    }
+  }, [dispatch, userData?._id]);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -114,7 +108,7 @@ const UserProfile = () => {
       dispatch(fetchUserById(userData._id));
     }
   }, [dispatch, userData?._id]);
-  
+
   useEffect(() => {
     if (userData?._id && activeTab === "reports") {
       dispatch(fetchUserMedicalReports(userData._id));
@@ -125,16 +119,6 @@ const UserProfile = () => {
     dispatch(handleDownloadMedicalReport(reportId));
   };
 
-  useEffect(() => {
-    if (
-      userData?._id &&
-      (activeTab === "appointments" || !appointments.length)
-    ) {
-      dispatch(fetchUserAppointments(userData._id));
-    }
-  }, [dispatch, userData?._id, activeTab, appointments.length]);
-
-  // Initialize form data when user data is available
   useEffect(() => {
     if (userData) {
       setFormData({
@@ -199,44 +183,20 @@ const UserProfile = () => {
     });
   };
 
-  // Get status color for appointments
-  const getStatusColor = (status) => {
-    const statusColors = {
-      scheduled: "blue",
-      completed: "green",
-      cancelled: "red",
-      pending: "orange",
-      default: "gray",
-    };
-    return statusColors[status?.toLowerCase()] || statusColors.default;
-  };
-
-  // Get status icon for appointments
-  const getStatusIcon = (status) => {
-    const statusIcons = {
-      scheduled: Calendar,
-      completed: CheckCircle,
-      cancelled: XCircle,
-      pending: Clock,
-      default: AlertCircle,
-    };
-    return statusIcons[status?.toLowerCase()] || statusIcons.default;
-  };
-
-  // UI Colors and Styles
+  // UI Colors and Styles - UPDATED for a more professional look
   const bgColor = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
-  const headerBg = useColorModeValue("teal.600", "teal.800");
-  const primaryColor = useColorModeValue("teal.600", "teal.300");
-  const secondaryColor = useColorModeValue("purple.600", "purple.300");
-  const accentColor = useColorModeValue("pink.500", "pink.300");
+  const primaryColor = useColorModeValue("blue.600", "blue.400");
+  const secondaryColor = useColorModeValue("gray.700", "gray.300");
   const textColor = useColorModeValue("gray.800", "gray.100");
   const mutedColor = useColorModeValue("gray.600", "gray.400");
   const borderColor = useColorModeValue("gray.200", "gray.700");
-  const highlightBg = useColorModeValue("teal.50", "teal.900");
-  const statBg1 = useColorModeValue("teal.50", "teal.900");
-  const statBg2 = useColorModeValue("purple.50", "purple.900");
-  const statBg3 = useColorModeValue("pink.50", "pink.900");
+  const highlightBg = useColorModeValue("blue.50", "blue.900");
+  const statBg = useColorModeValue("gray.50", "gray.800");
+  const headerGradient = useColorModeValue(
+    "linear(to-r, blue.600, blue.500)",
+    "linear(to-r, blue.500, blue.400)"
+  );
 
   // Authentication check
   if (!isAuthenticated) {
@@ -263,7 +223,7 @@ const UserProfile = () => {
           backdropFilter="blur(10px)"
           zIndex={0}
         />
-        
+
         <Flex
           direction="column"
           align="center"
@@ -278,7 +238,13 @@ const UserProfile = () => {
           position="relative"
         >
           <Icon as={AlertCircle} boxSize={16} color="red.500" mb={6} />
-          <Heading mb={4} size="xl" textAlign="center" fontWeight="bold" color={textColor}>
+          <Heading
+            mb={4}
+            size="xl"
+            textAlign="center"
+            fontWeight="bold"
+            color={textColor}
+          >
             Authentication Required
           </Heading>
           <Text fontSize="lg" color={mutedColor} mb={10} textAlign="center">
@@ -292,12 +258,12 @@ const UserProfile = () => {
             color="white"
             px={12}
             py={6}
-            borderRadius="full"
+            borderRadius="lg"
             fontWeight="bold"
             _hover={{
               transform: "translateY(-2px)",
               boxShadow: "xl",
-              bg: "teal.700",
+              bg: "blue.700",
             }}
             _active={{
               transform: "translateY(0)",
@@ -313,18 +279,13 @@ const UserProfile = () => {
   }
 
   return (
-    <Box
-      bg={bgColor}
-      minH="100vh"
-      pt={8}
-      pb={16}
-    >
+    <Box bg={bgColor} minH="100vh" pt={8} pb={16}>
       <Container maxW="container.xl">
         {/* Profile Header */}
         <Box
           bg={cardBg}
-          borderRadius="2xl"
-          boxShadow="xl"
+          borderRadius="xl"
+          boxShadow="md"
           overflow="hidden"
           mb={8}
           position="relative"
@@ -332,7 +293,7 @@ const UserProfile = () => {
           {/* Header Background */}
           <Box
             height="180px"
-            bgGradient="linear(to-r, teal.500, purple.500)"
+            bgGradient={headerGradient}
             position="relative"
             overflow="hidden"
           >
@@ -345,19 +306,10 @@ const UserProfile = () => {
               bgImage="url('https://images.unsplash.com/photo-1504439468489-c8920d796a29?ixlib=rb-1.2.1&auto=format&fit=crop&w=2850&q=80')"
               bgSize="cover"
               bgPosition="center"
-              opacity="0.2"
-            />
-            <Box
-              position="absolute"
-              top="0"
-              left="0"
-              right="0"
-              bottom="0"
-              bgGradient="linear(to-r, teal.600, purple.600)"
-              opacity="0.9"
+              opacity="0.1"
             />
           </Box>
-          
+
           <Box px={{ base: 6, md: 10 }} pb={8} pt={0} position="relative">
             <Flex
               direction={{ base: "column", md: "row" }}
@@ -374,14 +326,18 @@ const UserProfile = () => {
                   color={primaryColor}
                   borderWidth="4px"
                   borderColor="white"
-                  boxShadow="xl"
+                  boxShadow="md"
                   mt={{ base: "-40px", md: "-70px" }}
                   mr={{ base: 0, md: 6 }}
                   mb={{ base: 4, md: 0 }}
                 >
-                  <AvatarBadge boxSize="1.25em" bg="green.500" border="4px solid white" />
+                  <AvatarBadge
+                    boxSize="1.25em"
+                    bg="green.500"
+                    border="4px solid white"
+                  />
                 </Avatar>
-                
+
                 <VStack
                   spacing={1}
                   align={{ base: "center", md: "flex-start" }}
@@ -401,12 +357,16 @@ const UserProfile = () => {
                   <HStack spacing={6} mt={2}>
                     <HStack color={mutedColor} spacing={2}>
                       <Icon as={Mail} boxSize={4} />
-                      <Text fontSize="sm" fontWeight="medium">{userData?.email}</Text>
+                      <Text fontSize="sm" fontWeight="medium">
+                        {userData?.email}
+                      </Text>
                     </HStack>
                     {userData?.phone && (
                       <HStack color={mutedColor} spacing={2}>
                         <Icon as={Phone} boxSize={4} />
-                        <Text fontSize="sm" fontWeight="medium">{userData?.phone}</Text>
+                        <Text fontSize="sm" fontWeight="medium">
+                          {userData?.phone}
+                        </Text>
                       </HStack>
                     )}
                   </HStack>
@@ -424,7 +384,7 @@ const UserProfile = () => {
                     px={6}
                     py={5}
                     _hover={{
-                      bg: "teal.700",
+                      bg: "blue.700",
                       transform: "translateY(-2px)",
                       boxShadow: "md",
                     }}
@@ -456,118 +416,210 @@ const UserProfile = () => {
                 )}
               </Box>
             </Flex>
-
-            {/* Stats Cards */}
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6} mt={6}>
+            <Flex overflow="auto" width="100%" gap={4} mt={6} pb={2}>
+              {/* Appointments Stat */}
               <Stat
+                minWidth="250px"
                 px={6}
                 py={4}
-                bg={statBg1}
+                bg={statBg}
                 borderRadius="lg"
-                boxShadow="sm"
+                boxShadow="md"
                 borderWidth="1px"
                 borderColor={borderColor}
+                _hover={{
+                  bg: "gray.50",
+                  transform: "translateY(-3px)",
+                  boxShadow: "lg",
+                  transition: "all 0.3s ease",
+                }}
               >
                 <Flex justify="space-between" align="center">
                   <Box>
-                    <StatLabel color={mutedColor} fontWeight="medium">Appointments</StatLabel>
-                    <StatNumber fontSize="3xl" fontWeight="bold" color={primaryColor}>
-                      {appointments?.length || 0}
+                    <StatLabel
+                      color={mutedColor}
+                      fontWeight="medium"
+                      fontSize="sm"
+                    >
+                      Appointments
+                    </StatLabel>
+                    <StatNumber
+                      fontSize="3xl"
+                      fontWeight="bold"
+                      color={primaryColor}
+                    >
+                      {userStats?.appointmentsCount || 0}
                     </StatNumber>
-                    <StatHelpText mb={0}>
-                      <StatArrow type="increase" />
-                      23% from last month
-                    </StatHelpText>
                   </Box>
                   <Flex
-                    w="50px"
-                    h="50px"
+                    w="56px"
+                    h="56px"
                     align="center"
                     justify="center"
                     borderRadius="full"
-                    bg="teal.100"
-                    color="teal.700"
+                    bg="blue.50"
+                    color="blue.600"
+                    boxShadow="md"
                   >
-                    <Icon as={Calendar} boxSize={6} />
+                    <Icon as={Calendar} boxSize={7} strokeWidth={2.5} />
                   </Flex>
                 </Flex>
               </Stat>
 
+              {/* Medical Reports Stat */}
               <Stat
+                minWidth="250px"
                 px={6}
                 py={4}
-                bg={statBg2}
+                bg={statBg}
                 borderRadius="lg"
-                boxShadow="sm"
+                boxShadow="md"
                 borderWidth="1px"
                 borderColor={borderColor}
+                _hover={{
+                  bg: "gray.50",
+                  transform: "translateY(-3px)",
+                  boxShadow: "lg",
+                  transition: "all 0.3s ease",
+                }}
               >
                 <Flex justify="space-between" align="center">
                   <Box>
-                    <StatLabel color={mutedColor} fontWeight="medium">Medical Reports</StatLabel>
-                    <StatNumber fontSize="3xl" fontWeight="bold" color={secondaryColor}>
-                      {reports?.length || 0}
+                    <StatLabel
+                      color={mutedColor}
+                      fontWeight="medium"
+                      fontSize="sm"
+                    >
+                      Medical Reports
+                    </StatLabel>
+                    <StatNumber
+                      fontSize="3xl"
+                      fontWeight="bold"
+                      color={primaryColor}
+                    >
+                      {userStats?.reportsCount || 0}
                     </StatNumber>
-                    <StatHelpText mb={0}>
-                      <StatArrow type="increase" />
-                      12% from last month
-                    </StatHelpText>
                   </Box>
                   <Flex
-                    w="50px"
-                    h="50px"
+                    w="56px"
+                    h="56px"
                     align="center"
                     justify="center"
                     borderRadius="full"
-                    bg="purple.100"
-                    color="purple.700"
+                    bg="purple.50"
+                    color="purple.600"
+                    boxShadow="md"
                   >
-                    <Icon as={FileText} boxSize={6} />
+                    <Icon as={FileText} boxSize={7} strokeWidth={2.5} />
                   </Flex>
                 </Flex>
               </Stat>
 
+              {/* Test Booking Stat */}
               <Stat
+                minWidth="250px"
                 px={6}
                 py={4}
-                bg={statBg3}
+                bg={statBg}
                 borderRadius="lg"
-                boxShadow="sm"
+                boxShadow="md"
                 borderWidth="1px"
                 borderColor={borderColor}
+                _hover={{
+                  bg: "gray.50",
+                  transform: "translateY(-3px)",
+                  boxShadow: "lg",
+                  transition: "all 0.3s ease",
+                }}
               >
                 <Flex justify="space-between" align="center">
                   <Box>
-                    <StatLabel color={mutedColor} fontWeight="medium">Health Score</StatLabel>
-                    <StatNumber fontSize="3xl" fontWeight="bold" color={accentColor}>
-                      85%
+                    <StatLabel
+                      color={mutedColor}
+                      fontWeight="medium"
+                      fontSize="sm"
+                    >
+                      Test Booking
+                    </StatLabel>
+                    <StatNumber
+                      fontSize="3xl"
+                      fontWeight="bold"
+                      color={primaryColor}
+                    >
+                      {userStats?.testBookingsCount || 0}
                     </StatNumber>
-                    <StatHelpText mb={0}>
-                      <StatArrow type="increase" />
-                      7% from last check
-                    </StatHelpText>
                   </Box>
                   <Flex
-                    w="50px"
-                    h="50px"
+                    w="56px"
+                    h="56px"
                     align="center"
                     justify="center"
                     borderRadius="full"
-                    bg="pink.100"
-                    color="pink.700"
+                    bg="green.50"
+                    color="green.600"
+                    boxShadow="md"
                   >
-                    <Icon as={Heart} boxSize={6} />
+                    <Icon as={CheckCircle} boxSize={7} strokeWidth={2.5} />
                   </Flex>
                 </Flex>
               </Stat>
-            </SimpleGrid>
+
+              {/* Transactions Stat */}
+              <Stat
+                minWidth="250px"
+                px={6}
+                py={4}
+                bg={statBg}
+                borderRadius="lg"
+                boxShadow="md"
+                borderWidth="1px"
+                borderColor={borderColor}
+                _hover={{
+                  bg: "gray.50",
+                  transform: "translateY(-3px)",
+                  boxShadow: "lg",
+                  transition: "all 0.3s ease",
+                }}
+              >
+                <Flex justify="space-between" align="center">
+                  <Box>
+                    <StatLabel
+                      color={mutedColor}
+                      fontWeight="medium"
+                      fontSize="sm"
+                    >
+                      Transactions
+                    </StatLabel>
+                    <StatNumber
+                      fontSize="3xl"
+                      fontWeight="bold"
+                      color={primaryColor}
+                    >
+                      {userStats?.transactionsCount || 0}
+                    </StatNumber>
+                  </Box>
+                  <Flex
+                    w="56px"
+                    h="56px"
+                    align="center"
+                    justify="center"
+                    borderRadius="full"
+                    bg="yellow.50"
+                    color="yellow.600"
+                    boxShadow="md"
+                  >
+                    <Icon as={Currency} boxSize={7} strokeWidth={2.5} />
+                  </Flex>
+                </Flex>
+              </Stat>
+            </Flex>
           </Box>
         </Box>
 
         {/* Tabs & Content */}
         <Tabs
           variant="soft-rounded"
-          colorScheme="teal"
+          colorScheme="blue"
           isLazy
           onChange={(index) => {
             const tabs = ["personal", "appointments", "reports"];
@@ -588,10 +640,10 @@ const UserProfile = () => {
             borderColor={borderColor}
             overflowX="auto"
             css={{
-              '&::-webkit-scrollbar': {
-                display: 'none',
+              "&::-webkit-scrollbar": {
+                display: "none",
               },
-              'scrollbarWidth': 'none',
+              scrollbarWidth: "none",
             }}
           >
             <Tab
@@ -660,6 +712,28 @@ const UserProfile = () => {
               <Icon as={FileText} mr={2} boxSize={5} />
               Medical Reports
             </Tab>
+            <Tab
+              fontWeight="medium"
+              px={6}
+              py={4}
+              borderRadius="lg"
+              color={mutedColor}
+              _selected={{
+                color: "white",
+                bg: primaryColor,
+                fontWeight: "600",
+              }}
+              _hover={{
+                bg: "gray.100",
+                color: primaryColor,
+              }}
+              transition="all 0.2s"
+              display="flex"
+              alignItems="center"
+            >
+              <Icon as={CreditCard} mr={2} boxSize={5} />
+              Transactions
+            </Tab>
           </TabList>
 
           <TabPanels>
@@ -668,26 +742,26 @@ const UserProfile = () => {
               <Card
                 bg={cardBg}
                 borderRadius="xl"
-                boxShadow="xl"
+                boxShadow="md"
                 overflow="hidden"
                 borderWidth="1px"
                 borderColor={borderColor}
               >
-                <CardHeader 
-                  bg={highlightBg} 
-                  py={6} 
+                <CardHeader
+                  bg={highlightBg}
+                  py={6}
                   px={8}
                   borderBottomWidth="1px"
                   borderColor={borderColor}
                 >
                   <Flex align="center">
                     <Icon as={User} color={primaryColor} boxSize={6} mr={3} />
-                    <Heading size="md" color={primaryColor} fontWeight="700">
+                    <Heading size="md" color={secondaryColor} fontWeight="700">
                       Profile Information
                     </Heading>
                   </Flex>
                 </CardHeader>
-                
+
                 <CardBody p={{ base: 6, md: 10 }}>
                   <form onSubmit={handleSubmit}>
                     <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8}>
@@ -708,7 +782,12 @@ const UserProfile = () => {
                           display="flex"
                           alignItems="center"
                         >
-                          <Icon as={User} mr={2} boxSize={4} color={primaryColor} />
+                          <Icon
+                            as={User}
+                            mr={2}
+                            boxSize={4}
+                            color={primaryColor}
+                          />
                           Full Name
                         </FormLabel>
                         {isEditing ? (
@@ -716,15 +795,19 @@ const UserProfile = () => {
                             name="fullName"
                             value={formData.fullName}
                             onChange={handleChange}
-                            focusBorderColor="teal.400"
+                            focusBorderColor="blue.400"
                             borderRadius="lg"
                             borderColor="gray.200"
                             bg="white"
                             size="lg"
-                            _hover={{ borderColor: "teal.300" }}
+                            _hover={{ borderColor: "blue.300" }}
                           />
                         ) : (
-                          <Text color={textColor} fontWeight="medium" fontSize="md">
+                          <Text
+                            color={textColor}
+                            fontWeight="medium"
+                            fontSize="md"
+                          >
                             {userData?.fullName || "Not specified"}
                           </Text>
                         )}
@@ -747,7 +830,12 @@ const UserProfile = () => {
                           display="flex"
                           alignItems="center"
                         >
-                          <Icon as={User} mr={2} boxSize={4} color={primaryColor} />
+                          <Icon
+                            as={User}
+                            mr={2}
+                            boxSize={4}
+                            color={primaryColor}
+                          />
                           Username
                         </FormLabel>
                         {isEditing ? (
@@ -755,15 +843,19 @@ const UserProfile = () => {
                             name="userName"
                             value={formData.userName}
                             onChange={handleChange}
-                            focusBorderColor="teal.400"
+                            focusBorderColor="blue.400"
                             borderRadius="lg"
                             borderColor="gray.200"
                             bg="white"
                             size="lg"
-                            _hover={{ borderColor: "teal.300" }}
+                            _hover={{ borderColor: "blue.300" }}
                           />
                         ) : (
-                          <Text color={textColor} fontWeight="medium" fontSize="md">
+                          <Text
+                            color={textColor}
+                            fontWeight="medium"
+                            fontSize="md"
+                          >
                             {userData?.userName || "Not specified"}
                           </Text>
                         )}
@@ -786,7 +878,12 @@ const UserProfile = () => {
                           display="flex"
                           alignItems="center"
                         >
-                          <Icon as={Mail} mr={2} boxSize={4} color={primaryColor} />
+                          <Icon
+                            as={Mail}
+                            mr={2}
+                            boxSize={4}
+                            color={primaryColor}
+                          />
                           Email
                         </FormLabel>
                         {isEditing ? (
@@ -794,16 +891,20 @@ const UserProfile = () => {
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
-                            focusBorderColor="teal.400"
+                            focusBorderColor="blue.400"
                             type="email"
                             borderRadius="lg"
                             borderColor="gray.200"
                             bg="white"
                             size="lg"
-                            _hover={{ borderColor: "teal.300" }}
+                            _hover={{ borderColor: "blue.300" }}
                           />
                         ) : (
-                          <Text color={textColor} fontWeight="medium" fontSize="md">
+                          <Text
+                            color={textColor}
+                            fontWeight="medium"
+                            fontSize="md"
+                          >
                             {userData?.email || "Not specified"}
                           </Text>
                         )}
@@ -826,7 +927,12 @@ const UserProfile = () => {
                           display="flex"
                           alignItems="center"
                         >
-                          <Icon as={Phone} mr={2} boxSize={4} color={primaryColor} />
+                          <Icon
+                            as={Phone}
+                            mr={2}
+                            boxSize={4}
+                            color={primaryColor}
+                          />
                           Phone
                         </FormLabel>
                         {isEditing ? (
@@ -834,15 +940,19 @@ const UserProfile = () => {
                             name="phone"
                             value={formData.phone}
                             onChange={handleChange}
-                            focusBorderColor="teal.400"
+                            focusBorderColor="blue.400"
                             borderRadius="lg"
                             borderColor="gray.200"
                             bg="white"
                             size="lg"
-                            _hover={{ borderColor: "teal.300" }}
+                            _hover={{ borderColor: "blue.300" }}
                           />
                         ) : (
-                          <Text color={textColor} fontWeight="medium" fontSize="md">
+                          <Text
+                            color={textColor}
+                            fontWeight="medium"
+                            fontSize="md"
+                          >
                             {userData?.phone || "Not specified"}
                           </Text>
                         )}
@@ -865,7 +975,12 @@ const UserProfile = () => {
                           display="flex"
                           alignItems="center"
                         >
-                          <Icon as={MapPin} mr={2} boxSize={4} color={primaryColor} />
+                          <Icon
+                            as={MapPin}
+                            mr={2}
+                            boxSize={4}
+                            color={primaryColor}
+                          />
                           Address
                         </FormLabel>
                         {isEditing ? (
@@ -873,15 +988,19 @@ const UserProfile = () => {
                             name="address"
                             value={formData.address}
                             onChange={handleChange}
-                            focusBorderColor="teal.400"
+                            focusBorderColor="blue.400"
                             borderRadius="lg"
                             borderColor="gray.200"
                             bg="white"
                             size="lg"
-                            _hover={{ borderColor: "teal.300" }}
+                            _hover={{ borderColor: "blue.300" }}
                           />
                         ) : (
-                          <Text color={textColor} fontWeight="medium" fontSize="md">
+                          <Text
+                            color={textColor}
+                            fontWeight="medium"
+                            fontSize="md"
+                          >
                             {userData?.address || "Not specified"}
                           </Text>
                         )}
@@ -904,7 +1023,12 @@ const UserProfile = () => {
                           display="flex"
                           alignItems="center"
                         >
-                          <Icon as={User} mr={2} boxSize={4} color={primaryColor} />
+                          <Icon
+                            as={User}
+                            mr={2}
+                            boxSize={4}
+                            color={primaryColor}
+                          />
                           Gender
                         </FormLabel>
                         {isEditing ? (
@@ -912,12 +1036,12 @@ const UserProfile = () => {
                             name="gender"
                             value={formData.gender}
                             onChange={handleChange}
-                            focusBorderColor="teal.400"
+                            focusBorderColor="blue.400"
                             borderRadius="lg"
                             borderColor="gray.200"
                             bg="white"
                             size="lg"
-                            _hover={{ borderColor: "teal.300" }}
+                            _hover={{ borderColor: "blue.300" }}
                           >
                             <option value="">Select gender</option>
                             <option value="male">Male</option>
@@ -928,7 +1052,12 @@ const UserProfile = () => {
                             </option>
                           </Select>
                         ) : (
-                          <Text color={textColor} fontWeight="medium" fontSize="md" textTransform="capitalize">
+                          <Text
+                            color={textColor}
+                            fontWeight="medium"
+                            fontSize="md"
+                            textTransform="capitalize"
+                          >
                             {userData?.gender || "Not specified"}
                           </Text>
                         )}
@@ -947,7 +1076,7 @@ const UserProfile = () => {
                         py={6}
                         borderRadius="lg"
                         _hover={{
-                          bg: "teal.700",
+                          bg: "blue.700",
                           transform: "translateY(-2px)",
                           boxShadow: "md",
                         }}
@@ -967,25 +1096,34 @@ const UserProfile = () => {
 
             {/* Appointments Tab */}
             <TabPanel px={0}>
-              <Card
+              {/* <Card
                 bg={cardBg}
                 borderRadius="xl"
-                boxShadow="xl"
+                boxShadow="md"
                 overflow="hidden"
                 borderWidth="1px"
                 borderColor={borderColor}
               >
-                <CardHeader 
-                  bg={highlightBg} 
-                  py={6} 
+                <CardHeader
+                  bg={highlightBg}
+                  py={6}
                   px={8}
                   borderBottomWidth="1px"
                   borderColor={borderColor}
                 >
                   <Flex justify="space-between" align="center">
                     <Flex align="center">
-                      <Icon as={Calendar} color={primaryColor} boxSize={6} mr={3} />
-                      <Heading size="md" color={primaryColor} fontWeight="700">
+                      <Icon
+                        as={Calendar}
+                        color={primaryColor}
+                        boxSize={6}
+                        mr={3}
+                      />
+                      <Heading
+                        size="md"
+                        color={secondaryColor}
+                        fontWeight="700"
+                      >
                         Your Appointments
                       </Heading>
                     </Flex>
@@ -997,7 +1135,7 @@ const UserProfile = () => {
                       leftIcon={<Icon as={Calendar} boxSize={4} />}
                       px={6}
                       _hover={{
-                        bg: "teal.700",
+                        bg: "blue.700",
                         transform: "translateY(-2px)",
                         boxShadow: "md",
                       }}
@@ -1021,8 +1159,8 @@ const UserProfile = () => {
                       ))}
                     </VStack>
                   ) : (
-                    <TableContainer 
-                      borderRadius="xl" 
+                    <TableContainer
+                      borderRadius="xl"
                       borderWidth="1px"
                       borderColor={borderColor}
                       boxShadow="sm"
@@ -1031,26 +1169,52 @@ const UserProfile = () => {
                       <Table variant="simple">
                         <Thead bg="gray.50">
                           <Tr>
-                            <Th py={4} borderColor="gray.100">Title</Th>
-                            <Th py={4} borderColor="gray.100">Date & Time</Th>
-                            <Th py={4} borderColor="gray.100">Hospital</Th>
-                            <Th py={4} borderColor="gray.100">Status</Th>
-                            <Th py={4} borderColor="gray.100">Payment Status</Th>
-                            <Th py={4} borderColor="gray.100">Actions</Th>
+                            <Th py={4} borderColor="gray.100">
+                              Title
+                            </Th>
+                            <Th py={4} borderColor="gray.100">
+                              Date & Time
+                            </Th>
+                            <Th py={4} borderColor="gray.100">
+                              Hospital
+                            </Th>
+                            <Th py={4} borderColor="gray.100">
+                              Status
+                            </Th>
+
+                            <Th py={4} borderColor="gray.100">
+                              Actions
+                            </Th>
                           </Tr>
                         </Thead>
 
                         <Tbody>
                           {appointments && appointments.length > 0 ? (
                             appointments.map((appointment) => (
-                              <Tr key={appointment._id} _hover={{ bg: "gray.50" }}>
-                                <Td py={4} borderColor="gray.100" fontWeight="medium" color={textColor}>
+                              <Tr
+                                key={appointment._id}
+                                _hover={{ bg: "gray.50" }}
+                              >
+                                <Td
+                                  py={4}
+                                  borderColor="gray.100"
+                                  fontWeight="medium"
+                                  color={textColor}
+                                >
                                   Doctor Appointment
                                 </Td>
-                                <Td py={4} borderColor="gray.100" color={mutedColor}>
+                                <Td
+                                  py={4}
+                                  borderColor="gray.100"
+                                  color={mutedColor}
+                                >
                                   {formatDate(appointment.date)}
                                 </Td>
-                                <Td py={4} borderColor="gray.100" color={mutedColor}>
+                                <Td
+                                  py={4}
+                                  borderColor="gray.100"
+                                  color={mutedColor}
+                                >
                                   {appointment.hospital?.name || "N/A"}
                                 </Td>
                                 <Td py={4} borderColor="gray.100">
@@ -1065,32 +1229,21 @@ const UserProfile = () => {
                                     fontWeight="medium"
                                   >
                                     <Flex align="center">
-                                      <Icon as={getStatusIcon(appointment.status)} boxSize={3} mr={1} />
+                                      <Icon
+                                        as={getStatusIcon(appointment.status)}
+                                        boxSize={3}
+                                        mr={1}
+                                      />
                                       {appointment.status}
                                     </Flex>
                                   </Tag>
                                 </Td>
-                                <Td py={4} borderColor="gray.100">
-                                  <Tag
-                                    colorScheme={
-                                      appointment.paymentStatus === "paid"
-                                        ? "green"
-                                        : "gray"
-                                    }
-                                    borderRadius="full"
-                                    size="md"
-                                    py={1}
-                                    px={3}
-                                    fontWeight="medium"
-                                  >
-                                    {appointment.paymentStatus}
-                                  </Tag>
-                                </Td>
+
                                 <Td py={4} borderColor="gray.100">
                                   <HStack spacing={2}>
                                     <Button
                                       size="sm"
-                                      colorScheme="teal"
+                                      colorScheme="blue"
                                       variant="solid"
                                       borderRadius="md"
                                       fontWeight="medium"
@@ -1129,11 +1282,21 @@ const UserProfile = () => {
                                     boxSize={16}
                                     color="gray.300"
                                   />
-                                  <Heading size="md" color={mutedColor} fontWeight="medium">
+                                  <Heading
+                                    size="md"
+                                    color={mutedColor}
+                                    fontWeight="medium"
+                                  >
                                     No appointments found
                                   </Heading>
-                                  <Text color="gray.500" maxW="md" textAlign="center" mb={2}>
-                                    You don't have any appointments scheduled yet. Book your first appointment.
+                                  <Text
+                                    color="gray.500"
+                                    maxW="md"
+                                    textAlign="center"
+                                    mb={2}
+                                  >
+                                    You don't have any appointments scheduled
+                                    yet. Book your first appointment.
                                   </Text>
                                   <Button
                                     size="md"
@@ -1141,10 +1304,12 @@ const UserProfile = () => {
                                     color="white"
                                     px={8}
                                     py={6}
-                                    onClick={() => navigate("/book-appointment")}
+                                    onClick={() =>
+                                      navigate("/book-appointment")
+                                    }
                                     borderRadius="lg"
                                     _hover={{
-                                      bg: "teal.700",
+                                      bg: "blue.700",
                                       transform: "translateY(-2px)",
                                       boxShadow: "md",
                                     }}
@@ -1164,12 +1329,16 @@ const UserProfile = () => {
 
                   {appointments && appointments.length > 0 && (
                     <Flex justify="space-between" align="center" mt={8} px={2}>
-                      <Text color={mutedColor} fontSize="sm" fontWeight="medium">
+                      <Text
+                        color={mutedColor}
+                        fontSize="sm"
+                        fontWeight="medium"
+                      >
                         Showing {appointments.length} appointments
                       </Text>
                       <Button
                         variant="link"
-                        colorScheme="teal"
+                        colorScheme="blue"
                         size="sm"
                         rightIcon={<Icon as={ArrowRight} boxSize={4} />}
                         fontWeight="medium"
@@ -1179,7 +1348,9 @@ const UserProfile = () => {
                     </Flex>
                   )}
                 </CardBody>
-              </Card>
+              </Card> */}
+
+              <AppointmentsTab />
             </TabPanel>
 
             {/* Reports Tab */}
@@ -1187,21 +1358,26 @@ const UserProfile = () => {
               <Card
                 bg={cardBg}
                 borderRadius="xl"
-                boxShadow="xl"
+                boxShadow="md"
                 overflow="hidden"
                 borderWidth="1px"
                 borderColor={borderColor}
               >
-                <CardHeader 
-                  bg={highlightBg} 
-                  py={6} 
+                <CardHeader
+                  bg={highlightBg}
+                  py={6}
                   px={8}
                   borderBottomWidth="1px"
                   borderColor={borderColor}
                 >
                   <Flex align="center">
-                    <Icon as={FileText} color={primaryColor} boxSize={6} mr={3} />
-                    <Heading size="md" color={primaryColor} fontWeight="700">
+                    <Icon
+                      as={FileText}
+                      color={primaryColor}
+                      boxSize={6}
+                      mr={3}
+                    />
+                    <Heading size="md" color={secondaryColor} fontWeight="700">
                       Your Medical Reports
                     </Heading>
                   </Flex>
@@ -1209,8 +1385,8 @@ const UserProfile = () => {
 
                 <CardBody p={{ base: 6, md: 8 }}>
                   {/* Medical Reports Table */}
-                  <TableContainer 
-                    borderRadius="xl" 
+                  <TableContainer
+                    borderRadius="xl"
                     borderWidth="1px"
                     borderColor={borderColor}
                     boxShadow="sm"
@@ -1219,11 +1395,21 @@ const UserProfile = () => {
                     <Table variant="simple">
                       <Thead bg="gray.50">
                         <Tr>
-                          <Th py={4} borderColor="gray.100">Report Title</Th>
-                          <Th py={4} borderColor="gray.100">Hospital</Th>
-                          <Th py={4} borderColor="gray.100">Doctor</Th>
-                          <Th py={4} borderColor="gray.100">Date</Th>
-                          <Th py={4} borderColor="gray.100">Actions</Th>
+                          <Th py={4} borderColor="gray.100">
+                            Report Title
+                          </Th>
+                          <Th py={4} borderColor="gray.100">
+                            Hospital
+                          </Th>
+                          <Th py={4} borderColor="gray.100">
+                            Doctor
+                          </Th>
+                          <Th py={4} borderColor="gray.100">
+                            Date
+                          </Th>
+                          <Th py={4} borderColor="gray.100">
+                            Actions
+                          </Th>
                         </Tr>
                       </Thead>
 
@@ -1231,16 +1417,33 @@ const UserProfile = () => {
                         {reports && reports.length > 0 ? (
                           reports.map((report) => (
                             <Tr key={report._id} _hover={{ bg: "gray.50" }}>
-                              <Td py={4} borderColor="gray.100" fontWeight="medium" color={textColor}>
+                              <Td
+                                py={4}
+                                borderColor="gray.100"
+                                fontWeight="medium"
+                                color={textColor}
+                              >
                                 {report.reportTitle}
                               </Td>
-                              <Td py={4} borderColor="gray.100" color={mutedColor}>
+                              <Td
+                                py={4}
+                                borderColor="gray.100"
+                                color={mutedColor}
+                              >
                                 {report.hospital?.name || "N/A"}
                               </Td>
-                              <Td py={4} borderColor="gray.100" color={mutedColor}>
+                              <Td
+                                py={4}
+                                borderColor="gray.100"
+                                color={mutedColor}
+                              >
                                 {report.doctorName || "N/A"}
                               </Td>
-                              <Td py={4} borderColor="gray.100" color={mutedColor}>
+                              <Td
+                                py={4}
+                                borderColor="gray.100"
+                                color={mutedColor}
+                              >
                                 {formatDate(report.createdAt)}
                               </Td>
                               <Td py={4} borderColor="gray.100">
@@ -1249,13 +1452,15 @@ const UserProfile = () => {
                                     size="sm"
                                     bg={primaryColor}
                                     color="white"
-                                    leftIcon={<Icon as={Download} boxSize={4} />}
+                                    leftIcon={
+                                      <Icon as={Download} boxSize={4} />
+                                    }
                                     onClick={() =>
                                       handleDownloadReport(report._id)
                                     }
                                     borderRadius="md"
                                     _hover={{
-                                      bg: "teal.700",
+                                      bg: "blue.700",
                                     }}
                                     fontWeight="medium"
                                   >
@@ -1293,12 +1498,21 @@ const UserProfile = () => {
                                   boxSize={16}
                                   color="gray.300"
                                 />
-                                <Heading size="md" color={mutedColor} fontWeight="medium">
+                                <Heading
+                                  size="md"
+                                  color={mutedColor}
+                                  fontWeight="medium"
+                                >
                                   No medical reports found
                                 </Heading>
-                                <Text color="gray.500" maxW="md" textAlign="center">
+                                <Text
+                                  color="gray.500"
+                                  maxW="md"
+                                  textAlign="center"
+                                >
                                   Your medical reports and test results will
-                                  appear here when available from your healthcare provider
+                                  appear here when available from your
+                                  healthcare provider
                                 </Text>
                               </VStack>
                             </Td>
@@ -1317,7 +1531,7 @@ const UserProfile = () => {
                       borderRadius="xl"
                       mt={8}
                     >
-                      <Spinner size="md" color="teal.500" thickness="3px" />
+                      <Spinner size="md" color="blue.500" thickness="3px" />
                       <Text ml={4} color={mutedColor} fontWeight="medium">
                         Loading your medical reports...
                       </Text>
@@ -1326,13 +1540,21 @@ const UserProfile = () => {
 
                   {reports && reports.length > 0 && (
                     <Flex justify="space-between" align="center" mt={8} px={2}>
-                      <Text color={mutedColor} fontSize="sm" fontWeight="medium">
+                      <Text
+                        color={mutedColor}
+                        fontSize="sm"
+                        fontWeight="medium"
+                      >
                         Showing {reports.length} reports
                       </Text>
                     </Flex>
                   )}
                 </CardBody>
               </Card>
+            </TabPanel>
+
+            <TabPanel px={0}>
+              <TransactionsTab />
             </TabPanel>
           </TabPanels>
         </Tabs>

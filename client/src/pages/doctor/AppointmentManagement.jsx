@@ -15,6 +15,7 @@ import BulkSelectionHeader from "../../component/doctor/appointment/BulkSelectio
 import EmptyState from "../../component/doctor/appointment/EmptyState.jsx";
 import AppointmentList from "../../component/doctor/appointment/AppointmentList.jsx";
 import { notification } from "antd";
+import CustomLoader from "../../component/common/CustomSpinner.jsx";
 
 const Appointments = () => {
   const dispatch = useDispatch();
@@ -55,6 +56,7 @@ const Appointments = () => {
       dispatch(fetchDoctorAppointments({ doctorId, status }));
     }
   }, [dispatch, doctorId, activeTab]);
+
   // 🔔 Show Notification
   const showNotification = (type, message, description) => {
     notification[type]({
@@ -267,14 +269,6 @@ const Appointments = () => {
     console.log("Reschedule clicked for appointment:", appointment._id);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
   // Function to safely check if error contains a specific string
   const errorIncludes = (searchString) => {
     if (!error) return false;
@@ -300,67 +294,70 @@ const Appointments = () => {
     return "Something went wrong. Please try again.";
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <CustomLoader></CustomLoader>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800">
-            Manage Appointments
-          </h2>
-          <div className="flex space-x-2">
-            {selectedAppointments.length > 0 && (
-              <button
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 flex items-center"
-                onClick={handleBulkDeleteClick}
-              >
-                <Trash size={16} className="mr-2" />
-                Delete Selected ({selectedAppointments.length})
-              </button>
-            )}
-            <button
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center"
-              onClick={handleAddAppointment}
-            >
-              <Calendar size={16} className="mr-2" />
-              Add Appointment
-            </button>
+      <div className="bg-white rounded-lg shadow-md">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Manage Appointments
+            </h2>
+            <div className="flex space-x-2">
+              {selectedAppointments.length > 0 && (
+                <button
+                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 flex items-center"
+                  onClick={handleBulkDeleteClick}
+                >
+                  <Trash size={16} className="mr-2" />
+                  Delete Selected ({selectedAppointments.length})
+                </button>
+              )}
+            </div>
           </div>
-        </div>
 
-        <AppointmentTabs
-          appointments={appointments}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-        />
-
-        {/* Bulk Selection Header */}
-        {appointments[activeTab]?.length > 0 && (
-          <BulkSelectionHeader
-            selectedAppointments={selectedAppointments}
+          <AppointmentTabs
             appointments={appointments}
             activeTab={activeTab}
-            handleSelectAll={handleSelectAll}
+            setActiveTab={setActiveTab}
           />
-        )}
 
-        {/* Appointments List */}
-        <div className="space-y-4">
-          {appointments[activeTab]?.length > 0 ? (
-            <AppointmentList
-              appointments={appointments[activeTab]}
+          {/* Bulk Selection Header */}
+          {appointments[activeTab]?.length > 0 && (
+            <BulkSelectionHeader
               selectedAppointments={selectedAppointments}
+              appointments={appointments}
               activeTab={activeTab}
-              handleSelectAppointment={handleSelectAppointment}
-              handleApproveAppointment={handleApproveAppointment}
-              handleRejectClick={handleRejectClick}
-              handleCompleteAppointment={handleCompleteAppointment}
-              handleReschedule={handleReschedule}
-              handleDeleteClick={handleDeleteClick}
-              setSelectedAppointment={setSelectedAppointment}
+              handleSelectAll={handleSelectAll}
             />
-          ) : (
-            <EmptyState getErrorMessage={getErrorMessage} />
           )}
+
+          {/* Appointments List */}
+          <div className="space-y-4 mt-4">
+            {appointments[activeTab]?.length > 0 ? (
+              <AppointmentList
+                appointments={appointments[activeTab]}
+                selectedAppointments={selectedAppointments}
+                activeTab={activeTab}
+                handleSelectAppointment={handleSelectAppointment}
+                handleApproveAppointment={handleApproveAppointment}
+                handleRejectClick={handleRejectClick}
+                handleCompleteAppointment={handleCompleteAppointment}
+                handleReschedule={handleReschedule}
+                handleDeleteClick={handleDeleteClick}
+                setSelectedAppointment={setSelectedAppointment}
+              />
+            ) : (
+              <EmptyState getErrorMessage={getErrorMessage} />
+            )}
+          </div>
         </div>
       </div>
 

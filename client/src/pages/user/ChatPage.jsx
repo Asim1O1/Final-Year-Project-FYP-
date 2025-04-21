@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { io } from "socket.io-client";
+
 import {
-  CameraIcon,
   Send,
   CheckCheck,
   Filter,
@@ -10,11 +9,8 @@ import {
   Search,
   X,
   Badge,
-  Phone,
-  Video,
   MoreVertical,
   ImageIcon,
-  BellOff,
   Paperclip,
   Smile,
   Mic,
@@ -54,27 +50,39 @@ import {
   setImagePreview,
   setCurrentChat,
   setNewMessage,
+  addNewMessageToState,
+  updateContactWithLatestMessage,
+  updateUnreadCount,
 } from "../../features/messages/messageSlice";
-
-// Initialize socket connection
-const socket = io("http://localhost:4001");
+import { useSocket } from "../../hooks/useSocketNotification";
 
 const ChatPage = () => {
+  // Make sure all hooks are called unconditionally at the top level
   const dispatch = useDispatch();
+
+  // All useState calls
+  const [isSending, setIsSending] = useState(false);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+
+  // All useRef calls
+  const scrollRef = useRef();
+
+  // All useSelector calls
   const contacts = useSelector((state) => state.messageSlice.contacts);
   const messages = useSelector((state) => state.messageSlice.messages);
   const currentChat = useSelector((state) => state.messageSlice.currentChat);
+  console.log("The currnt chat is", currentChat)
   const newMessage = useSelector((state) => state.messageSlice.newMessage);
   const image = useSelector((state) => state.messageSlice.image);
   const imagePreview = useSelector((state) => state.messageSlice.imagePreview);
   const isLoading = useSelector((state) => state.messageSlice.isLoading);
-
   const user = useSelector((state) => state?.auth?.user?.data);
-  const userId = user?._id;
 
-  const scrollRef = useRef();
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
+  // Derived state (not hooks)
+  const userId = user?._id;
+  const { getSocket } = useSocket();
+  const socket = getSocket();
 
   // Chakra color mode values
   const bgMain = useColorModeValue("gray.50", "gray.900");
@@ -86,6 +94,9 @@ const ChatPage = () => {
   const textPrimary = useColorModeValue("gray.800", "white");
   const textSecondary = useColorModeValue("gray.600", "gray.400");
   const highlightBg = useColorModeValue("blue.50", "blue.900");
+
+  console.log("The messages is", messages);
+  console.log("The socket is", socket);
 
   // Fetch contacts for sidebar with pagination & search
   useEffect(() => {
@@ -107,37 +118,83 @@ const ChatPage = () => {
     setPage(1);
   };
 
-  // Handle Load More Contacts (Pagination)
-  const handleLoadMore = () => {
-    setPage((prev) => prev + 1);
-  };
-
   // Socket.io setup
   useEffect(() => {
-    if (!userId) return;
+    // Make sure we always check for socket and userId before proceeding
+    if (!socket || !userId) {
+      console.warn("No socket or user ID found, skipping socket setup");
+      return;
+    }
 
-    socket.emit("addUser", userId);
+    if (!socket.connected) {
+      console.log("Socket not connected, trying to connect");
+      socket.connect();
+    }
 
-    socket.on("newMessage", (message) => {
-      if (
-        currentChat?._id === message.receiverId ||
-        currentChat?._id === message.senderId
-      ) {
-        dispatch(handleGetMessages(currentChat._id));
+    console.log("Setting up socket listeners for user:", userId);
+
+    const handleIncomingMessage = (message) => {
+      console.log("Received message:", message);
+
+      // Get latest messages from state rather than using stale closure
+      dispatch((dispatch, getState) => {
+        const currentState = getState();
+        const currentMessages = currentState?.messageSlice?.messages || [];
+        const currentChat = currentState?.messageSlice?.currentChat;
+        const unreadCount = currentState?.messageSlice?.unreadCount || {};
+
+        console.log("The curretnt chat is", currentChat);
+
+        // Check if we already have this message in state
+        const isDuplicate = currentMessages.some(
+          (msg) => msg._id === message._id
+        );
+
+        if (isDuplicate) {
+          console.log("Duplicate message detected, ignoring");
+          return; // Return state unchanged
+        }
+
+        dispatch(addNewMessageToState(message));
+
+        dispatch(updateContactWithLatestMessage({ message, userId }));
+
+        if (message.receiverId === userId && 
+          (!currentChat || currentChat._id !== message.senderId) &&
+          !message.read) {
+            const previousCount = unreadCount[message.senderId] || 0;
+            dispatch(updateUnreadCount({ chatId: message.senderId, count: previousCount + 1 }));
       }
-    });
+      });
+    };
 
-    socket.on("messages-read", ({ senderId, receiverId }) => {
+    const handleUnreadCountUpdate = ({ chatId, count }) => {
+      dispatch(updateUnreadCount({ chatId, count }));
+    };
+    
+
+    // Rest of the code remains the same
+    const handleMessagesRead = ({ senderId, receiverId }) => {
       if (userId === senderId) {
         dispatch(handleMarkMessagesAsRead({ senderId, receiverId }));
       }
+    };
+
+    // Add event listeners
+    socket.on("message", handleIncomingMessage);
+     socket.off("chatCountUpdate", handleUnreadCountUpdate); 
+    socket.on("messages-read", handleMessagesRead);
+    socket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
     });
 
+    // Cleanup function
     return () => {
-      socket.off("newMessage");
-      socket.off("messages-read");
+      socket.off("message", handleIncomingMessage);
+      socket.off("messages-read", handleMessagesRead);
+      socket.off("connect_error");
     };
-  }, [currentChat, dispatch, userId]);
+  }, [currentChat, dispatch, userId, socket]);
 
   // Fetch messages when changing chat
   useEffect(() => {
@@ -148,18 +205,32 @@ const ChatPage = () => {
   // Handle sending messages
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if ((!newMessage.trim() && !image) || !currentChat) return;
+    if ((!newMessage.trim() && !image) || !currentChat || !socket) return;
 
     try {
+      setIsSending(true);
+      // Save current message state to variables
+      const pendingText = newMessage;
+      const pendingImage = image;
+
+      // Clear input immediately but don't add to state yet
+      dispatch(setNewMessage(""));
+      dispatch(setImage(null));
+      dispatch(setImagePreview(null));
+
       await dispatch(
         handleSendMessage({
           receiverId: currentChat._id,
-          text: newMessage,
-          image: image,
+          text: pendingText,
+          image: pendingImage,
         })
       ).unwrap();
+
+      // The socket event will handle adding the message to state
     } catch (err) {
       console.error("Error sending message:", err);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -357,23 +428,6 @@ const ChatPage = () => {
             )}
           </Box>
         )}
-
-        <Box p={4} borderTop="1px" borderColor={borderColor}>
-          <Button
-            w="full"
-            onClick={handleLoadMore}
-            colorScheme="blue"
-            isDisabled={isLoading}
-            size="md"
-            borderRadius="lg"
-            fontWeight="medium"
-            leftIcon={<Paperclip size={16} />}
-            _hover={{ transform: "translateY(-1px)", boxShadow: "sm" }}
-            transition="all 0.2s"
-          >
-            Load More Contacts
-          </Button>
-        </Box>
       </Box>
 
       {/* Chat area */}
@@ -437,14 +491,6 @@ const ChatPage = () => {
                     borderRadius="full"
                     _hover={{ bg: "blue.50" }}
                   />
-                  <MenuList>
-                    <MenuItem icon={<Bell size={16} />}>
-                      Mute notifications
-                    </MenuItem>
-                    <MenuItem icon={<ImageIcon size={16} />}>
-                      View media
-                    </MenuItem>
-                  </MenuList>
                 </Menu>
               </Flex>
             </Flex>
@@ -526,7 +572,7 @@ const ChatPage = () => {
 
                     return (
                       <Flex
-                        key={message._id}
+                        key={`${message._id}-${index}`}
                         justify={isMine ? "flex-end" : "flex-start"}
                         ref={scrollRef}
                         mb={2}

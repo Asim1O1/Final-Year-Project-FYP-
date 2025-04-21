@@ -7,6 +7,7 @@ import PDFDocument from "pdfkit";
 import MedicalTest from "../../models/medicalTest.model.js";
 import TestBooking from "../../models/testBooking.model.js";
 import Notification from "../../models/notification.model.js";
+import { onlineUsers } from "../../server.js";
 
 export const uploadMedicalReport = async (req, res, next) => {
   try {
@@ -69,10 +70,7 @@ export const uploadMedicalReport = async (req, res, next) => {
     }
 
     // Validate test booking status
-    if (
-      testBooking.status !== "completed" &&
-      testBooking.status !== "report_available"
-    ) {
+    if (testBooking.status !== "completed") {
       console.log(
         "⚠️ Invalid test status for uploading report:",
         testBooking.status
@@ -142,20 +140,27 @@ export const uploadMedicalReport = async (req, res, next) => {
         console.log("🔄 Linked medical test updated:", medicalTest._id);
       }
     }
+    const io = req.app.get("socketio");
+
+    const message = `Your medical report titled "${reportTitle}" has been uploaded.`;
+
     // Create notification for the user
     const notification = await Notification.create({
       user: patient._id,
       type: "medical_report",
-      message: `Your medical report titled "${reportTitle}" has been uploaded.`,
+      message,
       relatedId: newReport._id,
     });
+    console.log(`📩 Notification saved for patient ${patient._id}`);
 
-    const io = req.app.get("socketio");
-    io.to(patient._id.toString()).emit("medical-report-uploaded", {
-      message: notification.message,
-      reportId: newReport._id,
+    // Emit real-time if user is online (to their room)
+    io.to(patient._id.toString()).emit("medical-report", {
+      id: newReport._id,
+      message,
+      type: "medical_report",
+      createdAt: new Date().toISOString(),
     });
-
+    console.log(`📡 Real-time notification sent to patient ${patient._id}`);
     // Success response
     return res.status(201).json(
       createResponse({
@@ -230,6 +235,7 @@ export const deleteReport = async (req, res, next) => {
     next(error);
   }
 };
+
 export const fetchAllReports = async (req, res, next) => {
   try {
     const adminId = req.user.id;

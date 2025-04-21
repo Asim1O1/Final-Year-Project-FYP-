@@ -1,11 +1,10 @@
-import  { useEffect } from "react";
+import { useEffect } from "react";
 import {
   VStack,
   HStack,
   Text,
   Box,
   Badge,
- 
   Button,
   IconButton,
   Menu,
@@ -23,10 +22,11 @@ import {
 } from "../../features/notification/notificationSlice";
 import { FiMoreVertical, FiCheck, FiTrash2, FiEye } from "react-icons/fi";
 import CustomLoader from "../common/CustomSpinner";
+import { notification } from "antd";
 
 export const Notifications = () => {
   const dispatch = useDispatch();
-  const toast = useToast();
+  const notification = useToast();
   const { notifications, isLoading, error } = useSelector(
     (state) => state.notifications
   );
@@ -68,18 +68,18 @@ export const Notifications = () => {
   const handleMarkAsRead = async (notificationId) => {
     try {
       await dispatch(handleMarkNotificationAsRead(notificationId)).unwrap();
-      toast({
+      notification.success({
         title: "Notification marked as read",
         status: "success",
-        duration: 2000,
+        duration: 2,
         isClosable: true,
       });
     } catch (error) {
-      toast({
+      notification.error({
         title: "Error marking notification as read",
         description: error.message,
         status: "error",
-        duration: 3000,
+        duration: 3,
         isClosable: true,
       });
     }
@@ -88,18 +88,18 @@ export const Notifications = () => {
   const handleMarkAllAsRead = async () => {
     try {
       await dispatch(handleMarkAllNotificationsAsRead()).unwrap();
-      toast({
+      notification.success({
         title: "All notifications marked as read",
         status: "success",
-        duration: 2000,
+        duration: 2,
         isClosable: true,
       });
     } catch (error) {
-      toast({
+      notification.error({
         title: "Error marking notifications as read",
         description: error.message,
         status: "error",
-        duration: 3000,
+        duration: 3,
         isClosable: true,
       });
     }
@@ -108,18 +108,18 @@ export const Notifications = () => {
   const handleClearAll = async () => {
     try {
       await dispatch(handleClearAllNotifications()).unwrap();
-      toast({
+      notification.success({
         title: "All notifications cleared",
         status: "success",
-        duration: 2000,
+        duration: 2,
         isClosable: true,
       });
     } catch (error) {
-      toast({
+      notification.error({
         title: "Error clearing notifications",
         description: error.message,
         status: "error",
-        duration: 3000,
+        duration: 3,
         isClosable: true,
       });
     }

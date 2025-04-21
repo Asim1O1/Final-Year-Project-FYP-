@@ -41,7 +41,7 @@ const MedicalTestManagement = () => {
   // Fetch tests on load and when searchQuery changes
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
-      dispatch(fetchAllMedicalTests({ search: searchQuery }));
+      dispatch(fetchAllMedicalTests({ search: searchQuery , isAdmin: true}));
     }, 300); // debounce search
 
     return () => clearTimeout(delayDebounce);

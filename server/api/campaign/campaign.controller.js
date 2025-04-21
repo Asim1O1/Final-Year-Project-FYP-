@@ -7,6 +7,7 @@ import { sendEmail } from "../../utils/sendEmail.js";
 import { emailTemplates } from "../../utils/emailTemplates.js";
 import { paginate } from "../../utils/paginationUtil.js";
 import { logActivity } from "../activity/activity.controller.js";
+import { onlineUsers } from "../../server.js";
 
 export const createCampaign = async (req, res, next) => {
   const {
@@ -96,22 +97,39 @@ export const createCampaign = async (req, res, next) => {
       visibleTo: ["hospital_admin"],
     });
 
-    // Notify all users
     const users = await userModel.find({ role: "user" }, "_id email");
+
+    // Consistent message
+    const campaignMessage = `New campaign: ${title}. Join us on ${new Date(
+      date
+    ).toLocaleDateString()} at ${location}.`;
+
+    // Save notifications to DB
     const notifications = users.map((user) => ({
       user: user._id,
-      message: `New campaign: ${title}. Join us on ${new Date(
-        date
-      ).toLocaleDateString()} at ${location}.`,
+      message: campaignMessage,
       type: "campaign",
       relatedId: campaign._id,
+      createdAt: new Date(), // ✅ Add this for DB consistency too
     }));
 
     await Notification.insertMany(notifications);
+    console.log("📩 Campaign notifications saved");
 
-    // Emit event via Socket.io
+    // Real-time to online users
     const io = req.app.get("socketio");
-    io.emit("new-campaign", { message: `New campaign: ${title}` });
+    for (const user of users) {
+      const socketId = onlineUsers.get(user._id.toString());
+      if (socketId) {
+        io.to(user._id.toString()).emit("campaign", {
+          id: campaign._id,
+          message: campaignMessage,
+          type: "campaign",
+          createdAt: new Date().toISOString(), // ✅ Add this line
+        });
+        console.log(`📡 Real-time campaign sent to user ${user._id}`);
+      }
+    }
 
     // Send email notifications
     // for (const user of users) {
@@ -238,7 +256,6 @@ export const updateCampaign = async (req, res, next) => {
   }
 };
 
-
 export const deleteCampaign = async (req, res, next) => {
   const { id } = req.params;
 
@@ -344,28 +361,16 @@ export const getAllCampaigns = async (req, res, next) => {
       endDate,
     } = req.query;
 
-    console.log("Incoming query params:", {
-      page,
-      limit,
-      sort,
-      hospital,
-      search,
-      startDate,
-      endDate,
-    });
-
     const query = {};
 
     // Filter by hospital
     if (hospital) {
       query.hospital = hospital;
-      console.log("Filtering by hospital:", hospital);
     }
 
-    // Search by campaign name (case insensitive)
+    // Search by campaign name
     if (search) {
       query.name = { $regex: search, $options: "i" };
-      console.log("Search query for campaign name:", query.name);
     }
 
     // Filter by date range
@@ -373,35 +378,32 @@ export const getAllCampaigns = async (req, res, next) => {
       query.createdAt = {};
       if (startDate) {
         query.createdAt.$gte = new Date(startDate);
-        console.log(
-          "Filtering campaigns from startDate:",
-          query.createdAt.$gte
-        );
       }
       if (endDate) {
         query.createdAt.$lte = new Date(endDate);
-        console.log("Filtering campaigns until endDate:", query.createdAt.$lte);
       }
     }
 
-    // Parse sort parameters
     const sortOrder = sort.startsWith("-") ? -1 : 1;
     const sortField = sort.replace("-", "");
     const sortOptions = { [sortField]: sortOrder };
-    console.log("Sort options:", sortOptions);
 
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
-    console.log("Pagination values -> page:", pageNum, "limit:", limitNum);
 
+    // If pagination is not requested
     if (!pageNum && !limitNum) {
-      console.log("Fetching all campaigns without pagination...");
-      const campaigns = await Campaign.find(query)
-        .populate("hospital", "name address")
+      const campaignsRaw = await Campaign.find(query)
+        .populate({
+          path: "hospital",
+          select: "name address isDeleted",
+          match: { isDeleted: false },
+        })
         .populate("createdBy", "name email")
         .populate("volunteers", "name email");
 
-      console.log("Total campaigns fetched (no pagination):", campaigns.length);
+      // Filter out campaigns with deleted hospitals
+      const campaigns = campaignsRaw.filter((c) => c.hospital);
 
       return res.status(200).json(
         createResponse({
@@ -417,35 +419,38 @@ export const getAllCampaigns = async (req, res, next) => {
       );
     }
 
-    console.log("Fetching paginated campaigns...");
-
-    const totalCount = await Campaign.countDocuments(query);
-    const totalPages = Math.ceil(totalCount / limitNum);
-    console.log("Total campaigns:", totalCount, "Total pages:", totalPages);
-
-    const campaigns = await Campaign.find(query)
+    // With pagination
+    const campaignsRaw = await Campaign.find(query)
       .skip((pageNum - 1) * limitNum)
       .limit(limitNum)
       .sort(sortOptions)
-      .populate("hospital", "name address")
+      .populate({
+        path: "hospital",
+        select: "name address isDeleted",
+        match: { isDeleted: false },
+      })
       .populate("createdBy", "name email")
       .populate("volunteers", "name email");
 
-    console.log("Campaigns returned for current page:", campaigns.length);
+    const campaigns = campaignsRaw.filter((c) => c.hospital);
 
-    return res.status(200).json({
-      isSuccess: true,
-      statusCode: 200,
-      message: "Campaigns retrieved successfully",
-      data: campaigns.map((campaign) => ({
-        ...campaign.toObject(),
-      })),
-      pagination: {
-        totalCount,
-        currentPage: pageNum,
-        totalPages,
-      },
-    });
+    const totalCount = campaigns.length;
+    const totalPages = Math.ceil(totalCount / limitNum);
+
+    return res.status(200).json(
+      createResponse({
+        isSuccess: true,
+        statusCode: 200,
+        message: "Campaigns retrieved successfully",
+        data: campaigns.map((campaign) => campaign.toObject()),
+        pagination: {
+          totalCount,
+          currentPage: pageNum,
+          totalPages,
+        },
+        error: null,
+      })
+    );
   } catch (error) {
     console.error("Error fetching campaigns:", error);
     return next(error);
@@ -519,18 +524,39 @@ export const volunteerForCampaign = async (req, res, next) => {
       role: "hospital_admin",
       hospital: campaign.hospital,
     });
+
     if (hospitalAdmin) {
+      const adminMessage = `New volunteer request for campaign: ${campaign.title}`;
+
       const notification = new Notification({
         user: hospitalAdmin._id,
-        message: `New volunteer request for campaign: ${campaign.title}`,
+        message: adminMessage,
         type: "campaign",
+        relatedId: campaign._id,
       });
+
       await notification.save();
+      console.log(
+        `📩 Notification saved for hospital admin ${hospitalAdmin._id}`
+      );
 
       const io = req.app.get("socketio");
-      io.to(hospitalAdmin._id.toString()).emit("new-notification", {
-        message: `New volunteer request for campaign: ${campaign.title}`,
-      });
+      const hospitalAdminSocketId = onlineUsers.get(
+        hospitalAdmin._id.toString()
+      );
+
+      if (hospitalAdminSocketId) {
+        io.to(hospitalAdminSocketId).emit("campaign", {
+          id: campaign._id,
+          message: adminMessage,
+          type: "campaign",
+        });
+        console.log(
+          `📡 Real-time notification sent to hospital admin ${hospitalAdmin._id}`
+        );
+      } else {
+        console.log(`💤 Hospital admin ${hospitalAdmin._id} is offline`);
+      }
     }
 
     return res.status(200).json(
@@ -589,20 +615,36 @@ export const handleVolunteerRequest = async (req, res, next) => {
     }
 
     await campaign.save();
-
     // Notify the user about approval/rejection
+    const userMessage = `Your volunteer request for campaign "${campaign.title}" has been ${status}.`;
+
     const notification = new Notification({
       user: volunteerRequest.user,
-      message: `Your volunteer request for campaign "${campaign.title}" has been ${status}.`,
+      message: userMessage,
       type: "campaign",
+      relatedId: campaign._id,
     });
     await notification.save();
+    console.log(`📩 Notification saved for user ${volunteerRequest.user}`);
 
-    // Emit real-time notification
+    // Emit real-time notification if user is online
     const io = req.app.get("socketio");
-    io.to(volunteerRequest.user.toString()).emit("new-notification", {
-      message: `Your volunteer request for campaign "${campaign.title}" has been ${status}.`,
-    });
+    const userSocketId = onlineUsers.get(volunteerRequest.user.toString());
+
+    if (userSocketId) {
+      // Changed: emit to user's room instead of socket ID
+      io.to(volunteerRequest.user.toString()).emit("campaign", {
+        id: campaign._id,
+        message: userMessage,
+        type: "campaign",
+        createdAt: new Date().toISOString(),
+      });
+      console.log(
+        `📡 Real-time notification sent to user ${volunteerRequest.user}`
+      );
+    } else {
+      console.log(`💤 User ${volunteerRequest.user} is offline`);
+    }
 
     return res.status(200).json(
       createResponse({
@@ -620,34 +662,56 @@ export const handleVolunteerRequest = async (req, res, next) => {
 };
 
 export const getAllVolunteerRequests = async (req, res, next) => {
-  console.log("entered the get all volynteer requests");
+  console.log("Entered the get hospital volunteer requests");
 
   try {
     const { page, limit } = req.query;
+    const hospitalId = req.user.hospital;
+    console.log("The req.user is", req.user);
+    console.log("Hospital ID from user:", hospitalId);
 
+    if (!hospitalId) {
+      return res.status(400).json({
+        isSuccess: false,
+        statusCode: 400,
+        message: "Hospital ID not found for this admin",
+      });
+    }
+
+    // Find campaigns associated with this hospital that have volunteer requests
     const result = await paginate(
       Campaign,
-      { volunteerRequests: { $exists: true, $ne: [] } }, // Ensures non-empty volunteer requests
+      {
+        hospitalId: hospitalId,
+        volunteerRequests: { $exists: true, $ne: [] },
+      },
       {
         page,
         limit,
-        sort: { "volunteerRequests.requestedAt": -1 }, // Sort by request date
-        populate: {
-          path: "volunteerRequests.user",
-          model: "User", // Ensure this matches your Mongoose User model
-          select: "name email",
-        },
+        sort: { "volunteerRequests.requestedAt": -1 },
+        populate: [
+          {
+            path: "volunteerRequests.user",
+            model: "User",
+            select: "name email",
+          },
+          {
+            path: "hospitalId",
+            model: "Hospital",
+            select: "name location",
+          },
+        ],
       }
     );
 
     return res.status(200).json({
       isSuccess: true,
       statusCode: 200,
-      message: "Volunteer requests retrieved successfully",
+      message: "Hospital volunteer requests retrieved successfully",
       data: result,
     });
   } catch (error) {
-    console.error("Error fetching volunteer requests:", error);
+    console.error("Error fetching hospital volunteer requests:", error);
     next(error);
   }
 };

@@ -129,7 +129,7 @@ const PatientDetails = () => {
         notification.error({
           message: "Payment Failed",
           description: error.message || "Payment verification failed.",
-          duration: 3,
+          duration: 2.5,
           placement: "topRight",
         });
         navigate("/payment-failed");
@@ -219,10 +219,10 @@ const PatientDetails = () => {
     try {
       // First, create the appointment regardless of payment method
       const result = await dispatch(bookAppointment(appointmentData)).unwrap();
-      console.log("the result in book appointment ", result)
+      console.log("the result in book appointment ", result);
 
       if (formData.paymentMethod === "pay_now") {
-        console.log("enetered the pay_now")
+        console.log("enetered the pay_now");
         // Get the appointmentId from the result
         const appointmentId = result.data.appointmentId;
 
@@ -237,7 +237,8 @@ const PatientDetails = () => {
         ).unwrap();
         console.log("The payment response is", paymentResponse);
 
-        window.location.href = paymentResponse?.data?.payment_url || paymentResponse.payment_url;
+        window.location.href =
+          paymentResponse?.data?.payment_url || paymentResponse.payment_url;
       } else {
         // For pay_on_site, just show success and redirect
         notification.success({
@@ -268,18 +269,18 @@ const PatientDetails = () => {
     <Box bg={useColorModeValue("gray.50", "gray.900")} minH="100vh" py={8}>
       <Container maxW="container.lg">
         {/* Progress Steps */}
-        <Box 
-          mb={8} 
-          bg={bgColor} 
-          p={4} 
-          borderRadius="lg" 
-          boxShadow="sm" 
+        <Box
+          mb={8}
+          bg={bgColor}
+          p={4}
+          borderRadius="lg"
+          boxShadow="sm"
           borderWidth="1px"
           borderColor={borderColor}
         >
-          <Flex 
-            justify="space-between" 
-            align="center" 
+          <Flex
+            justify="space-between"
+            align="center"
             mb={4}
             direction={{ base: "column", md: "row" }}
             gap={4}
@@ -292,20 +293,22 @@ const PatientDetails = () => {
               Step 4 of 5
             </Badge>
           </Flex>
-          
-          <Progress 
-            value={80} 
-            size="sm" 
-            colorScheme="blue" 
-            borderRadius="full" 
+
+          <Progress
+            value={80}
+            size="sm"
+            colorScheme="blue"
+            borderRadius="full"
             mb={4}
           />
-          
+
           <Flex justify="space-between" fontSize="sm" color={mutedColor} px={1}>
             <Text>Select Specialty</Text>
             <Text>Choose Doctor</Text>
             <Text>Select Time</Text>
-            <Text fontWeight="bold" color={primaryColor}>Patient Details</Text>
+            <Text fontWeight="bold" color={primaryColor}>
+              Patient Details
+            </Text>
             <Text>Confirmation</Text>
           </Flex>
         </Box>
@@ -319,7 +322,13 @@ const PatientDetails = () => {
           borderColor={borderColor}
         >
           <Box p={6} bg={headerBg} color="white">
-            <Breadcrumb separator="›" color="white" opacity="0.8" fontSize="sm" mb={3}>
+            <Breadcrumb
+              separator="›"
+              color="white"
+              opacity="0.8"
+              fontSize="sm"
+              mb={3}
+            >
               <BreadcrumbItem>
                 <BreadcrumbLink href="/book-appointment">
                   Specialties
@@ -329,17 +338,22 @@ const PatientDetails = () => {
                 <BreadcrumbLink href="/select-doctor">Doctors</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbItem>
-                <BreadcrumbLink href={`/book-appointment/select-time/${doctorId}`}>Time Slots</BreadcrumbLink>
+                <BreadcrumbLink
+                  href={`/book-appointment/select-time/${doctorId}`}
+                >
+                  Time Slots
+                </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbItem isCurrentPage>
-                <BreadcrumbLink fontWeight="bold">Patient Details</BreadcrumbLink>
+                <BreadcrumbLink fontWeight="bold">
+                  Patient Details
+                </BreadcrumbLink>
               </BreadcrumbItem>
             </Breadcrumb>
-            <Heading size="lg">
-              Complete Your Appointment
-            </Heading>
+            <Heading size="lg">Complete Your Appointment</Heading>
             <Text mt={2} fontSize="md" opacity="0.9">
-              Please review your appointment details and provide additional information
+              Please review your appointment details and provide additional
+              information
             </Text>
           </Box>
 
@@ -442,12 +456,7 @@ const PatientDetails = () => {
                             py={1}
                             borderRadius="full"
                             fontSize="sm"
-                          >
-                            <Flex align="center">
-                              <Icon as={FaStar} mr={2} />
-                              4.8 (120 reviews)
-                            </Flex>
-                          </Badge>
+                          ></Badge>
                         </HStack>
                         <Text fontSize="md" color="gray.600" mt={3}>
                           {doctor?.yearsOfExperience
@@ -455,19 +464,10 @@ const PatientDetails = () => {
                             : "Experienced Healthcare Professional"}
                         </Text>
                         <HStack mt={4} spacing={4}>
-                          <Button 
-                            size="sm" 
-                            leftIcon={<FaPhone />} 
-                            colorScheme="blue" 
-                            variant="outline"
-                            borderRadius="full"
-                          >
-                            Contact
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            leftIcon={<FaEnvelope />} 
-                            colorScheme="blue" 
+                          <Button
+                            size="sm"
+                            leftIcon={<FaEnvelope />}
+                            colorScheme="blue"
                             variant="outline"
                             borderRadius="full"
                           >
@@ -489,7 +489,10 @@ const PatientDetails = () => {
                         borderWidth="1px"
                         borderColor={borderColor}
                         transition="transform 0.3s"
-                        _hover={{ transform: "translateY(-4px)", boxShadow: "md" }}
+                        _hover={{
+                          transform: "translateY(-4px)",
+                          boxShadow: "md",
+                        }}
                       >
                         <Heading size="sm" mb={4} color={secondaryColor}>
                           <Flex align="center">
@@ -541,7 +544,10 @@ const PatientDetails = () => {
                         borderWidth="1px"
                         borderColor={borderColor}
                         transition="transform 0.3s"
-                        _hover={{ transform: "translateY(-4px)", boxShadow: "md" }}
+                        _hover={{
+                          transform: "translateY(-4px)",
+                          boxShadow: "md",
+                        }}
                       >
                         <Heading size="sm" mb={4} color={secondaryColor}>
                           <Flex align="center">
@@ -582,15 +588,16 @@ const PatientDetails = () => {
                                 {doctor?.hospital?.location || "Not specified"}
                               </Text>
                               {doctor?.hospital?.location && (
-                                <Link 
-                                  href="#" 
-                                  color="blue.500" 
+                                <Link
+                                  href="#"
+                                  color="blue.500"
                                   fontSize="sm"
                                   display="inline-flex"
                                   alignItems="center"
                                   mt={1}
                                 >
-                                  View on map <Icon as={FaArrowRight} ml={1} boxSize={3} />
+                                  View on map{" "}
+                                  <Icon as={FaArrowRight} ml={1} boxSize={3} />
                                 </Link>
                               )}
                             </Box>
@@ -621,13 +628,25 @@ const PatientDetails = () => {
                             <Text fontSize="sm" color="gray.600">
                               Consultation Fee
                             </Text>
-                            <Text fontWeight="bold" color="green.700" fontSize="xl">
-                              ${doctor.consultationFee}
+                            <Text
+                              fontWeight="bold"
+                              color="green.700"
+                              fontSize="xl"
+                            >
+                              Rs {doctor.consultationFee}
                             </Text>
                           </Box>
                         </Flex>
-                        <Tooltip label="This is the standard consultation fee for this specialist" hasArrow>
-                          <Icon as={FaInfoCircle} color="gray.400" boxSize={5} cursor="help" />
+                        <Tooltip
+                          label="This is the standard consultation fee for this specialist"
+                          hasArrow
+                        >
+                          <Icon
+                            as={FaInfoCircle}
+                            color="gray.400"
+                            boxSize={5}
+                            cursor="help"
+                          />
                         </Tooltip>
                       </Flex>
                     )}
@@ -662,7 +681,8 @@ const PatientDetails = () => {
                     _hover={{ borderColor: "blue.300" }}
                   />
                   <Text fontSize="xs" color={mutedColor} mt={2}>
-                    This information helps the doctor prepare for your appointment. Please be specific about your symptoms.
+                    This information helps the doctor prepare for your
+                    appointment. Please be specific about your symptoms.
                   </Text>
                 </FormControl>
 
@@ -677,50 +697,76 @@ const PatientDetails = () => {
                     onChange={handleRadioChange}
                     value={formData.paymentMethod}
                   >
-                    <Stack direction={{ base: "column", md: "row" }} spacing={6}>
-                      <Radio 
-                        value="pay_on_site" 
-                        colorScheme="blue" 
-                        size="lg"
-                        p={3}
-                        borderWidth="1px"
-                        borderRadius="md"
-                        borderColor={formData.paymentMethod === "pay_on_site" ? "blue.500" : "gray.200"}
-                        _checked={{ bg: "blue.50" }}
-                      >
-                        <Flex align="center">
-                          <Icon as={FaMoneyBill} mr={3} color="green.500" />
-                          <Box>
-                            <Text fontWeight="medium">Pay at Hospital</Text>
-                            <Text fontSize="xs" color={mutedColor}>Pay in cash or card at the hospital</Text>
-                          </Box>
-                        </Flex>
+                    <Stack
+                      direction={{ base: "column", md: "row" }}
+                      spacing={6}
+                    >
+                      {/* Pay at Hospital Option */}
+                      <Radio value="pay_on_site" colorScheme="blue" size="lg">
+                        <Box
+                          p={3}
+                          borderWidth="1px"
+                          borderRadius="md"
+                          borderColor={
+                            formData.paymentMethod === "pay_on_site"
+                              ? "blue.500"
+                              : "gray.200"
+                          }
+                          bg={
+                            formData.paymentMethod === "pay_on_site"
+                              ? "blue.50"
+                              : "transparent"
+                          }
+                        >
+                          <Flex align="center">
+                            <Icon as={FaMoneyBill} mr={3} color="green.500" />
+                            <Box>
+                              <Text fontWeight="medium">Pay at Hospital</Text>
+                              <Text fontSize="xs" color={mutedColor}>
+                                Pay in cash or card at the hospital
+                              </Text>
+                            </Box>
+                          </Flex>
+                        </Box>
                       </Radio>
-                      <Radio 
-                        value="pay_now" 
-                        colorScheme="blue" 
-                        size="lg"
-                        p={3}
-                        borderWidth="1px"
-                        borderRadius="md"
-                        borderColor={formData.paymentMethod === "pay_now" ? "blue.500" : "gray.200"}
-                        _checked={{ bg: "blue.50" }}
-                      >
-                        <Flex align="center">
-                          <Icon as={FaCreditCard} mr={3} color="blue.500" />
-                          <Box>
-                            <Text fontWeight="medium">Pay Now</Text>
-                            <Text fontSize="xs" color={mutedColor}>Secure online payment</Text>
-                          </Box>
-                        </Flex>
+
+                      {/* Pay Now Option */}
+                      <Radio value="pay_now" colorScheme="blue" size="lg">
+                        <Box
+                          p={3}
+                          borderWidth="1px"
+                          borderRadius="md"
+                          borderColor={
+                            formData.paymentMethod === "pay_now"
+                              ? "blue.500"
+                              : "gray.200"
+                          }
+                          bg={
+                            formData.paymentMethod === "pay_now"
+                              ? "blue.50"
+                              : "transparent"
+                          }
+                        >
+                          <Flex align="center">
+                            <Icon as={FaCreditCard} mr={3} color="blue.500" />
+                            <Box>
+                              <Text fontWeight="medium">Pay Now</Text>
+                              <Text fontSize="xs" color={mutedColor}>
+                                Secure online payment
+                              </Text>
+                            </Box>
+                          </Flex>
+                        </Box>
                       </Radio>
                     </Stack>
                   </RadioGroup>
                 </FormControl>
 
                 {formData.paymentMethod && (
-                  <Alert 
-                    status={formData.paymentMethod === "pay_now" ? "info" : "success"} 
+                  <Alert
+                    status={
+                      formData.paymentMethod === "pay_now" ? "info" : "success"
+                    }
                     variant="subtle"
                     borderRadius="md"
                     mb={6}
@@ -728,23 +774,23 @@ const PatientDetails = () => {
                     <AlertIcon />
                     <Box>
                       <AlertTitle>
-                        {formData.paymentMethod === "pay_now" 
-                          ? "Online Payment" 
+                        {formData.paymentMethod === "pay_now"
+                          ? "Online Payment"
                           : "Pay at Hospital"}
                       </AlertTitle>
                       <AlertDescription>
-                        {formData.paymentMethod === "pay_now" 
-                          ? "You'll be redirected to our secure payment gateway to complete your payment." 
+                        {formData.paymentMethod === "pay_now"
+                          ? "You'll be redirected to our secure payment gateway to complete your payment."
                           : "Please arrive 15 minutes before your appointment time to complete the payment."}
                       </AlertDescription>
                     </Box>
                   </Alert>
                 )}
 
-                <Flex 
-                  bg="blue.50" 
-                  p={4} 
-                  borderRadius="md" 
+                <Flex
+                  bg="blue.50"
+                  p={4}
+                  borderRadius="md"
                   borderWidth="1px"
                   borderColor="blue.200"
                   align="center"
@@ -752,17 +798,20 @@ const PatientDetails = () => {
                 >
                   <Icon as={FaShieldAlt} color="blue.500" boxSize={6} mr={4} />
                   <Box>
-                    <Text fontWeight="medium" color="blue.700">Your information is secure</Text>
+                    <Text fontWeight="medium" color="blue.700">
+                      Your information is secure
+                    </Text>
                     <Text fontSize="sm" color={mutedColor}>
-                      All personal and medical information is encrypted and protected
+                      All personal and medical information is encrypted and
+                      protected
                     </Text>
                   </Box>
                 </Flex>
               </CardBody>
             </Card>
 
-            <Flex 
-              direction={{ base: "column", md: "row" }} 
+            <Flex
+              direction={{ base: "column", md: "row" }}
               justify="space-between"
               gap={4}
             >
@@ -789,7 +838,11 @@ const PatientDetails = () => {
                 _hover={{ transform: "translateY(-2px)", boxShadow: "lg" }}
                 transition="all 0.2s"
                 isDisabled={!formData.paymentMethod || !formData.reason.trim()}
-                loadingText={formData.paymentMethod === "pay_now" ? "Processing..." : "Confirming..."}
+                loadingText={
+                  formData.paymentMethod === "pay_now"
+                    ? "Processing..."
+                    : "Confirming..."
+                }
                 width={{ base: "full", md: "auto" }}
               >
                 {formData.paymentMethod === "pay_now"

@@ -334,7 +334,7 @@ const TestBookingList = () => {
           ) : error ? (
             <Alert status="error" borderRadius="md">
               <AlertIcon />
-              {error}
+              {error?.message || error?.error || "Server down right now,  please! try again"}
             </Alert>
           ) : filteredBookings.length === 0 ? (
             <Alert status="info" borderRadius="md" variant="subtle">

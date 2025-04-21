@@ -199,6 +199,7 @@ const verifyUserAuthService = async () => {
       `${BASE_BACKEND_URL}/api/auth/verifyUserAuth`,
       { withCredentials: true }
     );
+    console.log("The respons eis", response)
 
     // Handle successful response
     if (response?.data?.isSuccess) {

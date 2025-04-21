@@ -22,7 +22,7 @@ const bookAppointmentService = async (appointmentData) => {
     return createApiResponse({
       isSuccess: true,
       message: response?.data?.message || "Appointment booked successfully",
-      data: response?.data?.data, 
+      data: response?.data?.data,
     });
   } catch (error) {
     console.error("Error in bookAppointmentService:", error?.response);
@@ -37,10 +37,13 @@ const bookAppointmentService = async (appointmentData) => {
   }
 };
 
-const getUserAppointmentsService = async (userId) => {
+const getUserAppointmentsService = async (userId, page = 1, limit = 10) => {
   try {
     const response = await axiosInstance.get(
-      `/api/appointments/user-appointments/${userId}`
+      `/api/appointments/user-appointments/${userId}`,
+      {
+        params: { page, limit }, // pass pagination as query params
+      }
     );
 
     console.log("Fetching appointments for user:", userId);
@@ -58,7 +61,7 @@ const getUserAppointmentsService = async (userId) => {
       isSuccess: true,
       message:
         response?.data?.message || "User appointments fetched successfully",
-      data: response?.data?.data, // Extract the appointments data
+      data: response?.data?.data, // Includes appointments and pagination
     });
   } catch (error) {
     console.error("Error in getUserAppointmentsService:", error?.response);
@@ -272,7 +275,6 @@ const deleteAppointmentsService = async (appointmentIds) => {
   }
 };
 
-
 const appointmentService = {
   bookAppointmentService,
   getUserAppointmentsService,
@@ -280,7 +282,7 @@ const appointmentService = {
   updateAppointmentStatusService,
   getAvailableTimeSlotsService,
   getAppointmentById,
-  deleteAppointmentsService
+  deleteAppointmentsService,
 };
 
 export default appointmentService;

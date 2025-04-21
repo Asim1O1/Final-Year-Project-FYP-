@@ -13,6 +13,7 @@ import createResponse from "../../utils/responseBuilder.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 import crypto from "crypto";
 import doctorModel from "../../models/doctor.model.js";
+import hospitalModel from "../../models/hospital.model.js";
 import { emailTemplates } from "../../utils/emailTemplates.js";
 import { logActivity } from "../activity/activity.controller.js";
 
@@ -175,6 +176,26 @@ export const handleUserLogin = async (req, res, next) => {
           error: null,
         })
       );
+    }
+
+    // ❗️ Check if user is hospital admin & their hospital is deleted
+    if (user && user.role === "hospital_admin") {
+      console.log("Checking if hospital admin's hospital is deleted...");
+      const hospital = await hospitalModel.findOne({
+        hospital_admin: user._id,
+        isDeleted: true,
+      });
+
+      if (hospital) {
+        return res.status(403).json(
+          createResponse({
+            isSuccess: false,
+            statusCode: 403,
+            message: "Your hospital has been deleted. Access denied.",
+            error: null,
+          })
+        );
+      }
     }
 
     const isPasswordValid = await bcryptjs.compare(password, account.password);
@@ -373,25 +394,31 @@ export const handleForgotPassword = async (req, res, next) => {
 
     // Generate OTP and expiration time
     const { resetToken, hashedToken, expiresAt } = generatePasswordResetToken();
+    console.log("The reset token is", resetToken);
 
     // Update user with OTP and expiration
     user.resetPasswordOTP = hashedToken;
     user.resetPasswordOTPExpiry = expiresAt;
     await user.save();
 
-    // Construct the email
-    const subject = "🔒 Password Reset Request";
-    const html = `
-      <p>Dear ${user.name},</p>
-      <p>We received a request to reset your password. Please use the OTP below to proceed:</p>
-      <h2 style="color: #2E86C1;">${resetToken}</h2>
-      <p><strong>Note:</strong> This OTP is valid for only 10 minutes. Do not share it with anyone.</p>
-      <p>If you did not request this, please ignore this email or contact our support team immediately.</p>
-      <p>Best regards,<br><strong>Your Company Name</strong></p>
-    `;
+    const template = {
+      body: `
+          <p>Dear {{fullName}},</p>
+          <p>We received a request to reset your password. Please use the OTP below to proceed:</p>
+          <h2 style="color: #2E86C1;">{{otp}}</h2>
+          <p><strong>Note:</strong> This OTP is valid for only 10 minutes. Do not share it with anyone.</p>
+          <p>If you did not request this, please ignore this email or contact our support team immediately.</p>
+          <p>Best regards,<br><strong>MedConnect</strong></p>
+        `,
+    };
 
-    // Send the email
-    await sendEmail(user.email, subject, html);
+    const data = {
+      name: user.name,
+      otp: resetToken,
+    };
+    const subject = "🔒 Password Reset Request";
+
+    await sendEmail(user.email, subject, template, data);
 
     return res.status(200).json(
       createResponse({

@@ -197,7 +197,10 @@ export const completeKhaltiPayment = async (req, res, next) => {
 
     const paymentInfo = paymentVerifyResponse.data;
     if (!paymentInfo || paymentInfo.status !== "Completed") {
-      console.log("paymentModel verification failed. Status:", paymentInfo?.status);
+      console.log(
+        "paymentModel verification failed. Status:",
+        paymentInfo?.status
+      );
 
       // Update payment status to 'failed'
       await paymentModel.findByIdAndUpdate(purchase_order_id, {
@@ -257,8 +260,7 @@ export const completeKhaltiPayment = async (req, res, next) => {
         console.log("Medical test booking marked as paid and confirmed.");
       }
 
-      // Send notification/email about successful payment
-      // You can add this functionality here if needed
+      
     }
 
     // Create query parameters with success details
@@ -305,5 +307,49 @@ export const completeKhaltiPayment = async (req, res, next) => {
     return res.redirect(
       `${appConfig.frontend_url}/payment-failed?${errorParams}`
     );
+  }
+}
+
+export const getUserPayments = async (req, res, next) => {
+  try {
+    const userId = req.user._id; // from auth middleware
+    const { page = 1, limit = 10, bookingType, paymentStatus } = req.query;
+
+    const query = { userId };
+
+    if (bookingType) {
+      query.bookingType = bookingType; // optional filter: appointment or medical_test
+    }
+
+    if (paymentStatus) {
+      query.paymentStatus = paymentStatus; // optional filter: pending, completed, failed
+    }
+
+    const total = await paymentModel.countDocuments(query);
+
+    const payments = await paymentModel
+      .find(query)
+      .sort({ createdAt: -1 }) // newest first
+      .skip((Number(page) - 1) * Number(limit))
+      .limit(Number(limit))
+      .populate("userId", "fullName email") // optional, shows user info
+      .lean();
+
+    res.status(200).json(
+      createResponse({
+        isSuccess: true,
+        statusCode: 200,
+        message: "User payment transactions fetched successfully",
+        data: {
+          total,
+          page: Number(page),
+          limit: Number(limit),
+          payments,
+        },
+      })
+    );
+  } catch (error) {
+    console.error("Error fetching user payments:", error.message);
+    next(error);
   }
 };

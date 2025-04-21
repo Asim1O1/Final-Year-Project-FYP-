@@ -39,16 +39,18 @@ export const fetchAvailableTimeSlots = createAsyncThunk(
   }
 );
 
-// **Fetch User Appointments**
+// **Fetch User Appointments with Pagination**
 export const fetchUserAppointments = createAsyncThunk(
   "appointment/fetchUserAppointments",
-  async (userId, { rejectWithValue }) => {
+  async ({ userId, page = 1, limit = 10 }, { rejectWithValue }) => {
     try {
       const response = await appointmentService.getUserAppointmentsService(
-        userId
+        userId,
+        page,
+        limit
       );
       if (!response.isSuccess) throw response;
-      return response.data;
+      return response.data; // includes appointments and pagination info
     } catch (error) {
       return rejectWithValue(
         createApiResponse(error, "Failed to fetch user appointments")

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { io } from "socket.io-client";
+
 import {
   CameraIcon,
   Send,
@@ -33,35 +33,30 @@ import {
   setImagePreview,
   setCurrentChat,
   setNewMessage,
+  addNewMessageToState,
+  updateContactWithLatestMessage,
 } from "../../../features/messages/messageSlice";
-
-// Initialize socket connection
-const socket = io("http://localhost:4001");
+import { useSocket } from "../../../hooks/useSocketNotification";
 
 const DoctorChatPage = () => {
   const dispatch = useDispatch();
-  const contacts = useSelector((state) => state.messageSlice.contacts);
-  const messages = useSelector((state) => state?.messageSlice?.messages);
-  const currentChat = useSelector((state) => state.messageSlice.currentChat);
-  const newMessage = useSelector((state) => state.messageSlice.newMessage);
-  const image = useSelector((state) => state.messageSlice.image);
-  const imagePreview = useSelector((state) => state.messageSlice.imagePreview);
-  const isLoading = useSelector((state) => state.messageSlice.isLoading);
+  const { contacts, messages, currentChat, newMessage, image, isLoading } =
+    useSelector((state) => state.messageSlice);
+    console.log("The current chat is", currentChat)
+  const doctorId = useSelector((state) => state?.auth?.user?.data?._id);
+  const { getSocket } = useSocket();
+  const socket = getSocket();
+
+  // Local state
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const messagesEndRef = useRef();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
 
-  const doctor = useSelector((state) => state?.doctorSlice);
-  const doctorId = doctor?._id;
-
   const [searchTerm, setSearchTerm] = useState("");
   const scrollRef = useRef();
-
-  const bgColor = useColorModeValue("white", "gray.800");
-  const hoverBgColor = useColorModeValue("gray.50", "gray.700");
-  const selectedBgColor = useColorModeValue("blue.50", "blue.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-  const textColor = useColorModeValue("gray.800", "white");
-  const subTextColor = useColorModeValue("gray.500", "gray.400");
 
   // Filter contacts based on search term
   const filteredContacts = contacts.filter((contact) =>
@@ -82,39 +77,58 @@ const DoctorChatPage = () => {
     getContacts();
   }, [dispatch, page, search]);
 
-  // Socket.io setup
+  // Socket listeners
   useEffect(() => {
-    if (!doctorId) return;
+    console.log("scoekt   doctor id", socket, doctorId)
+    if (!socket || !doctorId) return;
 
-    socket.emit("addUser", doctorId);
+    if (!socket.connected) {
+      console.log("Socket not connected, trying to connect");
+      socket.connect();
+    }
 
-    socket.on("newMessage", (message) => {
-      console.log("New message received:", message);
-      if (
-        currentChat?._id === message.receiverId ||
-        currentChat?._id === message.senderId
-      ) {
-        dispatch(handleGetMessages(currentChat._id));
-      }
-    });
+    const handleIncomingMessage = (message) => {
+      // Get latest messages from state rather than using stale closure
+      dispatch((dispatch, getState) => {
+        const currentState = getState();
+        const currentMessages = currentState?.messageSlice?.messages || [];
+        const currentChat = currentState?.messageSlice?.currentChat;
+        console.log("The curretnt chat is", currentChat);
 
-    socket.on("messages-read", ({ senderId, receiverId }) => {
-      if (doctorId === senderId) {
-        dispatch(handleMarkMessagesAsRead({ senderId, receiverId }));
-      }
-    });
+        // Check if we already have this message in state
+        const isDuplicate = currentMessages.some(
+          (msg) => msg._id === message._id
+        );
+
+        if (isDuplicate) {
+          console.log("Duplicate message detected, ignoring");
+          return;
+        }
+
+        dispatch(addNewMessageToState(message));
+
+        dispatch(updateContactWithLatestMessage({ message, doctorId }));
+      });
+    };
+
+    const handleTyping = (senderId) => {
+      if (senderId === currentChat?._id) setIsTyping(true);
+    };
+
+    socket.on("message", handleIncomingMessage);
+    socket.on("typing", handleTyping);
+    socket.on("stop-typing", () => setIsTyping(false));
 
     return () => {
-      socket.off("newMessage");
-      socket.off("messages-read");
+      socket.off("message", handleIncomingMessage);
+      socket.off("typing", handleTyping);
+      socket.off("stop-typing");
     };
-  }, [currentChat, dispatch, doctorId]);
+  }, [currentChat?._id, doctorId, socket, dispatch]);
 
-  // Fetch messages when changing chat
+  // Fetch messages when chat changes
   useEffect(() => {
-    console.log("Current chat is", currentChat);
-    if (!currentChat) return;
-    dispatch(handleGetMessages(currentChat._id));
+    if (currentChat) dispatch(handleGetMessages(currentChat._id));
   }, [currentChat, dispatch]);
 
   // Handle sending messages
@@ -123,15 +137,25 @@ const DoctorChatPage = () => {
     if ((!newMessage.trim() && !image) || !currentChat) return;
 
     try {
+      setIsSending(true);
+      const pendingMessage = newMessage;
+      const pendingImage = image;
+      dispatch(setNewMessage(""));
+      setImagePreview(null);
+      dispatch(setImage(null));
       await dispatch(
         handleSendMessage({
           receiverId: currentChat._id,
-          text: newMessage,
-          image: image,
+          text: pendingMessage,
+          image: pendingImage,
         })
       ).unwrap();
+      dispatch(setNewMessage(""));
+      setImagePreview(null);
     } catch (err) {
-      console.error("Error sending message:", err);
+      console.error("Failed to send:", err);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -158,17 +182,25 @@ const DoctorChatPage = () => {
     return patient?.fullName || "Unknown Patient";
   };
 
-  // Auto scroll to the latest message
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = messagesEndRef.current?.parentElement;
+    if (
+      container &&
+      container.scrollTop + container.clientHeight >=
+        container.scrollHeight - 100
+    ) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   return (
-<Flex 
-      h="calc(100vh - 120px)" 
-      bg="gray.50" 
+    <Flex
+      h="calc(100vh - 120px)"
+      bg="gray.50"
       className="shadow-sm border-gray-100 border-2"
     >
+      {isTyping && <div>Patient is typing...</div>}
+      <div ref={messagesEndRef} />
       {/* Patients sidebar */}
       <Box
         w="320px"
@@ -178,9 +210,9 @@ const DoctorChatPage = () => {
         className="bg-white shadow-md rounded-lg"
       >
         <Box p={5} borderBottom="1px" borderColor="gray.200">
-          <Heading 
-            size="lg" 
-            color="gray.700" 
+          <Heading
+            size="lg"
+            color="gray.700"
             className="font-semibold text-gray-800 mb-2"
           >
             Patient Chats
@@ -211,9 +243,11 @@ const DoctorChatPage = () => {
                 alignItems="center"
                 className={`
                   transition duration-200 ease-in-out 
-                  ${currentChat?._id === contact._id 
-                    ? 'bg-blue-50 hover:bg-blue-100' 
-                    : 'hover:bg-gray-100'}
+                  ${
+                    currentChat?._id === contact._id
+                      ? "bg-blue-50 hover:bg-blue-100"
+                      : "hover:bg-gray-100"
+                  }
                 `}
                 onClick={() => dispatch(setCurrentChat(contact))}
               >
@@ -225,15 +259,15 @@ const DoctorChatPage = () => {
                   className="ring-2 ring-blue-300"
                 />
                 <Box ml={3}>
-                  <Text 
-                    fontWeight="semibold" 
+                  <Text
+                    fontWeight="semibold"
                     color="gray.800"
                     className="text-gray-900 font-medium"
                   >
                     {getDisplayName(contact)}
                   </Text>
-                  <Text 
-                    fontSize="sm" 
+                  <Text
+                    fontSize="sm"
                     color="gray.500"
                     className="text-gray-500"
                   >
@@ -248,11 +282,7 @@ const DoctorChatPage = () => {
       </Box>
 
       {/* Chat area */}
-      <Flex 
-        flex="1" 
-        direction="column" 
-        className="bg-gray-50 rounded-r-lg"
-      >
+      <Flex flex="1" direction="column" className="bg-gray-50 rounded-r-lg">
         {currentChat ? (
           <>
             {/* Chat header */}
@@ -273,15 +303,15 @@ const DoctorChatPage = () => {
                   className="ring-2 ring-blue-300"
                 />
                 <Box ml={3}>
-                  <Text 
-                    fontWeight="semibold" 
+                  <Text
+                    fontWeight="semibold"
                     color="gray.800"
                     className="text-gray-900 font-medium"
                   >
                     {getDisplayName(currentChat)}
                   </Text>
-                  <Text 
-                    fontSize="sm" 
+                  <Text
+                    fontSize="sm"
                     color="gray.500"
                     className="text-gray-500"
                   >
@@ -299,27 +329,40 @@ const DoctorChatPage = () => {
             </Flex>
 
             {/* Messages */}
-            <Box 
-              flex="1" 
-              p={4} 
-              overflow="auto" 
+            <Box
+              flex="1"
+              p={4}
+              overflow="auto"
               className="bg-gray-50 scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-gray-100"
             >
               {isLoading ? (
                 <Flex justify="center" align="center" h="full">
                   <Spinner color="blue.500" />
-                  <Text ml={2} color="gray.600">Loading messages...</Text>
+                  <Text ml={2} color="gray.600">
+                    Loading messages...
+                  </Text>
                 </Flex>
               ) : (
                 <Flex direction="column" gap={4}>
-                  {messages.map((message) => {
-                    const isMine = message.senderId?._id === doctorId;
+                  {messages.map((message, index) => {
+                    const isMine =
+                      (message.senderId?._id === doctorId ||
+                        message.senderId === doctorId) &&
+                      !(
+                        message.receiverId?._id === doctorId ||
+                        message.receiverId === doctorId
+                      );
+
+                    console.log("the message is", message);
+                    console.log("The meesage is mine", isMine);
 
                     return (
                       <Flex
-                        key={message._id}
+                        key={`${message._id}-${index}`}
                         justify={isMine ? "flex-end" : "flex-start"}
-                        ref={scrollRef}
+                        ref={
+                          index === messages.length - 1 ? scrollRef : undefined
+                        }
                       >
                         <Box
                           maxW="xs"
@@ -327,19 +370,23 @@ const DoctorChatPage = () => {
                           px={4}
                           py={2}
                           className={`
-                            ${isMine 
-                              ? 'bg-blue-500 text-white' 
-                              : 'bg-white text-gray-800'}
+                            ${
+                              isMine
+                                ? "bg-blue-500 text-white"
+                                : "bg-white text-gray-800"
+                            }
                             shadow-md
                           `}
                         >
                           {message?.text && (
-                            <Text mb={1} className="text-sm">{message?.text}</Text>
+                            <Text mb={1} className="text-sm">
+                              {message?.text}
+                            </Text>
                           )}
                           {message.image && (
-                            <Box 
-                              mt={2} 
-                              borderRadius="md" 
+                            <Box
+                              mt={2}
+                              borderRadius="md"
                               overflow="hidden"
                               className="hover:scale-105 transition duration-300"
                             >
@@ -355,9 +402,7 @@ const DoctorChatPage = () => {
                             fontSize="xs"
                             mt={1}
                             className={`
-                              ${isMine 
-                                ? 'text-blue-100' 
-                                : 'text-gray-500'}
+                              ${isMine ? "text-blue-100" : "text-gray-500"}
                             `}
                           >
                             {new Date(message.createdAt).toLocaleTimeString(
@@ -473,18 +518,14 @@ const DoctorChatPage = () => {
             bg="gray.50"
             className="rounded-r-lg"
           >
-            <Heading 
-              size="lg" 
+            <Heading
+              size="lg"
               color="gray.700"
               className="text-gray-800 font-bold mb-3"
             >
               Welcome to Patient Chat
             </Heading>
-            <Text 
-              mt={2} 
-              color="gray.500"
-              className="text-gray-600"
-            >
+            <Text mt={2} color="gray.500" className="text-gray-600">
               Select a patient to start chatting
             </Text>
           </Flex>

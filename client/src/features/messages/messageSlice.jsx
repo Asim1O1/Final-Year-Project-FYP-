@@ -17,7 +17,7 @@ export const handleGetMessages = createAsyncThunk(
         });
       }
       console.log("The response while getting messages is", response);
-      return response?.data;
+      return response?.data?.messages;
     } catch (error) {
       return rejectWithValue(
         createApiResponse({
@@ -119,6 +119,8 @@ const messageSlice = createSlice({
     isLoading: false,
     error: null,
     successMessage: null,
+    onlineUsers: [],
+    unreadCount: [],
   },
 
   reducers: {
@@ -133,6 +135,10 @@ const messageSlice = createSlice({
       state.successMessage = null;
     },
     setCurrentChat: (state, action) => {
+      console.log(
+        "The action payload while setting current chat is",
+        action?.payload
+      );
       state.currentChat = action.payload;
     },
     setNewMessage: (state, action) => {
@@ -143,6 +149,83 @@ const messageSlice = createSlice({
     },
     setImagePreview: (state, action) => {
       state.imagePreview = action.payload;
+    },
+
+    addNewMessageToState: (state, action) => {
+      console.log("ADD NEW MESSAGE STATE :::::::", action?.payload);
+      if (!state.messages.some((msg) => msg._id === action.payload._id)) {
+        if (!Array.isArray(state.messages)) {
+          state.messages = [];
+        }
+
+        state.messages.push(action.payload);
+      }
+    },
+
+    updateContactWithLatestMessage: (state, action) => {
+      const message = action.payload;
+      // Update the contact with the latest message
+      state.contacts = state.contacts.map((contact) => {
+        if (
+          contact._id === message.senderId ||
+          contact._id === message.receiverId
+        ) {
+          return {
+            ...contact,
+            lastMessage: message.text || "Image sent",
+            lastMessageTime: message.createdAt,
+          };
+        }
+        return contact;
+      });
+    },
+    updateOnlineUsers: (state, action) => {
+      state.onlineUsers = action.payload;
+    },
+    updateUnreadCount: (state, action) => {
+      console.log("The update unread count", action.payload);
+    
+      const { chatId, count } = action.payload;
+    
+      // Ensure unreadCount is an array before using array methods
+      if (!Array.isArray(state.unreadCount)) {
+        state.unreadCount = [];
+      }
+    
+      const existingCount = state.unreadCount.find((entry) => entry.chatId === chatId);
+    
+      if (existingCount) {
+        // If the chatId already exists, update the count by adding the new count
+        existingCount.count += count;
+      } else {
+        // If the chatId doesn't exist, add it to the unreadCount array with the initial count
+        state.unreadCount.push({ chatId, count });
+      }
+    
+      console.log("Updated unread counts: ", state.unreadCount);
+    },
+    clearUnreadCountForChat: (state, action) => {
+      const chatId = action.payload;
+    
+      if (Array.isArray(state.unreadCount)) {
+        state.unreadCount = state.unreadCount.filter((item) => item.chatId !== chatId);
+      }
+    }
+    
+    ,
+    // In your messageSlice.js
+    addOptimisticMessage: (state, action) => {
+      state.messages = [...state.messages, action.payload];
+    },
+    replaceOptimisticMessage: (state, action) => {
+      state.messages = state.messages.map((msg) =>
+        msg._id === action.payload.tempId ? action.payload.realMessage : msg
+      );
+    },
+    removeOptimisticMessage: (state, action) => {
+      state.messages = state.messages.filter(
+        (msg) => msg._id !== action.payload
+      );
     },
   },
 
@@ -174,13 +257,6 @@ const messageSlice = createSlice({
       })
       .addCase(handleGetMessages.rejected, handleRejected)
 
-      // Send Message
-      .addCase(handleSendMessage.fulfilled, (state, action) => {
-        state.messages.push(action.payload); // Add the new message to the state
-        state.newMessage = "";
-        state.image = null;
-        state.imagePreview = null;
-      })
       .addCase(handleSendMessage.rejected, (state, action) => {
         state.error = action.payload;
       })
@@ -214,5 +290,9 @@ export const {
   setNewMessage,
   setImage,
   setImagePreview,
+  addNewMessageToState,
+  updateContactWithLatestMessage,
+  updateUnreadCount,
+  clearUnreadCountForChat
 } = messageSlice.actions;
 export default messageSlice.reducer;

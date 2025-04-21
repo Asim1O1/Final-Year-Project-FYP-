@@ -59,7 +59,6 @@ const completePaymentService = async ({
       "/api/payments/complete-khalti-payment",
       {
         params: {
-          
           pidx,
           transaction_id,
           amount,
@@ -92,9 +91,40 @@ const completePaymentService = async ({
   }
 };
 
+const getUserPaymentsService = async (params = {}) => {
+  try {
+    const response = await axiosInstance.get("/api/payments/user-payments", {
+      params,
+    });
+
+    console.log("Response from fetching user payments:", response);
+
+    if (!response?.data?.isSuccess) {
+      throw createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "Failed to fetch user payments",
+        error: response?.data?.error || null,
+      });
+    }
+
+    return createApiResponse({
+      isSuccess: true,
+      data: response.data.data,
+    });
+  } catch (error) {
+    console.error("Error fetching user payments:", error);
+    return createApiResponse({
+      isSuccess: false,
+      message: "Failed to fetch user payments",
+      error: error.message,
+    });
+  }
+};
+
 const paymentService = {
   initiatePaymentService,
   completePaymentService,
+  getUserPaymentsService,
 };
 
 export default paymentService;

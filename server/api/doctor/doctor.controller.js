@@ -7,7 +7,10 @@ import fs from "fs";
 import bcryptjs from "bcryptjs";
 import Notification from "../../models/notification.model.js";
 import userModel from "../../models/user.model.js";
+import Appointment from "../../models/appointment.model.js";
+import Message from "../../models/message.model.js";
 import { logActivity } from "../activity/activity.controller.js";
+import moment from "moment";
 
 export const createDoctor = async (req, res, next) => {
   try {
@@ -163,8 +166,9 @@ export const createDoctor = async (req, res, next) => {
     // ✅ Emit real-time notification via Socket.io
     const io = req.app.get("socketio");
     systemAdmins.forEach((admin) => {
-      io.to(admin._id.toString()).emit("new-notification", {
+      io.to(admin._id.toString()).emit("doctor", {
         message: `New doctor ${newDoctor.fullName} added.`,
+        createdAt: new Date().toISOString(),
       });
     });
 
@@ -431,19 +435,17 @@ export const getAllDoctors = async (req, res, next) => {
       limit = 10,
       sort = "createdAt",
       hospital,
-      search, // optional search keyword
+      search,
     } = req.query;
 
     const query = {};
 
-    // Filter by hospital if provided
     if (hospital) {
       query.hospital = hospital;
     }
 
-    // Add search conditions for name, specialization, or email
     if (search) {
-      const regex = new RegExp(search, "i"); // case-insensitive
+      const regex = new RegExp(search, "i");
       query.$or = [
         { fullName: { $regex: regex } },
         { specialization: { $regex: regex } },
@@ -451,7 +453,6 @@ export const getAllDoctors = async (req, res, next) => {
       ];
     }
 
-    // Sort options
     const sortOrder = sort.startsWith("-") ? -1 : 1;
     const sortField = sort.replace("-", "");
     const sortOptions = { [sortField]: sortOrder };
@@ -464,7 +465,13 @@ export const getAllDoctors = async (req, res, next) => {
       const doctors = await doctorModel
         .find(query)
         .sort(sortOptions)
-        .populate("hospital", "name");
+        .populate({
+          path: "hospital",
+          select: "name",
+          match: { isDeleted: false },
+        });
+
+      const filteredDoctors = doctors.filter((doctor) => doctor.hospital); // remove if hospital is null
 
       return res.status(200).json(
         createResponse({
@@ -472,7 +479,7 @@ export const getAllDoctors = async (req, res, next) => {
           statusCode: 200,
           message: "All doctors fetched successfully",
           data: {
-            doctors,
+            doctors: filteredDoctors,
             pagination: null,
           },
           error: null,
@@ -485,21 +492,21 @@ export const getAllDoctors = async (req, res, next) => {
       page: pageNum,
       limit: limitNum,
       sort: sortOptions,
+      populate: {
+        path: "hospital",
+        select: "name",
+        match: { isDeleted: false },
+      },
     });
 
-    // Get paginated doctors with populated hospital names
-    const doctors = await doctorModel
-      .find(query)
-      .skip((pageNum - 1) * limitNum)
-      .limit(limitNum)
-      .sort(sortOptions)
-      .populate("hospital", "name");
+    // Filter out doctors whose populated hospital is null (deleted)
+    result.data = result.data.filter((doc) => doc.hospital);
 
     return res.status(200).json({
       isSuccess: true,
       statusCode: 200,
       message: "Doctors retrieved successfully",
-      data: doctors.map((doctor) => doctor.toObject()),
+      data: result.data.map((doctor) => doctor.toObject()),
       pagination: {
         totalCount: result.totalCount,
         currentPage: result.currentPage,
@@ -575,8 +582,9 @@ export const deleteDoctor = async (req, res, next) => {
     // ✅ Emit real-time notification via Socket.io
     const io = req.app.get("socketio");
     systemAdmins.forEach((admin) => {
-      io.to(admin._id.toString()).emit("new-notification", {
+      io.to(admin._id.toString()).emit("doctor", {
         message: `Doctor ${doctor.fullName} has been deleted.`,
+        createdAt: new Date().toISOString(),
       });
     });
 
@@ -598,26 +606,102 @@ export const deleteDoctor = async (req, res, next) => {
 export const getDoctorsBySpecialization = async (req, res, next) => {
   try {
     const { specialization } = req.params;
-    const { page = 1, limit = 10 } = req.query;
-    console.log("The requested specialization:", specialization);
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      experience,
+      minFee = 0,
+      maxFee = 500,
+      sort = "recommended",
+    } = req.query;
+
+    console.log("Fetching doctors for specialization:", specialization);
+
+    // Build the filter object
+    const filter = {
+      specialization,
+      isActive: true,
+      isVerified: true,
+    };
+
+    // Add search filter (case-insensitive)
+    if (search) {
+      filter.$or = [
+        { fullName: { $regex: search, $options: "i" } },
+        { hospital: { $regex: search, $options: "i" } }, // Assuming you want to search hospital names too
+      ];
+    }
+
+    // Add experience filter (using yearsOfExperience from schema)
+    if (experience) {
+      const experienceRanges = experience.split(",");
+      const experienceConditions = [];
+
+      experienceRanges.forEach((range) => {
+        switch (range) {
+          case "novice":
+            experienceConditions.push({ yearsOfExperience: { $lte: 5 } });
+            break;
+          case "intermediate":
+            experienceConditions.push({
+              yearsOfExperience: { $gt: 5, $lte: 10 },
+            });
+            break;
+          case "expert":
+            experienceConditions.push({ yearsOfExperience: { $gt: 10 } });
+            break;
+        }
+      });
+
+      if (experienceConditions.length > 0) {
+        filter.$and = experienceConditions;
+      }
+    }
+
+    // Add fee range filter (convert consultationFee to number for comparison)
+    filter.$expr = {
+      $and: [
+        { $gte: [{ $toDouble: "$consultationFee" }, Number(minFee)] },
+        { $lte: [{ $toDouble: "$consultationFee" }, Number(maxFee)] },
+      ],
+    };
+
+    // Build sort options
+    let sortOptions = {};
+    switch (sort) {
+      case "fee-low-high":
+        sortOptions = { consultationFee: 1 }; // Ascending
+        break;
+      case "fee-high-low":
+        sortOptions = { consultationFee: -1 }; // Descending
+        break;
+      case "experience":
+        sortOptions = { yearsOfExperience: -1 }; // Descending
+        break;
+
+      default: // 'recommended'
+        sortOptions = { createdAt: -1 }; // Newest first
+    }
 
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
-    const sortOptions = { createdAt: -1 };
 
-    // Use the paginate function consistently
-    const result = await paginate(
-      doctorModel,
-      { specialization }, // Filter by specialization
-      {
-        page: pageNum,
-        limit: limitNum,
-        sort: sortOptions,
-        populate: { path: "hospital", select: "name" }, // Fetch only hospital name
-      }
-    );
+    // Use the paginate function with all filters and sorting
+    const result = await paginate(doctorModel, filter, {
+      page: pageNum,
+      limit: limitNum,
+      sort: sortOptions,
+      populate: [
+        { path: "hospital", select: "name" },
+        { path: "user", select: "email" },
+      ],
+    });
 
-    console.log("Paginated doctors by specialization:", result);
+    console.log("Filtered doctors result:", {
+      count: result.data.length,
+      total: result.totalCount,
+    });
 
     return res.status(200).json(
       createResponse({
@@ -636,5 +720,95 @@ export const getDoctorsBySpecialization = async (req, res, next) => {
   } catch (error) {
     console.error("Error fetching doctors by specialization:", error);
     return next(error);
+  }
+};
+
+export const getDoctorDashboardStats = async (req, res, next) => {
+  try {
+    const doctorId = req.user._id;
+
+    const totalAppointments = await Appointment.countDocuments({
+      doctor: doctorId,
+    });
+
+    const uniqueUserIds = await Appointment.distinct("user", {
+      doctor: doctorId,
+    });
+    const totalPatients = uniqueUserIds.length;
+
+    const totalUnreadMessages = await Message.countDocuments({
+      receiverId: doctorId,
+      read: false,
+    });
+
+    return res.status(200).json(
+      createResponse({
+        isSuccess: true,
+        statusCode: 200,
+        message: "Doctor dashboard data fetched successfully.",
+        data: {
+          totalAppointments,
+          totalPatients,
+          totalUnreadMessages,
+        },
+      })
+    );
+  } catch (error) {
+    console.error(
+      "The error got while fetching stats for doctor dashboard is:",
+      error
+    );
+    next(error);
+  }
+};
+
+export const getDoctorAppointmentSummary = async (req, res, next) => {
+  console.log("Entered doctor appointment summary");
+
+  try {
+    const doctorId = req.user._id;
+
+    const todayStart = moment().startOf("day").toDate();
+    const todayEnd = moment().endOf("day").toDate();
+
+    console.log("Doctor ID:", doctorId);
+    console.log("Today's Start:", todayStart);
+    console.log("Today's End:", todayEnd);
+
+    const todaysAppointments = await Appointment.find({
+      doctor: doctorId,
+      date: { $gte: todayStart, $lte: todayEnd },
+    })
+      .populate("user", "fullName email phone") // Add more fields if needed
+      .sort({ date: 1 });
+
+    console.log("Found today's appointments:", todaysAppointments.length);
+
+    const upcomingAppointments = await Appointment.find({
+      doctor: doctorId,
+      date: { $gt: todayEnd },
+    })
+      .populate("user", "fullName email phone") // Add more fields if needed
+      .sort({ date: 1 });
+
+    console.log("Found upcoming appointments:", upcomingAppointments.length);
+
+    return res.status(200).json(
+      createResponse({
+        isSuccess: true,
+        statusCode: 200,
+        message: "Appointment summary fetched successfully",
+        data: {
+          todaysAppointments,
+          upcomingAppointments,
+        },
+      })
+    );
+  } catch (error) {
+    console.error(
+      "The error while getting doctor appointment summary is:",
+      error
+    );
+    next(error);
   }
 };

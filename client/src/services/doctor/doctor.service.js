@@ -216,27 +216,44 @@ export const getAllDoctorsService = async (filters = {}) => {
 
 const getDoctorsBySpecialization = async (specialization, filters = {}) => {
   try {
-    console.log(
-      "The specialization in getDoctorsBySpecialization are",
-      specialization
-    );
-    const { page = 1, limit = 10 } = filters;
-    const queryParams = new URLSearchParams({ page, limit }).toString();
+    console.log("Fetching doctors for specialization:", specialization);
+
+    // Default parameters
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      experience = [],
+      minFee = 0,
+      maxFee = 500,
+      sort = "recommended",
+    } = filters;
+
+    // Build query parameters
+    const queryParams = new URLSearchParams({
+      page,
+      limit,
+      search,
+      minFee,
+      maxFee,
+      sort,
+    });
+
+    // Add experience filters if any
+    if (experience.length > 0) {
+      queryParams.append("experience", experience.join(","));
+    }
 
     const response = await axios.get(
-      `${BASE_BACKEND_URL}/api/doctor/specialization/${specialization}?${queryParams}`
+      `${BASE_BACKEND_URL}/api/doctor/specialization/${specialization}?${queryParams.toString()}`
     );
-    console.log(
-      "The response while fetching doctors by specialization is",
-      response
-    );
+
+    console.log("Doctors API response:", response.data);
 
     if (!response?.data?.isSuccess) {
       throw createApiResponse({
         isSuccess: false,
-        message:
-          response?.data?.message ||
-          "Failed to retrieve doctors by specialization",
+        message: response?.data?.message || "Failed to retrieve doctors",
         error: response?.data?.error || null,
       });
     }
@@ -246,20 +263,78 @@ const getDoctorsBySpecialization = async (specialization, filters = {}) => {
       message: "Doctors retrieved successfully",
       data: {
         doctors: response?.data?.data,
-        totalCount: response?.data?.pagination?.totalCount,
-        currentPage: response?.data?.pagination?.currentPage,
-        totalPages: response?.data?.pagination?.totalPages,
+        pagination: {
+          totalCount: response?.data?.pagination?.totalCount,
+          currentPage: response?.data?.pagination?.currentPage,
+          totalPages: response?.data?.pagination?.totalPages,
+        },
       },
     });
   } catch (error) {
+    console.error("Error fetching doctors:", error);
     return createApiResponse({
       isSuccess: false,
-      message: "An error occurred while fetching doctors by specialization",
+      message: "An error occurred while fetching doctors",
+      error:
+        error?.response?.data?.error?.[0] ||
+        error?.response?.data?.message ||
+        error.message ||
+        "Something went wrong",
+    });
+  }
+};
+
+const getDoctorDashboardStatsService = async () => {
+  try {
+    const response = await axiosInstance.get("/api/doctor/dashboard/stats");
+
+    if (!response?.data?.isSuccess) {
+      throw createApiResponse({
+        isSuccess: false,
+        message: response?.data?.message || "Failed to fetch dashboard stats",
+        error: response?.data?.error || null,
+      });
+    }
+
+    return createApiResponse({
+      isSuccess: true,
+      message:
+        response?.data?.message ||
+        "Doctor dashboard stats fetched successfully",
+      data: response?.data,
+    });
+  } catch (error) {
+    console.error("Error in getDoctorDashboardStatsService:", error);
+    return createApiResponse({
+      isSuccess: false,
+      message: "An error occurred while fetching dashboard stats",
       error:
         error?.response?.data?.error?.[0] ||
         error?.response?.data?.message ||
         "Something went wrong",
     });
+  }
+};
+
+const getDoctorAppointmentsSummary = async () => {
+  console.log("ENTERED");
+  try {
+    const response = await axiosInstance.get(
+      "/api/doctor/appointments/summary"
+    );
+    console.log("The response is", response);
+    return {
+      isSuccess: true,
+      data: response.data,
+    };
+  } catch (error) {
+    console.log("The error is", error);
+    return {
+      isSuccess: false,
+      message:
+        error?.response?.data?.message || "Failed to fetch appointment summary",
+      error: error?.response?.data || error,
+    };
   }
 };
 
@@ -270,6 +345,8 @@ const doctorService = {
   getDoctorByIdService,
   getAllDoctorsService,
   getDoctorsBySpecialization,
+  getDoctorDashboardStatsService,
+  getDoctorAppointmentsSummary,
 };
 
 export default doctorService;

@@ -277,7 +277,7 @@ const UpdateMedicalTestForm = ({ isOpen, onClose, testData }) => {
         });
 
         // Refresh medical test list
-        dispatch(fetchAllMedicalTests({ page: 1, limit: 10 }));
+        dispatch(fetchAllMedicalTests({ page: 1, limit: 10, isAdmin: true }));
         onClose();
       } else {
         toast({

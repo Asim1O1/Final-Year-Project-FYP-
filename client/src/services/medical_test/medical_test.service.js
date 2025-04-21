@@ -55,27 +55,83 @@ const getMedicalTestByIdService = async (id) => {
 };
 
 // Get multiple medical tests with pagination and filters
-const getMedicalTestsService = async (params) => {
+
+const getMedicalTestsService = async (filters = {}, isAdmin = false) => {
   try {
-    const response = await axiosInstance.get("/api/medicalTest", { params });
+    // Extract parameters with defaults only for pagination/sort
+    const {
+      page = 1,
+      limit = 10,
+      sort = "createdAt_desc",
+      hospital,
+      search,
+      testType,
+      minPrice,
+      maxPrice,
+    } = filters;
+
+    // Determine the endpoint based on whether this is an admin request
+    const endpoint = isAdmin ? "/api/medicalTest/hospitalAdmin-tests" : "/api/medicalTest/";
+
+    // Build base query parameters (always include pagination and sort)
+    const queryParams = new URLSearchParams({
+      page,
+      limit,
+      sort,
+    });
+
+    // Add optional filters only if they are provided
+    if (!isAdmin && hospital) queryParams.append("hospital", hospital);
+    if (search) queryParams.append("search", search);
+    if (testType) queryParams.append("testType", testType);
+
+    // Only add price range if both values are provided
+    if (minPrice !== undefined && maxPrice !== undefined) {
+      queryParams.append("minPrice", minPrice);
+      queryParams.append("maxPrice", maxPrice);
+    }
+
+    const queryString = queryParams.toString();
+    console.log(
+      `Medical Test API Request (${isAdmin ? "Admin" : "Public"}):`,
+      queryString
+    );
+
+    // Using the correct endpoint based on isAdmin flag
+    const response = await axiosInstance.get(`${endpoint}?${queryString}`);
+
     if (response?.data?.isSuccess === false) {
+      console.error("Medical Test API Error:", response.data);
       return createApiResponse({
         isSuccess: false,
-        message: response?.data?.message || "",
-        data: response?.data?.error,
+        message: response?.data?.message || "Failed to fetch medical tests",
+        error: response?.data?.error || null,
       });
     }
+
+    console.log("Medical Test API Success:", {
+      count: response?.data?.data?.tests?.length,
+      total: response?.data?.data?.pagination?.totalCount,
+    });
+
     return createApiResponse({
       isSuccess: true,
       message: "Medical tests fetched successfully",
       data: response?.data?.data,
     });
   } catch (error) {
+    console.error("Medical Test Service Error:", {
+      message: error.message,
+      response: error.response?.data,
+    });
+
     return createApiResponse({
       isSuccess: false,
       message:
         error?.response?.data?.message ||
-        "An error occurred while fetching medical tests.",
+        "An error occurred while fetching medical tests",
+      error: error?.response?.data?.error || error.message,
+      status: error?.response?.status,
     });
   }
 };

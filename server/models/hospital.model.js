@@ -36,7 +36,7 @@ const hospitalSchema = new mongoose.Schema(
         ref: "MedicalTest",
       },
     ],
-    
+
     notifications: [
       {
         message: { type: String, required: true },
@@ -44,10 +44,23 @@ const hospitalSchema = new mongoose.Schema(
       },
     ],
 
-    hospital_admin: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    hospital_admin: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
+
+hospitalSchema.index({ name: 1 });
+hospitalSchema.index({ location: 1 });
+hospitalSchema.index({ specialties: 1 });
+hospitalSchema.index({ medicalTests: 1 });
 
 const hospitalModel = mongoose.model("Hospital", hospitalSchema);
 

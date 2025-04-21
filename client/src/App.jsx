@@ -1,21 +1,30 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { verifyUserAuth } from "./features/auth/authSlice";
 import CheckAuth from "./utils/CheckAuth.jsx";
 
+// Auth Pages
 import RegisterPage from "./pages/auth/RegisterPage";
 import LoginPage from "./pages/auth/LoginPage";
-import HomePage from "./pages/public/HomePage";
-import HospitalsPage from "./pages/public/HospitalsPage";
-import NotFoundPage from "./pages/public/404Page";
 import UnauthorizedPage from "./pages/auth/UnauthorizedPage.jsx";
 import ForgotPassword from "./component/auth/ForgotPassword.jsx";
 import OTPVerification from "./component/auth/OtpVerification.jsx";
 import UpdatePassword from "./component/auth/UpdatePassword.jsx";
+
+// Public Pages
+import HomePage from "./pages/public/HomePage";
+import HospitalsPage from "./pages/public/HospitalsPage";
+import NotFoundPage from "./pages/public/404Page";
+import MedicalTests from "./pages/public/MedicalTests.jsx";
+import { TestDetail } from "./pages/public/TestDetail.jsx";
+import HospitalDetailPage from "./pages/public/HospitalDetail.jsx";
+
+// Payment Components
 import PaymentSuccess from "./component/payment/PaymentSuccess.jsx";
 import PaymentFailed from "./component/payment/PaymentFailed.jsx";
 
+// Admin Pages
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { Users } from "./pages/admin/Users";
 import { Doctors } from "./pages/admin/Doctors.jsx";
@@ -23,15 +32,25 @@ import HospitalManagement from "./pages/admin/HospitalManagement";
 import HospitalAdminManagement from "./pages/admin/HospitalAdminManagement.jsx";
 import { AdminLayout } from "./layouts/AdminLayout";
 
+// Hospital Admin Pages
 import { HospitalAdminDashboard } from "./pages/hospital_admin/HospitalAdminDashboard";
 import { HospitalAdminLayout } from "./layouts/HospitalAdminLayout.jsx";
 import DoctorManagement from "./pages/hospital_admin/DoctorManagement.jsx";
 import CampaignManagement from "./pages/hospital_admin/CampaignManagement.jsx";
+import MedicalTestManagement from "./pages/hospital_admin/MedicalTestManagement.jsx";
+import VolunteerRequestsManager from "./component/hospital_admin/campaign/VolunteerRequestManager.jsx";
+import TestBookingList from "./component/hospital_admin/test_booking/test_bookingList.jsx";
+import MedicalReportUpload from "./component/hospital_admin/test_report/UploadReport.jsx";
+import MedicalReports from "./component/hospital_admin/test_report/MedicalReports.jsx";
 
+// Doctor Pages
 import DoctorLayout from "./layouts/DoctorLayout.jsx";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard.jsx";
 import Appointments from "./pages/doctor/AppointmentManagement.jsx";
+import DoctorProfile from "./pages/doctor/DoctorProfile.jsx";
+import DoctorChatPage from "./component/doctor/chat/DoctorChatPage.jsx";
 
+// User Pages
 import MainLayout from "./layouts/MainLayout.jsx";
 import SelectSpecialty from "./pages/user/SelectSpeciality.jsx";
 import SelectDoctor from "./pages/user/SelectDoctor.jsx";
@@ -42,29 +61,62 @@ import UserProfile from "./pages/user/UserProfile";
 import CampaignDetails from "./component/user/CampaignDetail.jsx";
 import AppointmentDetail from "./component/user/AppointmentDetail.jsx";
 import ChatPage from "./pages/user/ChatPage.jsx";
-import DoctorChatPage from "./component/doctor/chat/DoctorChatPage.jsx";
-import MedicalTestManagement from "./pages/hospital_admin/MedicalTestManagement.jsx";
-import VolunteerRequestsManager from "./component/hospital_admin/campaign/VolunteerRequestManager.jsx";
-import MedicalTests from "./pages/public/MedicalTests.jsx";
-import { TestDetail } from "./pages/public/TestDetail.jsx";
-import TestBookingList from "./component/hospital_admin/test_booking/test_bookingList.jsx";
-import MedicalReportUpload from "./component/hospital_admin/test_report/UploadReport.jsx";
-import MedicalReports from "./component/hospital_admin/test_report/MedicalReports.jsx";
-import HospitalDetailPage from "./pages/public/HospitalDetail.jsx";
+import ViewDoctorProfile from "./pages/user/ViewDoctorProfile.jsx";
+
+// Hooks
+import { useSocket } from "./hooks/useSocketNotification.js";
 
 function App() {
+  // Redux state and dispatch
   const { isAuthenticated, user } = useSelector((state) => state?.auth);
   const dispatch = useDispatch();
+  const [authAttempted, setAuthAttempted] = useState(false);
 
+  // Socket connection
+  const { isConnected, disconnect } = useSocket();
+
+  /**
+   * Effect to verify user authentication on initial load
+   */
   useEffect(() => {
-    dispatch(verifyUserAuth());
-  }, [dispatch]);
+    if (!authAttempted) {
+      dispatch(verifyUserAuth());
+      setAuthAttempted(true);
+    }
+
+    // Clean up socket on unmount
+    return () => {
+      if (isAuthenticated) {
+        disconnect();
+      }
+    };
+  }, [dispatch, isAuthenticated, disconnect, authAttempted]);
+
+  /**
+   * Effect to monitor socket connection status
+   */
+  useEffect(() => {
+    console.log("Socket connection status:", isConnected);
+
+    // If authenticated but socket not connected, you might want to try reconnecting
+    if (isAuthenticated && user && !isConnected) {
+      console.log("User authenticated but socket not connected");
+      // Add reconnection logic here if needed
+    }
+  }, [isConnected, isAuthenticated, user]);
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<HomePage />} />
+        {/* ========== PUBLIC ROUTES ========== */}
+        <Route
+          path="/"
+          element={
+            <MainLayout>
+              <HomePage />
+            </MainLayout>
+          }
+        />
         <Route
           path="/hospitals"
           element={
@@ -73,7 +125,6 @@ function App() {
             </MainLayout>
           }
         />
-
         <Route
           path="/hospitals/:id"
           element={
@@ -94,15 +145,16 @@ function App() {
           path="/tests/:testId"
           element={
             <MainLayout>
-              {" "}
               <TestDetail />
             </MainLayout>
           }
         />
 
+        {/* Payment Routes */}
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/paymentFailed" element={<PaymentFailed />} />
 
+        {/* Protected User Routes */}
         <Route
           path="/campaigns/:id"
           element={
@@ -112,7 +164,7 @@ function App() {
               </MainLayout>
             </CheckAuth>
           }
-        ></Route>
+        />
         <Route
           path="/appointments/:id"
           element={
@@ -122,7 +174,7 @@ function App() {
               </MainLayout>
             </CheckAuth>
           }
-        ></Route>
+        />
         <Route
           path="/chat/users"
           element={
@@ -132,7 +184,7 @@ function App() {
           }
         />
 
-        {/* Appointment Booking Routes */}
+        {/* ========== APPOINTMENT BOOKING ROUTES ========== */}
         <Route
           path="/book-appointment"
           element={
@@ -180,7 +232,7 @@ function App() {
           }
         />
 
-        {/* Protected Routes for Register and Login */}
+        {/* ========== AUTHENTICATION ROUTES ========== */}
         <Route
           path="/register"
           element={
@@ -221,7 +273,7 @@ function App() {
           }
         />
 
-        {/* User Profile Route */}
+        {/* ========== USER PROFILE ROUTES ========== */}
         <Route
           path="/profile"
           element={
@@ -232,8 +284,18 @@ function App() {
             </CheckAuth>
           }
         />
+        <Route
+          path="/doctor-profile/:doctorId"
+          element={
+            <CheckAuth role="user">
+              <MainLayout>
+                <ViewDoctorProfile />
+              </MainLayout>
+            </CheckAuth>
+          }
+        />
 
-        {/* Admin Protected Routes */}
+        {/* ========== ADMIN PROTECTED ROUTES ========== */}
         <Route
           path="/admin/*"
           element={
@@ -249,7 +311,7 @@ function App() {
           <Route path="hospital-admin" element={<HospitalAdminManagement />} />
         </Route>
 
-        {/* Hospital Admin Protected Routes */}
+        {/* ========== HOSPITAL ADMIN PROTECTED ROUTES ========== */}
         <Route
           path="/hospital-admin/*"
           element={
@@ -263,21 +325,18 @@ function App() {
           <Route path="campaign" element={<CampaignManagement />} />
           <Route path="medicalTests" element={<MedicalTestManagement />} />
           <Route path="bookings" element={<TestBookingList />} />
-
           <Route
             path="medical-reports/upload"
             element={<MedicalReportUpload />}
           />
-
           <Route path="medical-reports/" element={<MedicalReports />} />
-
           <Route
             path="volunteer-requests"
             element={<VolunteerRequestsManager />}
           />
         </Route>
 
-        {/* Doctor Protected Routes */}
+        {/* ========== DOCTOR PROTECTED ROUTES ========== */}
         <Route
           path="/doctor/*"
           element={
@@ -290,12 +349,11 @@ function App() {
           <Route path="dashboard" element={<DoctorDashboard />} />
           <Route path="appointments" element={<Appointments />} />
           <Route path="chat" element={<DoctorChatPage />} />
+          <Route path="profile" element={<DoctorProfile />} />
         </Route>
 
-        {/* Unauthorized Route */}
+        {/* ========== MISC ROUTES ========== */}
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
-
-        {/* 404 Route: Catch-all for undefined routes */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>

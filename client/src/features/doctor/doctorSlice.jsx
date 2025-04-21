@@ -83,20 +83,56 @@ export const fetchAllDoctors = createAsyncThunk(
 // **Fetch Doctors by Specialization**
 export const fetchDoctorsBySpecialization = createAsyncThunk(
   "doctor/fetchDoctorsBySpecialization",
-  async ({ specialization, params = {} }, { rejectWithValue }) => {
+  async ({ specialization, filters = {} }, { rejectWithValue }) => {
     try {
-      console.log("The specialization in the slice is", specialization);
-      const response = await doctorService.getDoctorsBySpecialization(
+      console.log(
+        "Fetching doctors for:",
         specialization,
-        params
+        "with filters:",
+        filters
       );
 
-      if (!response.isSuccess) throw response?.data;
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        createApiResponse(error, "Failed to fetch doctors by specialization")
+      // Normalize filters to match API expectations
+      const apiParams = {
+        page: filters.page || 1,
+        limit: filters.limit || 10,
+        search: filters.searchQuery || "",
+        minFee: filters.feeRange?.[0] || 0,
+        maxFee: filters.feeRange?.[1] || 500,
+        sort: filters.sortOption || "recommended",
+        experience: [],
+      };
+
+      // Convert experience filter to API format
+      if (filters.experienceFilter) {
+        const { novice, intermediate, expert } = filters.experienceFilter;
+        if (novice) apiParams.experience.push("novice");
+        if (intermediate) apiParams.experience.push("intermediate");
+        if (expert) apiParams.experience.push("expert");
+      }
+
+      const response = await doctorService.getDoctorsBySpecialization(
+        specialization,
+        apiParams
       );
+
+      if (!response.isSuccess) {
+        console.error("API Error:", response);
+        throw response;
+      }
+
+      return {
+        doctors: response.data.doctors,
+        pagination: response.data.pagination,
+        filters, // Return current filters to store them in state
+      };
+    } catch (error) {
+      console.error("Failed to fetch doctors:", error);
+      return rejectWithValue({
+        message: error.message || "Failed to fetch doctors by specialization",
+        error: error.error || error,
+        status: error.statusCode,
+      });
     }
   }
 );
@@ -118,11 +154,50 @@ export const fetchSingleDoctor = createAsyncThunk(
   }
 );
 
+export const fetchDoctorDashboardStats = createAsyncThunk(
+  "doctor/fetchDoctorDashboardStats",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await doctorService.getDoctorDashboardStatsService();
+
+      if (!response.isSuccess) throw response;
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        createApiResponse(error, "Failed to fetch doctor dashboard statistics")
+      );
+    }
+  }
+);
+
+export const fetchDoctorAppointmentsSummary = createAsyncThunk(
+  "doctor/fetchDoctorAppointmentsSummary",
+  async (_, { rejectWithValue }) => {
+    console.log("ENTERED  ");
+    try {
+      const response = await doctorService.getDoctorAppointmentsSummary();
+      console.log("The response is", response);
+      if (!response.isSuccess) throw response;
+      return response.data;
+    } catch (error) {
+      console.log("The error is", error);
+      return rejectWithValue(
+        createApiResponse(error, "Failed to fetch appointment summary")
+      );
+    }
+  }
+);
+
 const doctorSlice = createSlice({
   name: "doctorSlice",
   initialState: {
     doctor: null,
     doctors: [],
+    doctorStats: null,
+    appointmentsSummary: {
+      todayCount: 0,
+      upcomingCount: 0,
+    },
     isLoading: false,
     error: null,
   },
@@ -202,6 +277,25 @@ const doctorSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchDoctorsBySpecialization.rejected, handleRejected);
+
+    builder
+      .addCase(fetchDoctorDashboardStats.pending, handlePending)
+      .addCase(fetchDoctorDashboardStats.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.doctorStats = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchDoctorDashboardStats.rejected, handleRejected);
+
+    builder
+      .addCase(fetchDoctorAppointmentsSummary.pending, handlePending)
+
+      .addCase(fetchDoctorAppointmentsSummary.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.appointmentsSummary = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchDoctorAppointmentsSummary.rejected, handleRejected);
   },
 });
 

@@ -46,11 +46,27 @@ export const updateUser = createAsyncThunk(
   }
 );
 
+export const fetchUserStats = createAsyncThunk(
+  "user/fetchUserStats",
+  async (userId, { rejectWithValue }) => {
+    try {
+      const response = await userService.getUserStatsService(userId);
+      if (!response.isSuccess) throw response;
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        createApiResponse(error, "Failed to fetch user stats")
+      );
+    }
+  }
+);
+
 const userSlice = createSlice({
   name: "userSlice",
   initialState: {
     user: null,
     users: [],
+    userStats: null,
     isLoading: false,
     error: null,
   },
@@ -98,6 +114,15 @@ const userSlice = createSlice({
         state.error = null;
       })
       .addCase(updateUser.rejected, handleRejected);
+
+    builder
+      .addCase(fetchUserStats.pending, handlePending)
+      .addCase(fetchUserStats.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.userStats = action.payload; // Add userStats to the state
+        state.error = null;
+      })
+      .addCase(fetchUserStats.rejected, handleRejected);
   },
 });
 

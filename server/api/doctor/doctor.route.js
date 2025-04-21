@@ -6,6 +6,8 @@ import {
   getAllDoctors,
   getDoctorById,
   getDoctorsBySpecialization,
+  getDoctorDashboardStats,
+  getDoctorAppointmentSummary,
 } from "./doctor.controller.js";
 import protectRoute from "../../middlewares/protectRoute.js";
 import upload from "../../imageUpload/multerConfig.js";
@@ -21,6 +23,9 @@ router.post(
   ]),
   createDoctor
 );
+// ✅ Get Doctor Dashboard Stats
+router.get("/dashboard/stats", protectRoute, getDoctorDashboardStats);
+router.get("/appointments/summary", protectRoute, getDoctorAppointmentSummary);
 
 router.put(
   "/:id",

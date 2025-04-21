@@ -100,6 +100,10 @@ const notificationSlice = createSlice({
       state.error = null;
       state.successMessage = null;
     },
+    addNewNotification: (state, action) => {
+      console.log("adding new notificaton", action?.payload)
+      state.notifications.unshift(action.payload);
+    },
   },
 
   extraReducers: (builder) => {
@@ -163,5 +167,5 @@ const notificationSlice = createSlice({
   },
 });
 
-export const { resetNotificationState } = notificationSlice.actions;
+export const { resetNotificationState, addNewNotification } = notificationSlice.actions;
 export default notificationSlice.reducer;

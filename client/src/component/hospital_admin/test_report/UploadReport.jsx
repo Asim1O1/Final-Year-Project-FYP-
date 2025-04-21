@@ -42,6 +42,7 @@ import {
 } from "../../../features/test_report/testReportSlice";
 import { BuildingIcon, ClipboardListIcon, FileIcon, FilesIcon, UploadIcon, UserIcon } from "lucide-react";
 import { ArrowRightIcon, CheckCircleIcon, CheckIcon } from "@chakra-ui/icons";
+import { notification } from "antd";
 
 const MedicalReportUpload = () => {
   const dispatch = useDispatch();
@@ -199,11 +200,11 @@ const MedicalReportUpload = () => {
   };
 
   const handleUploadSuccess = () => {
-    toast({
+    notification.success({
       title: "Upload successful",
       description: "Your medical report has been uploaded successfully.",
       status: "success",
-      duration: 5000,
+      duration: 3,
       isClosable: true,
     });
 
@@ -247,12 +248,12 @@ const MedicalReportUpload = () => {
       simulateUploadProgress(dispatch, reportData);
     } catch (error) {
       console.error("Error during form submission:", error);
-      toast({
+      notification.error({
         title: "Upload failed",
         description:
           error.message || "An error occurred while uploading your report.",
         status: "error",
-        duration: 5000,
+        duration: 3,
         isClosable: true,
       });
     }

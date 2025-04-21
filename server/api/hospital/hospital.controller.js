@@ -1,6 +1,6 @@
 import hospitalModel from "../../models/hospital.model.js";
-import doctorModel from "../../models/doctor.model.js"
-import medicalTestModel from "../../models/medicalTest.model.js"
+import doctorModel from "../../models/doctor.model.js";
+import medicalTestModel from "../../models/medicalTest.model.js";
 import { validateHospitalInput } from "../../utils/validationUtils.js";
 import createResponse from "../../utils/responseBuilder.js";
 import fs from "fs";
@@ -102,6 +102,9 @@ export const fetchHospitals = async (req, res, next) => {
       sort = "createdAt",
       search = "",
       speciality,
+      location,
+      testAvailable,
+      name,
     } = req.query;
 
     const sortOrder = sort.startsWith("-") ? -1 : 1;
@@ -111,14 +114,40 @@ export const fetchHospitals = async (req, res, next) => {
     // Build dynamic query filters
     const queryFilter = {};
 
-    // Search by hospital name (case-insensitive)
+    // Ensure hospitals marked as deleted are excluded
+    queryFilter.$or = [
+      { isDeleted: { $exists: false } }, // Hospitals without `isDeleted` field
+      { isDeleted: false }, // Hospitals where `isDeleted` is explicitly false
+    ];
+
+    // Search by hospital name (case-insensitive partial match)
     if (search) {
       queryFilter.name = { $regex: search, $options: "i" };
     }
 
-    // Filter by speciality
+    // Exact name match filter
+    if (name) {
+      queryFilter.name = name;
+    }
+
+    // Location filter (case-insensitive partial match)
+    if (location) {
+      queryFilter.location = { $regex: location, $options: "i" };
+    }
+
+    // Filter by speciality (array contains)
     if (speciality) {
-      queryFilter.speciality = speciality;
+      queryFilter.specialties = { $in: [speciality] };
+    }
+
+    // Filter by available medical tests
+    if (testAvailable) {
+      queryFilter.medicalTests = { $exists: true, $ne: [] };
+
+      // If testAvailable is an ID, find hospitals with that specific test
+      if (mongoose.Types.ObjectId.isValid(testAvailable)) {
+        queryFilter.medicalTests = testAvailable;
+      }
     }
 
     // No pagination
@@ -132,14 +161,6 @@ export const fetchHospitals = async (req, res, next) => {
           match: { status: { $ne: "cancelled" } },
           options: { sort: { testName: 1 } },
         });
-
-      hospitals.forEach((hospital, index) => {
-        console.log(`Hospital ${index + 1}:`, {
-          name: hospital.name,
-          speciality: hospital.speciality,
-          testCount: hospital.medicalTests?.length || 0,
-        });
-      });
 
       return res.status(200).json(
         createResponse({
@@ -167,14 +188,6 @@ export const fetchHospitals = async (req, res, next) => {
       },
     });
 
-    result.data.forEach((hospital, index) => {
-      console.log(`Hospital ${index + 1}:`, {
-        name: hospital.name,
-        speciality: hospital.speciality,
-        testCount: hospital.medicalTests?.length || 0,
-      });
-    });
-
     return res.status(200).json(
       createResponse({
         isSuccess: true,
@@ -199,7 +212,6 @@ export const fetchHospitals = async (req, res, next) => {
 /**
  * Handles fetching a specific hospital by ID.
  */
-
 
 export const fetchHospitalById = async (req, res, next) => {
   try {
@@ -333,14 +345,15 @@ export const deleteHospital = async (req, res, next) => {
       );
     }
 
-    // Delete hospital from database
-    await hospitalModel.findByIdAndDelete(id);
+    // Soft delete the hospital
+    hospital.isDeleted = true;
+    await hospital.save();
 
     return res.status(200).json(
       createResponse({
         isSuccess: true,
         statusCode: 200,
-        message: "Hospital deleted successfully.",
+        message: "Hospital deleted successfully (soft deleted).",
         data: null,
         error: null,
       })

@@ -209,34 +209,40 @@ export const getAllHospitalAdmins = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, sort = "createdAt", search = "" } = req.query;
 
-    // Determine sort field and order
     const sortOrder = sort.startsWith("-") ? -1 : 1;
     const sortField = sort.replace("-", "");
     const sortOptions = { [sortField]: sortOrder };
 
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
-
-    // Build search query
-    const searchQuery = {
-      role: "hospital_admin",
-      ...(search && {
-        $or: [
-          { fullName: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } },
-          { "hospital.name": { $regex: search, $options: "i" } },
-        ],
-      }),
-    };
-
-    // If pagination params are missing, return all hospital admins without pagination
     const isPaginationDisabled = isNaN(pageNum) || isNaN(limitNum);
 
+    // Base query: only hospital admins
+    const searchQuery = { role: "hospital_admin" };
+
+    // If there's a search term, use regex on fullName, email
+    if (search) {
+      const regex = new RegExp(search, "i");
+      searchQuery.$or = [
+        { fullName: { $regex: regex } },
+        { email: { $regex: regex } },
+      ];
+    }
+
     if (isPaginationDisabled) {
-      const hospitalAdmins = await userModel
-        .find(searchQuery)
-        .populate("hospital", "name")
-        .sort(sortOptions);
+      // Fetch all hospital admins without pagination
+      const hospitalAdmins = await userModel.find(searchQuery).populate({
+        path: "hospital",
+        select: "name",
+        match: {
+          $or: [{ isDeleted: { $exists: false } }, { isDeleted: false }],
+        },
+      });
+
+      // Filter out admins with deleted or missing hospitals
+      const filteredAdmins = hospitalAdmins.filter(
+        (admin) => admin.hospital // Remove admins with deleted hospitals (null after match)
+      );
 
       return res.status(200).json(
         createResponse({
@@ -244,7 +250,7 @@ export const getAllHospitalAdmins = async (req, res, next) => {
           statusCode: 200,
           message: "All hospital admins fetched successfully",
           data: {
-            hospitalAdmins,
+            hospitalAdmins: filteredAdmins,
             pagination: null,
           },
           error: null,
@@ -252,7 +258,7 @@ export const getAllHospitalAdmins = async (req, res, next) => {
       );
     }
 
-    // Paginated query using custom paginate utility
+    // Paginated query
     const result = await paginate(userModel, searchQuery, {
       page: pageNum,
       limit: limitNum,
@@ -260,14 +266,20 @@ export const getAllHospitalAdmins = async (req, res, next) => {
       populate: {
         path: "hospital",
         select: "name",
+        match: {
+          $or: [{ isDeleted: { $exists: false } }, { isDeleted: false }],
+        },
       },
     });
+
+    // Filter out hospital admins whose associated hospitals were deleted
+    result.data = result.data.filter((admin) => admin.hospital);
 
     return res.status(200).json({
       isSuccess: true,
       statusCode: 200,
       message: "Hospital admins retrieved successfully",
-      data: result.data,
+      data: result.data.map((admin) => admin.toObject()),
       pagination: {
         totalCount: result.totalCount,
         currentPage: result.currentPage,

@@ -49,6 +49,7 @@ import {
   handleCampaignDeletion,
 } from "../../../features/campaign/campaignSlice";
 import Pagination from "../../../utils/Pagination";
+import { notification } from "antd";
 
 const CampaignList = ({ onEdit }) => {
   const dispatch = useDispatch();
@@ -113,11 +114,11 @@ const CampaignList = ({ onEdit }) => {
         handleCampaignDeletion(selectedCampaign._id)
       );
       console.log("the result is", result);
-      toast({
+      notification.success({
         title: "Campaign deleted",
         description: `"${selectedCampaign.title}" has been removed successfully.`,
         status: "success",
-        duration: 5000,
+        duration: 2.3,
         isClosable: true,
         position: "top-right",
       });

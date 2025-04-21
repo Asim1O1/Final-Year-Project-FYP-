@@ -102,9 +102,12 @@ const deleteHospitalService = async (hospitalId) => {
 const fetchHospitalsService = async ({
   page,
   limit,
-  sort,
+  sort = "createdAt",
   search,
   speciality,
+  location,       // NEW: Location filter
+  testAvailable,  // NEW: Medical test availability filter
+  name            // NEW: Exact name match filter
 } = {}) => {
   try {
     const response = await axios.get(`${BASE_BACKEND_URL}/api/hospitals`, {
@@ -114,10 +117,12 @@ const fetchHospitalsService = async ({
         ...(sort && { sort }),
         ...(search && { search }),
         ...(speciality && { speciality }),
+        ...(location && { location }),         // NEW
+        ...(testAvailable && { testAvailable }), // NEW
+        ...(name && { name })                  // NEW
       },
     });
 
-    // Check if the response is a failure case
     if (!response.data?.isSuccess) {
       throw createApiResponse({
         isSuccess: false,
@@ -132,15 +137,18 @@ const fetchHospitalsService = async ({
       data: response.data?.data,
     });
   } catch (error) {
-    console.error("❌ Error in fetchHospitalsService function:", error);
-    const errorMessage =
-      error?.response?.data?.error ||
-      error?.response?.data?.message ||
-      "An error occurred while fetching hospitals.";
+    console.error("❌ Error in fetchHospitalsService:", {
+      message: error.message,
+      response: error.response?.data,
+    });
 
     return createApiResponse({
       isSuccess: false,
-      message: errorMessage,
+      message:
+        error?.response?.data?.message ||
+        "An error occurred while fetching hospitals",
+      error: error?.response?.data?.error || error.message,
+      status: error?.response?.status,
     });
   }
 };

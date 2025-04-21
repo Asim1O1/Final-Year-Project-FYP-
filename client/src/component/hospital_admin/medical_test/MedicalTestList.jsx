@@ -16,7 +16,6 @@ import {
   Heading,
   Icon,
   Image,
- 
   Text,
   useColorModeValue,
   useDisclosure,
@@ -51,7 +50,10 @@ const MedicalTestList = () => {
     onClose: onDeleteClose,
   } = useDisclosure();
   const [currentPage, setCurrentPage] = useState(1);
-
+  const currentUser = useSelector((state) => state?.auth?.user?.data);
+  console.log("The current user", currentUser);
+  const hospitalId = currentUser?.hospital;
+  console.log("The hospitaL ID IS", hospitalId);
   const dispatch = useDispatch();
   const { medicalTests, isLoading, totalPages } = useSelector(
     (state) => state?.medicalTestSlice
@@ -65,8 +67,15 @@ const MedicalTestList = () => {
 
   // Fetch medical tests when the component mounts or when currentPage/filters change
   useEffect(() => {
-    dispatch(fetchAllMedicalTests({ page: currentPage, limit: 10 }));
-  }, [dispatch, currentPage]);
+    dispatch(
+      fetchAllMedicalTests({
+        page: currentPage,
+        limit: 10,
+        hospital: hospitalId,
+        isAdmin: true,
+      })
+    );
+  }, [dispatch, currentPage, hospitalId]);
 
   const handleEditClick = (test) => {
     setSelectedTest(test);
@@ -86,17 +95,26 @@ const MedicalTestList = () => {
   const handleDeleteConfirm = async () => {
     if (selectedTest) {
       try {
-      const result =   await dispatch(deleteMedicalTest(selectedTest._id)).unwrap();
-      console.log("The result is", result)
+        const result = await dispatch(
+          deleteMedicalTest(selectedTest._id)
+        ).unwrap();
+        console.log("The result is", result);
         notification.success({
           message: "Medical Test Deleted",
           description: "The medical test has been successfully deleted.",
         });
         setSelectedTest(null);
         onDeleteClose();
-        dispatch(fetchAllMedicalTests({ page: currentPage, limit: 10 }));
+        dispatch(
+          fetchAllMedicalTests({
+            page: currentPage,
+            limit: 10,
+            hospital: hospitalId,
+            isAdmin: true,
+          })
+        );
       } catch (error) {
-        console.log("The error is", error)
+        console.log("The error is", error);
         notification.error({
           message: "Failed to delete medical test",
           description:
@@ -112,12 +130,7 @@ const MedicalTestList = () => {
 
   const InfoItem = ({ icon, text, label, iconColor }) => (
     <Flex align="center" gap={3}>
-      <Box 
-        p={2} 
-        bg="white" 
-        borderRadius="md" 
-        boxShadow="sm"
-      >
+      <Box p={2} bg="white" borderRadius="md" boxShadow="sm">
         <Icon as={icon} color={iconColor || "gray.500"} boxSize={5} />
       </Box>
       <Box>
@@ -146,12 +159,12 @@ const MedicalTestList = () => {
           </Flex>
         ) : (
           <Flex direction="column" gap={4}>
-            {medicalTests?.data?.length === 0 ? (
+            {medicalTests?.data?.length === 0 || medicalTests.length === 0 ? (
               <Box textAlign="center" py={8}>
                 <Text color={textColor}>No medical tests found</Text>
               </Box>
             ) : (
-              medicalTests?.data?.map((test) => (
+              medicalTests?.map((test) => (
                 <Box
                   key={test._id}
                   p={4}
@@ -200,7 +213,6 @@ const MedicalTestList = () => {
                           >
                             {test.testName}
                           </Heading>
-                          
                         </Box>
                         <Box ml="auto">
                           <Image

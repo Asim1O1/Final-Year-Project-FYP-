@@ -1,255 +1,328 @@
+import { useState } from "react";
+
 import {
-  Box,
-  Image,
-  VStack,
-  Heading,
-  Text,
-  HStack,
-  IconButton,
-  Button,
-  Badge,
-  Flex,
-  Divider,
-  useColorModeValue,
-  Tooltip,
-  SimpleGrid,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
-  AccordionIcon,
-} from "@chakra-ui/react";
-import {
-  FaFacebook,
-  FaTwitter,
-  FaLinkedin,
-  FaStar,
   FaHospital,
   FaMedal,
-  FaMoneyBillWave,
   FaMapMarkerAlt,
-  FaGraduationCap,
   FaUserMd,
-  FaPhone,
-  FaEnvelope,
+  FaGraduationCap,
   FaCalendarCheck,
+  FaStethoscope,
 } from "react-icons/fa";
+import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
+  Avatar,
+  Badge,
+  Box,
+  Button,
+  Divider,
+  Flex,
+  Heading,
+  Icon,
+  Image,
+  Text,
+  useColorModeValue,
+  VStack,
+} from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 
 const DoctorCard = ({ doctor }) => {
   const navigate = useNavigate();
-  const bgColor = useColorModeValue("white", "gray.800");
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Color theme based on blue
   const borderColor = useColorModeValue("gray.200", "gray.700");
-  const badgeBg = useColorModeValue("blue.50", "blue.900");
+  const subtleBg = useColorModeValue("gray.50", "gray.800");
+  const textColor = useColorModeValue("gray.800", "gray.100");
+  const subtleText = useColorModeValue("gray.600", "gray.400");
+  const accentColor = useColorModeValue("#00A9FF", "#38B2FF");
+  const cardBg = useColorModeValue("white", "gray.900");
+  const highlightColor = useColorModeValue(
+    "blue.50",
+    "rgba(0, 169, 255, 0.15)"
+  );
+  const badgeBg = useColorModeValue("#00A9FF", "#38B2FF");
 
   const handleSelectDoctor = () => {
     navigate(`/book-appointment/select-time/${doctor._id}`);
   };
+  const handleViewDoctorProfile = () => {
+    navigate(`/doctor-profile/${doctor._id}`);
+  };
+
+  const doctorProfileImage =
+    doctor?.doctorProfileImage || "/placeholder.svg?height=400&width=300";
+  const doctorFullName = doctor?.fullName || "Name Unknown";
+  const doctorConsultationFee = doctor?.consultationFee || "N/A";
+  const doctorHospitalName = doctor?.hospital?.name || "Not specified";
+  const doctorYearsOfExperience = doctor?.yearsOfExperience || "5+";
+  const doctorAddress = doctor?.address || "Damak";
+  const doctorQualifications = doctor?.qualifications || [];
+  const doctorSpecialization = doctor?.specialization || "General";
 
   return (
     <Box
-      bg={bgColor}
-      borderRadius="xl"
+      bg={cardBg}
+      borderRadius="lg"
       overflow="hidden"
-      boxShadow="lg"
-      transition="all 0.3s"
-      _hover={{ boxShadow: "2xl", transform: "translateY(-5px)" }}
+      boxShadow={isHovered ? "md" : "sm"}
+      transition="all 0.2s ease"
       borderWidth="1px"
-      borderColor={borderColor}
+      borderColor={isHovered ? accentColor : borderColor}
+      position="relative"
+      maxW="600px"
+      minH="300px"
+      w="100%"
+      mb={4}
+      mx="auto"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <Flex direction={{ base: "column", md: "row" }}>
+      <Flex direction={{ base: "column", sm: "row" }} h="full">
+        {/* Doctor Image Section - Taller */}
         <Box
-          width={{ base: "100%", md: "30%" }}
+          width={{ base: "100%", sm: "110px", md: "130px" }}
+          height={{ base: "180px", sm: "auto" }}
           position="relative"
-          bg="blue.50"
+          overflow="hidden"
+          bg={`linear-gradient(to bottom, ${useColorModeValue(
+            "blue.50",
+            "blue.900"
+          )}, ${useColorModeValue("cyan.50", "cyan.900")})`}
         >
-          <Flex
-            justifyContent="center"
-            alignItems="center"
-            h="100%"
-            position="relative"
-            overflow="hidden"
-          >
-            <Image
-              src={
-                doctor?.doctorProfileImage ||
-                "https://via.placeholder.com/300x400"
-              }
-              alt={doctor?.fullName}
-              w="full"
-              h={{ base: "250px", md: "100%" }}
-              objectFit="cover"
-              transition="transform 0.5s"
-              _hover={{ transform: "scale(1.05)" }}
-            />
-            <Box
-              position="absolute"
-              top="0"
-              left="0"
-              right="0"
-              height="80px"
-              bgGradient="linear(to-b, rgba(0,0,0,0.5), transparent)"
-            />
-          </Flex>
-
-          <HStack position="absolute" top="10px" left="10px" spacing={2}>
-            <Badge
-              colorScheme="blue"
-              p="2"
-              borderRadius="md"
-              fontSize="xs"
-              fontWeight="bold"
-              boxShadow="sm"
-            >
-              {doctor?.specialization}
-            </Badge>
-
-            {doctor?.isVerified ? (
-              <Badge
-                colorScheme="green"
-                p="2"
-                borderRadius="md"
-                fontSize="xs"
-                fontWeight="bold"
-                boxShadow="sm"
-              >
-                Verified
-              </Badge>
-            ) : (
-              <Badge
-                colorScheme="yellow"
-                p="2"
-                borderRadius="md"
-                fontSize="xs"
-                fontWeight="bold"
-                boxShadow="sm"
-              >
-                Pending
-              </Badge>
-            )}
-          </HStack>
-
-          <HStack
-            position="absolute"
-            bottom="10px"
-            left="10px"
-            spacing={1}
-            bg="rgba(0,0,0,0.6)"
-            p="2"
-            borderRadius="md"
-          >
-            {[...Array(5)].map((_, i) => (
-              <Box
-                as={FaStar}
-                key={i}
-                color={i < 4 ? "yellow.400" : "gray.300"}
-                fontSize="sm"
+          {doctor?.doctorProfileImage ? (
+            <Box position="relative" h="full">
+              <Image
+                src={doctorProfileImage}
+                alt={`Dr. ${doctorFullName}`}
+                w="full"
+                h="full"
+                objectFit="cover"
+                objectPosition="center"
+                transition="transform 0.3s ease"
+                _groupHover={{ transform: "scale(1.05)" }}
               />
-            ))}
-            <Text color="white" fontSize="xs" fontWeight="bold">
-              4.0
-            </Text>
-          </HStack>
+              <Box
+                position="absolute"
+                inset={0}
+                bg="linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 50%)"
+              />
+            </Box>
+          ) : (
+            <Flex
+              justify="center"
+              align="center"
+              h="full"
+              bg={`linear-gradient(135deg, ${useColorModeValue(
+                "blue.50",
+                "blue.900"
+              )}, ${useColorModeValue("cyan.50", "cyan.900")})`}
+              p={3}
+            >
+              <Avatar
+                size="lg"
+                name={doctorFullName}
+                src={undefined}
+                bg={accentColor}
+                color="white"
+                icon={<FaUserMd fontSize="1.2rem" />}
+                border="2px solid"
+                borderColor="white"
+              />
+            </Flex>
+          )}
+
+          {/* Specialization Badge */}
+          <Box
+            position="absolute"
+            bottom={2}
+            left={0}
+            right={0}
+            zIndex={1}
+            px={2}
+          >
+            <Badge
+              bg={badgeBg}
+              color="white"
+              px={2}
+              py={0.5}
+              borderRadius="full"
+              fontSize="2xs"
+              fontWeight="semibold"
+              boxShadow="0 1px 3px rgba(0,0,0,0.2)"
+            >
+              <Flex align="center" gap={1}>
+                <Icon as={FaStethoscope} boxSize={2} />
+                <Text fontSize="xs">{doctorSpecialization}</Text>
+              </Flex>
+            </Badge>
+          </Box>
         </Box>
 
-        <Box flex="1" p={{ base: 4, md: 6 }}>
-          <Flex direction="column" h="100%">
-            <Flex justify="space-between" align="flex-start" mb={4}>
-              <VStack align="start" spacing={1}>
-                <Heading size="lg" color="blue.600">
-                  Dr. {doctor?.fullName}
-                </Heading>
-                <HStack>
-                  <Box as={FaUserMd} color="blue.500" />
-                  <Text color="gray.600" fontWeight="medium">
-                    {doctor?.specialization} Specialist
-                  </Text>
-                </HStack>
-              </VStack>
+        <Box
+          flex={1}
+          p={{ base: 3, md: 4 }}
+          display="flex"
+          flexDirection="column"
+          justifyContent="space-between"
+        >
+          <Box>
+            <Flex
+              justify="space-between"
+              align={{ base: "flex-start", sm: "center" }}
+              mb={3}
+              direction={{ base: "column", sm: "row" }}
+              gap={{ base: 2, sm: 0 }}
+            >
+              {/* Doctor name */}
+              <Heading
+                as="h3"
+                fontSize={{ base: "md", md: "lg" }}
+                color={textColor}
+                fontWeight="bold"
+                transition="color 0.2s"
+                _groupHover={{ color: accentColor }}
+              >
+                Dr. {doctorFullName}
+              </Heading>
 
-              <VStack align="end" spacing={1}>
-                <Text fontWeight="bold" fontSize="xl" color="blue.600">
-                  Rs. {doctor?.consultationFee}
+              {/* Consultation Fee */}
+              <Box
+                bg={highlightColor}
+                px={2}
+                py={1}
+                borderRadius="md"
+                textAlign="center"
+                borderLeft="2px solid"
+                borderColor={accentColor}
+              >
+                <Text fontWeight="bold" fontSize="sm" color={accentColor}>
+                  Rs. {doctorConsultationFee}
                 </Text>
-                <Text fontSize="sm" color="gray.500">
+                <Text fontSize="2xs" color={subtleText}>
                   Consultation Fee
                 </Text>
-              </VStack>
+              </Box>
             </Flex>
 
-            <Divider />
+            <Divider mb={3} borderColor={borderColor} />
 
-            <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4} mt={4}>
-              <Flex align="center">
-                <Box as={FaHospital} color="blue.500" fontSize="lg" mr={3} />
-                <VStack align="start" spacing={0}>
-                  <Text fontSize="sm" color="gray.500">
+            {/* Key Details - Vertical layout for more height */}
+            <VStack align="stretch" mb={4} spacing={2.5}>
+              <Flex align="center" gap={2}>
+                <Flex
+                  align="center"
+                  justify="center"
+                  bg={highlightColor}
+                  p={1.5}
+                  borderRadius="md"
+                  w="24px"
+                  h="24px"
+                >
+                  <Icon as={FaHospital} color={accentColor} boxSize={3} />
+                </Flex>
+                <Box>
+                  <Text fontSize="xs" color={subtleText}>
                     Hospital
                   </Text>
-                  <Text fontWeight="medium">
-                    {doctor?.hospital?.name || "Not specified"}
-                  </Text>
-                </VStack>
+                  <Text fontSize="sm">{doctorHospitalName}</Text>
+                </Box>
               </Flex>
 
-              <Flex align="center">
-                <Box as={FaMedal} color="blue.500" fontSize="lg" mr={3} />
-                <VStack align="start" spacing={0}>
-                  <Text fontSize="sm" color="gray.500">
+              <Flex align="center" gap={2}>
+                <Flex
+                  align="center"
+                  justify="center"
+                  bg={highlightColor}
+                  p={1.5}
+                  borderRadius="md"
+                  w="24px"
+                  h="24px"
+                >
+                  <Icon as={FaMedal} color={accentColor} boxSize={3} />
+                </Flex>
+                <Box>
+                  <Text fontSize="xs" color={subtleText}>
                     Experience
                   </Text>
-                  <Text fontWeight="medium">
-                    {doctor?.yearsOfExperience} years
-                  </Text>
-                </VStack>
+                  <Text fontSize="sm">{doctorYearsOfExperience} years</Text>
+                </Box>
               </Flex>
 
-              <Flex align="center">
-                <Box
-                  as={FaMapMarkerAlt}
-                  color="blue.500"
-                  fontSize="lg"
-                  mr={3}
-                />
-                <VStack align="start" spacing={0}>
-                  <Text fontSize="sm" color="gray.500">
+              <Flex align="center" gap={2}>
+                <Flex
+                  align="center"
+                  justify="center"
+                  bg={highlightColor}
+                  p={1.5}
+                  borderRadius="md"
+                  w="24px"
+                  h="24px"
+                >
+                  <Icon as={FaMapMarkerAlt} color={accentColor} boxSize={3} />
+                </Flex>
+                <Box>
+                  <Text fontSize="xs" color={subtleText}>
                     Location
                   </Text>
-                  <Text fontWeight="medium">{doctor?.address || "Damak"}</Text>
-                </VStack>
+                  <Text fontSize="sm">{doctorAddress}</Text>
+                </Box>
               </Flex>
+            </VStack>
 
-              <Flex align="center">
-                <Box as={FaPhone} color="blue.500" fontSize="lg" mr={3} />
-                <VStack align="start" spacing={0}>
-                  <Text fontSize="sm" color="gray.500">
-                    Contact
-                  </Text>
-                  <Text fontWeight="medium">{doctor?.phone}</Text>
-                </VStack>
-              </Flex>
-            </SimpleGrid>
-
-            <Accordion allowToggle mt={4}>
+            {/* Education Accordion */}
+            <Accordion allowToggle mb={4}>
               <AccordionItem border="none">
                 <AccordionButton
-                  p={2}
-                  _hover={{ bg: "blue.50" }}
+                  px={2}
+                  py={1.5}
+                  _hover={{ bg: subtleBg }}
                   borderRadius="md"
+                  border="1px solid"
+                  borderColor={borderColor}
+                  fontSize="sm"
                 >
-                  <Box as={FaGraduationCap} color="blue.500" mr={2} />
-                  <Text fontWeight="medium" flex="1" textAlign="left">
-                    Qualifications & Education
+                  <Icon
+                    as={FaGraduationCap}
+                    color={accentColor}
+                    boxSize={3}
+                    mr={2}
+                  />
+                  <Text
+                    fontSize="xs"
+                    fontWeight="medium"
+                    flex="1"
+                    textAlign="left"
+                  >
+                    Education & Qualifications
                   </Text>
-                  <AccordionIcon />
+                  <AccordionIcon boxSize={4} />
                 </AccordionButton>
-                <AccordionPanel pb={4}>
-                  {doctor?.qualifications?.length > 0 ? (
+                <AccordionPanel pb={2} pt={2} px={2}>
+                  {doctorQualifications?.length > 0 ? (
                     <VStack align="stretch" spacing={2}>
-                      {doctor.qualifications.map((qual, index) => (
-                        <Box key={index} p={3} borderRadius="md" bg="blue.50">
-                          <Text fontWeight="bold">{qual.degree}</Text>
-                          <Flex justify="space-between" fontSize="sm">
+                      {doctorQualifications.map((qual, index) => (
+                        <Box
+                          key={index}
+                          p={2}
+                          borderRadius="md"
+                          bg={subtleBg}
+                          borderLeft="2px solid"
+                          borderColor={accentColor}
+                        >
+                          <Text fontSize="xs" fontWeight="bold">
+                            {qual.degree}
+                          </Text>
+                          <Flex
+                            justify="space-between"
+                            fontSize="2xs"
+                            mt={0.5}
+                            color={subtleText}
+                          >
                             <Text>{qual.university}</Text>
                             <Text>Graduated: {qual.graduationYear}</Text>
                           </Flex>
@@ -257,68 +330,51 @@ const DoctorCard = ({ doctor }) => {
                       ))}
                     </VStack>
                   ) : (
-                    <Text color="gray.500">
+                    <Text fontSize="xs" color={subtleText} p={1}>
                       No qualification details available
                     </Text>
                   )}
                 </AccordionPanel>
               </AccordionItem>
             </Accordion>
+          </Box>
 
-            <Flex
-              mt="auto"
-              pt={4}
-              justify="space-between"
-              align="center"
-              flexWrap="wrap"
-              gap={2}
+          {/* Action Buttons - At the bottom of the flex container */}
+          <Flex gap={2} mt="auto">
+            <Button
+              bg={accentColor}
+              color="white"
+              onClick={handleSelectDoctor}
+              size="sm"
+              borderRadius="md"
+              leftIcon={<FaCalendarCheck size="12px" />}
+              flex={1}
+              _hover={{
+                bg: useColorModeValue("blue.600", "blue.400"),
+              }}
+              transition="all 0.2s"
+              fontSize="xs"
+              py={2}
             >
-              <HStack spacing={2}>
-                <Tooltip label="Share on Facebook">
-                  <IconButton
-                    aria-label="Facebook"
-                    icon={<FaFacebook />}
-                    size="sm"
-                    colorScheme="facebook"
-                    variant="outline"
-                    borderRadius="full"
-                  />
-                </Tooltip>
-                <Tooltip label="Share on Twitter">
-                  <IconButton
-                    aria-label="Twitter"
-                    icon={<FaTwitter />}
-                    size="sm"
-                    colorScheme="twitter"
-                    variant="outline"
-                    borderRadius="full"
-                  />
-                </Tooltip>
-                <Tooltip label="Share on LinkedIn">
-                  <IconButton
-                    aria-label="LinkedIn"
-                    icon={<FaLinkedin />}
-                    size="sm"
-                    colorScheme="linkedin"
-                    variant="outline"
-                    borderRadius="full"
-                  />
-                </Tooltip>
-              </HStack>
+              Book Appointment
+            </Button>
 
-              <Button
-                colorScheme="blue"
-                onClick={handleSelectDoctor}
-                size="md"
-                borderRadius="full"
-                px={6}
-                boxShadow="md"
-                _hover={{ transform: "translateY(-2px)", boxShadow: "lg" }}
-                leftIcon={<FaCalendarCheck />}
-              >
-                Book Appointment
-              </Button>
-            </Flex>
+            <Button
+            onClick={handleViewDoctorProfile}
+              variant="outline"
+              borderColor={accentColor}
+              color={accentColor}
+              size="sm"
+              borderRadius="md"
+              _hover={{
+                bg: highlightColor,
+              }}
+              transition="all 0.2s"
+              fontSize="xs"
+              py={2}
+            >
+              View Profile
+            </Button>
           </Flex>
         </Box>
       </Flex>

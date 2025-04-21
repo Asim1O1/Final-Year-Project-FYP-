@@ -32,7 +32,7 @@ const testBookingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "Completed", "cancelled", "booked"],
+    enum: ["pending", "Completed", "cancelled", "booked", "report_available"],
     default: "pending",
   },
   paymentStatus: {

@@ -5,10 +5,7 @@ import {
   Home,
   Calendar,
   MessageSquare,
-  FileText,
-  Clock,
   User,
-  Bell,
   LogOut,
   Menu,
   X,
@@ -24,7 +21,7 @@ const DoctorSidebar = () => {
 
   const handleLogout = () => {
     dispatch(logoutUser());
-    navigate("/login"); // Navigate to login page after logging out
+    navigate("/login"); 
   };
 
   const menuItems = [
@@ -39,18 +36,8 @@ const DoctorSidebar = () => {
       icon: <MessageSquare size={20} />,
       path: "/doctor/chat",
     },
-    {
-      name: "Medical Reports",
-      icon: <FileText size={20} />,
-      path: "/doctor/reports",
-    },
-    { name: "Schedule", icon: <Clock size={20} />, path: "/doctor/schedule" },
+
     { name: "Profile", icon: <User size={20} />, path: "/doctor/profile" },
-    {
-      name: "Notifications",
-      icon: <Bell size={20} />,
-      path: "/doctor/notifications",
-    },
   ];
 
   return (

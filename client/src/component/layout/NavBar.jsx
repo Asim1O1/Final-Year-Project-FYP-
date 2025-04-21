@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Home,
   Hospital,
   DollarSign,
-  Contact,
   LogIn,
   User,
   LogOut,
@@ -24,6 +23,7 @@ import {
   handleMarkNotificationAsRead,
 } from "../../features/notification/notificationSlice";
 import { Menu } from "@chakra-ui/react";
+import { clearUnreadCountForChat } from "../../features/messages/messageSlice";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -32,7 +32,15 @@ const Navbar = () => {
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [prevScrollPos, setPrevScrollPos] = useState(window.scrollY);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-
+  const unreadChatCount = useSelector(
+    (state) => state?.messageSlice?.unreadCount
+  );
+  console.log("The unread chat count os", unreadChatCount);
+  const totalUnreadCount = unreadChatCount.reduce(
+    (total, chat) => total + chat.count,
+    0
+  );
+  console.log("The total unread count is", totalUnreadCount);
   // Get notifications from Redux store
   const { notifications } = useSelector((state) => state?.notifications);
 
@@ -74,8 +82,12 @@ const Navbar = () => {
     dispatch(logoutUser());
     navigate("/login");
   };
-
   const navigateToChat = () => {
+    if (unreadChatCount.length > 0) {
+      const chatIdToClear = unreadChatCount[0].chatId;
+      dispatch(clearUnreadCountForChat(chatIdToClear));
+    }
+
     navigate("/chat/users");
     setIsMenuOpen(false);
   };
@@ -114,7 +126,11 @@ const Navbar = () => {
       <div className="container mx-auto px-4 lg:px-8 py-3.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <img src={MedConnectLogo || "/placeholder.svg"} alt="MedConnect Logo" className="w-36 h-auto" />
+            <img
+              src={MedConnectLogo || "/placeholder.svg"}
+              alt="MedConnect Logo"
+              className="w-36 h-auto"
+            />
           </div>
 
           <div className="hidden md:flex items-center space-x-8">
@@ -151,17 +167,16 @@ const Navbar = () => {
                 />
                 <button
                   onClick={navigateToChat}
-                  className="flex items-center text-gray-700 hover:text-blue-600 text-base font-medium transition-colors duration-300 group py-2 relative"
+                  className="relative p-2 rounded-full hover:bg-gray-100"
                 >
-                  <MessageSquare
-                    className="mr-2 text-gray-500 group-hover:text-blue-600 transition-colors duration-300"
-                    size={18}
-                  />
-                  <span className="relative">
-                    Messages
-                    <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-blue-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-full"></span>
-                  </span>
+                  <MessageSquare className="w-5 h-5" />
+                  {totalUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-ping-once">
+                      {totalUnreadCount}
+                    </span>
+                  )}
                 </button>
+
                 <button
                   onClick={() => navigate("/profile")}
                   className="flex items-center text-gray-700 hover:text-blue-600 text-base font-medium transition-colors duration-300 group py-2 relative"
@@ -199,7 +214,7 @@ const Navbar = () => {
                 </a>
                 <a
                   href="/login"
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2.5 rounded-lg hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center text-sm font-medium transform hover:translate-y-[-2px] active:translate-y-[0px]"
+                  className="bg-[#00A9FF] text-white px-6 py-2.5 rounded-lg hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center text-sm font-medium transform hover:translate-y-[-2px] active:translate-y-[0px]"
                 >
                   Login <LogIn className="ml-1.5" size={16} />
                 </a>
@@ -221,9 +236,14 @@ const Navbar = () => {
                 />
                 <button
                   onClick={navigateToChat}
-                  className="p-2 rounded-full text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200"
+                  className="relative p-2 rounded-full hover:bg-gray-100"
                 >
                   <MessageSquare className="w-5 h-5" />
+                  {totalUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-ping-once">
+                      {totalUnreadCount}
+                    </span>
+                  )}
                 </button>
               </>
             )}
@@ -232,7 +252,11 @@ const Navbar = () => {
               onClick={toggleMenu}
               aria-label="Toggle menu"
             >
-              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {isMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
             </button>
           </div>
         </div>
@@ -241,7 +265,9 @@ const Navbar = () => {
       {/* Mobile Menu */}
       <div
         className={`${
-          isMenuOpen ? "max-h-[500px] opacity-100 border-b border-gray-100" : "max-h-0 opacity-0"
+          isMenuOpen
+            ? "max-h-[500px] opacity-100 border-b border-gray-100"
+            : "max-h-0 opacity-0"
         } md:hidden absolute left-0 right-0 top-full bg-white/95 backdrop-blur-md shadow-lg flex flex-col w-full overflow-hidden transition-all duration-400 ease-in-out z-40`}
       >
         <div className="px-5 py-4 space-y-2.5">
@@ -260,19 +286,21 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <button
-                  onClick={() => {
-                    navigateToChat()
-                    setIsMenuOpen(false)
-                  }}
-                  className="flex items-center text-gray-700 hover:bg-blue-50 hover:text-blue-600 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 w-full"
+                  onClick={navigateToChat}
+                  className="relative p-2 rounded-full hover:bg-gray-100"
                 >
-                  <MessageSquare className="mr-3.5 text-gray-500" size={18} />
-                  Messages
+                  <MessageSquare className="w-5 h-5" />
+                  {totalUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-ping-once">
+                      {totalUnreadCount}
+                    </span>
+                  )}
                 </button>
+
                 <button
                   onClick={() => {
-                    setIsMenuOpen(false)
-                    navigate("/profile")
+                    setIsMenuOpen(false);
+                    navigate("/profile");
                   }}
                   className="flex items-center text-gray-700 hover:bg-blue-50 hover:text-blue-600 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 w-full"
                 >

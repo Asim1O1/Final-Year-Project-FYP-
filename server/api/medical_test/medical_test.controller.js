@@ -146,45 +146,148 @@ export const getMedicalTestById = async (req, res, next) => {
  */
 export const getMedicalTests = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, hospital, search } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      hospital,
+      search = "",
+      testType = "",
+      minPrice,
+      maxPrice,
+      sort = "createdAt_desc",
+      isHospitalAdmin = false, // New parameter
+      adminHospitalId, // New parameter
+    } = req.query;
 
-    // Build dynamic query
+    console.log("📥 Query Params:", {
+      page,
+      limit,
+      hospital,
+      search,
+      testType,
+      minPrice,
+      maxPrice,
+      sort,
+      isHospitalAdmin,
+      adminHospitalId,
+    });
+
+    // Build dynamic query - start with empty query
     const query = {};
-    if (hospital) {
+
+    // Check if request is from hospital admin dashboard
+    if (isHospitalAdmin === "true" && adminHospitalId) {
+      // For hospital admin, only show tests from their hospital
+      query.hospital = adminHospitalId;
+      console.log("🏥 Hospital Admin filtering for hospital:", adminHospitalId);
+    } else if (hospital) {
+      // For general users, apply hospital filter if provided
       query.hospital = hospital;
+      console.log("🏥 Filtering by hospital:", hospital);
     }
+
+    if (testType) {
+      query.testType = testType;
+      console.log("🧪 Filtering by test type:", testType);
+    }
+
     if (search) {
-      query.testName = { $regex: search, $options: "i" };
+      query.$or = [
+        { testName: { $regex: search, $options: "i" } },
+        { testDescription: { $regex: search, $options: "i" } },
+      ];
+      console.log("🔍 Searching by test name or description:", search);
+    }
+
+    // Only apply price range if both min and max are provided
+    if (minPrice !== undefined && maxPrice !== undefined) {
+      query.testPrice = {
+        $gte: Number(minPrice),
+        $lte: Number(maxPrice),
+      };
+      console.log("💰 Price range:", minPrice, "-", maxPrice);
+    }
+
+    // Sort options (always applied)
+    let sortOptions = {};
+    const [sortField, sortOrder] = sort.split("_");
+
+    switch (sortField) {
+      case "price":
+        sortOptions.testPrice = sortOrder === "asc" ? 1 : -1;
+        break;
+      case "name":
+        sortOptions.testName = sortOrder === "asc" ? 1 : -1;
+        break;
+      case "createdAt":
+      default:
+        sortOptions.createdAt = sortOrder === "asc" ? 1 : -1;
     }
 
     const options = {
       page: parseInt(page, 10),
       limit: parseInt(limit, 10),
-      sort: { createdAt: -1 },
+      sort: sortOptions,
       populate: {
         path: "hospital",
         select: "name location contactNumber",
+        match: {
+          $or: [{ isDeleted: { $exists: false } }, { isDeleted: false }],
+        },
       },
     };
 
+    console.log("⚙️ Pagination Options:", options);
+    console.log("🧪 Final Query:", query);
+
     const result = await paginate(MedicalTest, query, options);
+
+    console.log("✅ Raw Paginated Result:", {
+      count: result.data.length,
+      total: result.totalCount,
+    });
+
+    // Filter out tests with null or deleted hospitals
+    result.data = result.data.filter(
+      (test) => test.hospital && test.hospital.isDeleted !== true
+    );
 
     // Remove sensitive or unnecessary fields
     result.data = result.data.map((test) => {
-      const { timeSlot, payment, ...filteredTest } = test.toObject();
+      const { timeSlot, payment, __v, ...filteredTest } = test.toObject();
       return filteredTest;
     });
+
+    // Calculate active filters for frontend
+    const activeFilters = {};
+    if (isHospitalAdmin === "true" && adminHospitalId) {
+      activeFilters.hospital = adminHospitalId;
+    } else if (hospital) {
+      activeFilters.hospital = hospital;
+    }
+    if (testType) activeFilters.testType = testType;
+    if (search) activeFilters.search = search;
+    if (minPrice) activeFilters.minPrice = minPrice;
+    if (maxPrice) activeFilters.maxPrice = maxPrice;
 
     return res.status(200).json(
       createResponse({
         isSuccess: true,
         statusCode: 200,
         message: "Medical tests fetched successfully",
-        data: result,
+        data: {
+          tests: result.data,
+          pagination: {
+            totalCount: result.totalCount,
+            currentPage: result.currentPage,
+            totalPages: result.totalPages,
+          },
+          activeFilters,
+        },
       })
     );
   } catch (error) {
-    console.error("Error fetching medical tests:", error);
+    console.error("❌ Error fetching medical tests:", error);
     next(error);
   }
 };
@@ -434,6 +537,7 @@ export const bookMedicalTest = async (req, res, next) => {
         })
       );
     }
+    console.log("The hospital is", hospital);
 
     // Check for existing bookings at the same time
     const existingBooking = await TestBooking.findOne({
@@ -512,7 +616,7 @@ export const bookMedicalTest = async (req, res, next) => {
         message: `New ${test.testName} test booked by ${
           user.fullName
         } on ${new Date(bookingDate).toLocaleDateString()} at ${bookingTime}`,
-        type: "test_booking_admin",
+        type: "test_booking",
         relatedId: newTestBooking._id,
         hospitalId: hospital._id,
       }));
@@ -520,9 +624,12 @@ export const bookMedicalTest = async (req, res, next) => {
       await Notification.insertMany(adminNotifications);
       console.log(`Admin notifications inserted in DB.`);
 
+      // Emit real-time to each admin's room
       hospitalAdmins.forEach((admin) => {
-        console.log(`Emitting 'new-admin-notification' to admin: ${admin._id}`);
-        io.to(admin._id.toString()).emit("new-admin-notification", {
+        console.log(
+          `Emitting 'new-admin-notification' to admin room: ${admin._id}`
+        );
+        io.to(admin._id.toString()).emit("test_booking", {
           message: `New test booking at ${hospital.name}`,
           bookingDetails: {
             testName: test.testName,
@@ -531,6 +638,7 @@ export const bookMedicalTest = async (req, res, next) => {
             time: bookingTime,
             tokenNumber: tokenNumber,
           },
+          createdAt: new Date().toISOString(),
         });
       });
     } else {
@@ -549,17 +657,20 @@ export const bookMedicalTest = async (req, res, next) => {
       }`,
       type: "test_booking",
       relatedId: newTestBooking._id,
+      createdAt: new Date().toISOString(),
     });
 
     await userNotification.save();
     console.log("✅ User notification created:", userNotification._id);
 
-    console.log(`Emitting 'new-notification' to user: ${userId}`);
-    io.to(userId.toString()).emit("new-notification", {
+    // Emit to the room based on user ID
+    console.log(`Emitting 'new-notification' to user's room: ${userId}`);
+    io.to(userId.toString()).emit("test_booking", {
       message: `Test booking ${
         status === "confirmed" ? "confirmed" : "created"
       }`,
       bookingId: newTestBooking._id,
+      createdAt: new Date().toISOString(),
     });
 
     // 3. SEND CONFIRMATION EMAIL
@@ -782,21 +893,30 @@ export const updateTestBookingStatus = async (req, res, next) => {
 
     const io = req.app.get("socketio");
 
+    // Get the current date for createdDate
+    const createdDate = new Date();
+
+    // Create notification with createdDate
     const notification = new Notification({
       user: updatedBooking.userId._id,
       message: `Your test booking status has been updated to ${status}.`,
       type: "test_booking",
       relatedId: updatedBooking._id,
+      createdAt: createdDate, // Save createdDate to the notification
     });
 
-    io.to(updatedBooking.userId._id.toString()).emit("new-notification", {
+    // Emit to the user's room instead of their socket ID
+    io.to(updatedBooking.userId._id.toString()).emit("test_booking", {
       message: notification.message,
       bookingId: updatedBooking._id,
       type: notification.type,
       user: notification.user,
+      createdAt: createdDate, // Send createdDate in the real-time notification
     });
 
+    // Save notification to the database
     await notification.save();
+    console.log("✅ Notification saved for updated booking:", notification._id);
 
     res.status(200).json(
       createResponse({

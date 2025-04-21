@@ -101,19 +101,10 @@ const MedicalReports = () => {
 
   if (error) {
     return (
-      <div className="error-container">
-        <h3>Error</h3>
-        <p>{error}</p>
-        {error.data?.message.includes("not linked to any hospital") &&
-          isHospitalAdmin && (
-            <div className="info-message">
-              <p>
-                Your admin account is not linked to any hospital. Please contact
-                the system administrator.
-              </p>
-            </div>
-          )}
-      </div>
+      <Alert status="error" borderRadius="md">
+      <AlertIcon />
+      {error?.message || error?.error || "Server down right now,  please! try again"}
+    </Alert>
     );
   }
 

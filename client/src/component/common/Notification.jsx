@@ -22,7 +22,7 @@ const Notifications = ({
     if (notification.type === "campaign" && notification.relatedId) {
       navigate(`/campaigns/${notification.relatedId}`);
     } else if (notification.type === "appointment" && notification.relatedId) {
-      console.log("entered the else")
+      console.log("entered the else");
       navigate(`/appointments/${notification.relatedId}`);
     }
     // Add more conditions for other types if needed
@@ -45,17 +45,29 @@ const Notifications = ({
     }
   };
 
-  // Function to get icon based on notification type
   const getNotificationIcon = (type) => {
     switch (type) {
-      case "info":
+      case "appointment":
+        return <Clock size={16} className="text-purple-500" />;
+
+      case "message":
         return <Info size={16} className="text-blue-500" />;
-      case "warning":
-        return <AlertTriangle size={16} className="text-yellow-500" />;
-      case "error":
-        return <AlertTriangle size={16} className="text-red-500" />;
-      case "success":
+
+      case "payment":
         return <Check size={16} className="text-green-500" />;
+
+      case "campaign":
+        return <AlertTriangle size={16} className="text-orange-500" />;
+
+      case "test_booking":
+        return <Clock size={16} className="text-indigo-500" />;
+
+      case "doctor":
+        return <Info size={16} className="text-teal-500" />;
+
+      case "medical_report":
+        return <Info size={16} className="text-pink-500" />;
+
       default:
         return <Info size={16} className="text-gray-500" />;
     }

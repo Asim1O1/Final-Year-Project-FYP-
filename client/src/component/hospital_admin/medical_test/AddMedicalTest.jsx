@@ -47,7 +47,7 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
-    dispatch(fetchAllMedicalTests({ page: currentPage }));
+    dispatch(fetchAllMedicalTests({ page: currentPage, isAdmin: true }));
   }, [dispatch, currentPage, refreshTrigger]);
   
 
