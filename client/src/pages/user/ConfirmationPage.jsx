@@ -1,37 +1,45 @@
 // pages/Confirmation.js
-import React from 'react';
-import { 
-  Box, 
-  Container, 
-  Heading, 
-  Flex, 
-  Text, 
-  Button, 
-  Divider,
-  SimpleGrid,
-  Stack,
+import { CalendarIcon, CheckIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import {
   Avatar,
-  Icon,
-  HStack,
-  VStack,
-  RadioGroup,
-  Radio,
+  Box,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
-  Circle
-} from '@chakra-ui/react';
-import { ChevronRightIcon, CheckIcon, DownloadIcon, CalendarIcon, ExternalLinkIcon } from '@chakra-ui/icons';
-import { FaCreditCard, FaPaypal, FaApplePay, FaCalendarPlus, FaShareAlt, FaFileAlt, FaIdCard, FaFileDownload, FaInfoCircle } from 'react-icons/fa';
-import MainLayout from '../../layouts/MainLayout';
-
+  Button,
+  Circle,
+  Container,
+  Divider,
+  Flex,
+  Heading,
+  HStack,
+  Icon,
+  Radio,
+  RadioGroup,
+  SimpleGrid,
+  Text,
+} from "@chakra-ui/react";
+import React from "react";
+import {
+  FaApplePay,
+  FaCalendarPlus,
+  FaCreditCard,
+  FaFileAlt,
+  FaFileDownload,
+  FaIdCard,
+  FaInfoCircle,
+  FaPaypal,
+  FaShareAlt,
+} from "react-icons/fa";
 
 const ConfirmationPage = () => {
   return (
     <>
-       <Container maxW="container.md" py={8}>
-        <Heading size="md" color="blue.500" mb={6}>Appointment Confirmed</Heading>
-        
+      <Container maxW="container.md" py={8}>
+        <Heading size="md" color="blue.500" mb={6}>
+          Appointment Confirmed
+        </Heading>
+
         <Breadcrumb separator={<ChevronRightIcon color="gray.500" />} mb={8}>
           <BreadcrumbItem>
             <BreadcrumbLink>Select Doctor</BreadcrumbLink>
@@ -46,52 +54,75 @@ const ConfirmationPage = () => {
             <BreadcrumbLink>Confirmation</BreadcrumbLink>
           </BreadcrumbItem>
         </Breadcrumb>
-        
+
         <Box textAlign="center" mb={8}>
           <Circle size="60px" bg="green.100" color="green.500" mx="auto" mb={3}>
             <CheckIcon boxSize={6} />
           </Circle>
-          <Heading size="md" color="green.500" mb={2}>Appointment Confirmed!</Heading>
-          <Text color="gray.600">Your appointment has been successfully scheduled</Text>
+          <Heading size="md" color="green.500" mb={2}>
+            Appointment Confirmed!
+          </Heading>
+          <Text color="gray.600">
+            Your appointment has been successfully scheduled
+          </Text>
         </Box>
-        
+
         <Box borderWidth="1px" borderRadius="lg" p={6} mb={8}>
-          <Flex direction={{ base: 'column', md: 'row' }} mb={6}>
-            <Avatar src="/doctor-placeholder-3.jpg" size="lg" mr={4} mb={{ base: 4, md: 0 }} />
+          <Flex direction={{ base: "column", md: "row" }} mb={6}>
+            <Avatar
+              src="/doctor-placeholder-3.jpg"
+              size="lg"
+              mr={4}
+              mb={{ base: 4, md: 0 }}
+            />
             <Box flex="1">
-              <Text fontWeight="bold" color="gray.700">Dr. Sarah Wilson</Text>
-              <Text fontSize="sm" color="gray.600" mb={2}>Cardiologist | Memorial Hospital</Text>
-              
+              <Text fontWeight="bold" color="gray.700">
+                Dr. Sarah Wilson
+              </Text>
+              <Text fontSize="sm" color="gray.600" mb={2}>
+                Cardiologist | Memorial Hospital
+              </Text>
+
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mt={4}>
                 <Flex align="center">
                   <Icon as={CalendarIcon} color="gray.500" mr={2} />
                   <Box>
-                    <Text fontSize="xs" color="gray.500">Date & Time</Text>
+                    <Text fontSize="xs" color="gray.500">
+                      Date & Time
+                    </Text>
                     <Text fontSize="sm">March 15, 2025 | 10:00 AM</Text>
                   </Box>
                 </Flex>
-                
+
                 <Flex align="center">
                   <Icon as={FaInfoCircle} color="gray.500" mr={2} />
                   <Box>
-                    <Text fontSize="xs" color="gray.500">Consultation Mode</Text>
+                    <Text fontSize="xs" color="gray.500">
+                      Consultation Mode
+                    </Text>
                     <Text fontSize="sm">Video Consultation</Text>
                   </Box>
                 </Flex>
               </SimpleGrid>
             </Box>
           </Flex>
-          
+
           <Divider my={6} />
-          
+
           <Box mb={6}>
-            <Text fontWeight="medium" mb={3}>Fee Breakdown</Text>
+            <Text fontWeight="medium" mb={3}>
+              Fee Breakdown
+            </Text>
             <Flex justify="space-between" mb={2}>
-              <Text fontSize="sm" color="gray.600">Consultation Fee</Text>
+              <Text fontSize="sm" color="gray.600">
+                Consultation Fee
+              </Text>
               <Text fontSize="sm">$150.00</Text>
             </Flex>
             <Flex justify="space-between" mb={2}>
-              <Text fontSize="sm" color="gray.600">Platform Fee</Text>
+              <Text fontSize="sm" color="gray.600">
+                Platform Fee
+              </Text>
               <Text fontSize="sm">$10.00</Text>
             </Flex>
             <Divider my={3} />
@@ -100,11 +131,13 @@ const ConfirmationPage = () => {
               <Text>$160.00</Text>
             </Flex>
           </Box>
-          
+
           <Divider my={6} />
-          
+
           <Box mb={6}>
-            <Text fontWeight="medium" mb={4}>Payment Method</Text>
+            <Text fontWeight="medium" mb={4}>
+              Payment Method
+            </Text>
             <RadioGroup defaultValue="credit-card">
               <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
                 <Radio value="credit-card" colorScheme="blue" isChecked>
@@ -128,38 +161,41 @@ const ConfirmationPage = () => {
               </SimpleGrid>
             </RadioGroup>
           </Box>
-          
+
           <Divider my={6} />
-          
+
           <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
             <Box borderWidth="1px" borderRadius="md" p={4}>
               <Flex direction="column" align="center">
                 <Icon as={FaFileAlt} color="blue.500" boxSize={6} mb={3} />
-                <Text fontWeight="medium" mb={2}>Preparation</Text>
+                <Text fontWeight="medium" mb={2}>
+                  Preparation
+                </Text>
                 <Text fontSize="sm" color="gray.600" textAlign="center">
-                  Fast for 6 hours
-                  Bring medical records
-                  Wear comfortable clothes
+                  Fast for 6 hours Bring medical records Wear comfortable
+                  clothes
                 </Text>
               </Flex>
             </Box>
-            
+
             <Box borderWidth="1px" borderRadius="md" p={4}>
               <Flex direction="column" align="center">
                 <Icon as={FaIdCard} color="blue.500" boxSize={6} mb={3} />
-                <Text fontWeight="medium" mb={2}>Required Documents</Text>
+                <Text fontWeight="medium" mb={2}>
+                  Required Documents
+                </Text>
                 <Text fontSize="sm" color="gray.600" textAlign="center">
-                  Photo ID
-                  Insurance Card
-                  Previous Reports
+                  Photo ID Insurance Card Previous Reports
                 </Text>
               </Flex>
             </Box>
-            
+
             <Box borderWidth="1px" borderRadius="md" p={4}>
               <Flex direction="column" align="center">
                 <Icon as={FaInfoCircle} color="blue.500" boxSize={6} mb={3} />
-                <Text fontWeight="medium" mb={2}>Cancellation Policy</Text>
+                <Text fontWeight="medium" mb={2}>
+                  Cancellation Policy
+                </Text>
                 <Text fontSize="sm" color="gray.600" textAlign="center">
                   Free cancellation up to 24 hours before appointment
                 </Text>
@@ -167,7 +203,7 @@ const ConfirmationPage = () => {
             </Box>
           </SimpleGrid>
         </Box>
-        
+
         <HStack spacing={4} justify="center">
           <Button leftIcon={<FaFileDownload />} colorScheme="blue">
             Download Appointment Info
@@ -179,8 +215,8 @@ const ConfirmationPage = () => {
             Share Details
           </Button>
         </HStack>
-      </Container></>
-
+      </Container>
+    </>
   );
 };
 

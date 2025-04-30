@@ -1,16 +1,16 @@
-import MedicalTest from "../../models/medicalTest.model.js";
 import Hospital from "../../models/hospital.model.js";
-import User from "../../models/user.model.js";
-import TestBooking from "../../models/testBooking.model.js";
+import MedicalTest from "../../models/medicalTest.model.js";
 import Notification from "../../models/notification.model.js";
+import TestBooking from "../../models/testBooking.model.js";
+import User from "../../models/user.model.js";
 
 import fs from "fs";
 
-import createResponse from "../../utils/responseBuilder.js";
 import cloudinary from "../../imageUpload/cloudinaryConfig.js";
-import { paginate } from "../../utils/paginationUtil.js";
-import { sendEmail } from "../../utils/sendEmail.js";
 import { emailTemplates } from "../../utils/emailTemplates.js";
+import { paginate } from "../../utils/paginationUtil.js";
+import createResponse from "../../utils/responseBuilder.js";
+import { sendEmail } from "../../utils/sendEmail.js";
 
 import { logActivity } from "../activity/activity.controller.js";
 
@@ -32,6 +32,22 @@ export const createMedicalTest = async (req, res, next) => {
       );
     }
 
+    // Check if hospital already offers this test
+    const existingTest = await MedicalTest.findOne({
+      hospital: hospital,
+      testName: testName,
+    });
+
+    if (existingTest) {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "This hospital already offers this test",
+          error: "Duplicate test",
+        })
+      );
+    }
     let testImage = null;
 
     // Upload image to Cloudinary if provided
@@ -91,12 +107,22 @@ export const createMedicalTest = async (req, res, next) => {
     existingHospital.medicalTests.push(newMedicalTest._id);
     await existingHospital.save();
 
+    const filteredTest = {
+      _id: newMedicalTest._id,
+      hospital: newMedicalTest.hospital,
+      testName: newMedicalTest.testName,
+      testDescription: newMedicalTest.testDescription,
+      testPrice: newMedicalTest.testPrice,
+      status: newMedicalTest.status,
+      testImage: newMedicalTest.testImage,
+    };
+
     return res.status(201).json(
       createResponse({
         isSuccess: true,
         statusCode: 201,
-        message: "Medical test created and linked to hospital successfully",
-        data: newMedicalTest,
+        message: "Medical test created successfully",
+        data: filteredTest,
         error: null,
       })
     );

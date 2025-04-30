@@ -1,45 +1,45 @@
-import React, { useState, useEffect, useRef } from "react";
+import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import {
+  Badge,
+  Box,
+  Button,
+  Divider,
+  Flex,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
+  IconButton,
+  Image,
+  Input,
   Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Button,
-  FormControl,
-  FormLabel,
-  Input,
-  Select,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  VStack,
-  Textarea,
-  Box,
-  Flex,
-  FormErrorMessage,
-  Divider,
-  IconButton,
-  Image,
-  Tabs,
-  TabList,
-  TabPanels,
+  Select,
   Tab,
+  TabList,
   TabPanel,
-  Badge,
+  TabPanels,
+  Tabs,
+  Textarea,
+  VStack,
 } from "@chakra-ui/react";
-import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
+import PREDEFINED_SPECIALTIES from "../../../../../constants/Specialties";
 import {
   fetchAllDoctors,
   handleDoctorUpdate,
 } from "../../../features/doctor/doctorSlice";
-import PREDEFINED_SPECIALTIES from "../../../../../constants/Specialties";
 
 import { notification } from "antd";
 
@@ -242,7 +242,7 @@ const UpdateDoctorForm = ({ isOpen, onClose, doctorData }) => {
           description:
             response?.message ||
             "Doctor information has been updated successfully.",
-          duration: 2.5,
+          duration: 4.5,
         });
 
         // Refresh doctor list
@@ -267,7 +267,7 @@ const UpdateDoctorForm = ({ isOpen, onClose, doctorData }) => {
         message: "Error",
         description:
           error.message || "An error occurred while updating the doctor.",
-        duration: 2.5,
+        duration: 4.5,
       });
     } finally {
       setIsSubmitting(false);

@@ -1,12 +1,12 @@
+import { ColorModeScript } from "@chakra-ui/color-mode";
+import { ChakraProvider } from "@chakra-ui/react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./index.css";
+import { Provider } from "react-redux";
 import App from "./App.jsx";
-import { Provider } from "react-redux"; // Import Provider
-import store from "./store/store.js"; // Import the Redux store
-import { ChakraProvider } from "@chakra-ui/react";
-import { ColorModeScript } from "@chakra-ui/color-mode";
-import theme from "./utils/theme.js"; // Assuming you have a theme.js file
+import "./index.css";
+import store from "./store/store.js";
+import theme from "./utils/theme.js";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

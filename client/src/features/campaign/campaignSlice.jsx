@@ -32,7 +32,7 @@ export const handleCampaignCreation = createAsyncThunk(
 export const handleCampaignUpdate = createAsyncThunk(
   "campaign/updateCampaign",
   async ({ campaignId, updatedData }, { rejectWithValue }) => {
-    console.log("THe updated data in the campaign slice is", updatedData)
+    console.log("THe updated data in the campaign slice is", updatedData);
     try {
       const response = await campaignServices.updateCampaignService(
         campaignId,
@@ -69,29 +69,15 @@ export const fetchAllCampaigns = createAsyncThunk(
   "campaign/fetchAllCampaigns",
   async (params = {}, { rejectWithValue }) => {
     try {
-      // Destructure with default values
-      const {
-        page = 1,
-        limit = 10,
-        sort = "createdAt",
-        hospital = null,
-        search = null,
-        startDate = null,
-        endDate = null,
-      } = params;
-
-      const response = await campaignServices.getAllCampaignsService({
-        page,
-        limit,
-        sort,
-        hospital,
-        search,
-        startDate,
-        endDate,
-      });
+      const response = await campaignServices.getAllCampaignsService(params);
 
       if (!response.isSuccess) throw response;
-      return response.data;
+
+      // Return both campaigns and pagination in proper structure
+      return {
+        campaigns: response.data.campaigns,
+        pagination: response.data.pagination,
+      };
     } catch (error) {
       return rejectWithValue(
         createApiResponse(error, "Failed to fetch campaigns")

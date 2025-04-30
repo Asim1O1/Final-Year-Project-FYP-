@@ -1,36 +1,38 @@
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { SmallCloseIcon } from "@chakra-ui/icons";
 import {
   Box,
-  Spinner,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  Button,
   Flex,
-  Text,
-  SimpleGrid,
-  Stack,
   FormControl,
   FormLabel,
-  InputGroup,
-  InputLeftElement,
-  Input,
-  Button,
-  Textarea,
-  Select,
-  useToast,
   Icon,
   IconButton,
   Image,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Select,
+  SimpleGrid,
+  Stack,
+  Text,
+  Textarea,
 } from "@chakra-ui/react";
-import { DollarSign, FileText, Building2 } from "lucide-react";
 import { notification } from "antd";
+import { Building2, FileText } from "lucide-react";
+import { useEffect, useState } from "react";
+import { FaMoneyBill } from "react-icons/fa";
+import { useDispatch, useSelector } from "react-redux";
 import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
-import { createMedicalTest, fetchAllMedicalTests } from "../../../features/medical_test/medicalTestSlice";
-import { SmallCloseIcon } from "@chakra-ui/icons";
+import {
+  createMedicalTest,
+  fetchAllMedicalTests,
+} from "../../../features/medical_test/medicalTestSlice";
 import CustomLoader from "../../common/CustomSpinner";
 
 const AddMedicalTest = ({ isOpen, onClose }) => {
@@ -49,7 +51,6 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
   useEffect(() => {
     dispatch(fetchAllMedicalTests({ page: currentPage, isAdmin: true }));
   }, [dispatch, currentPage, refreshTrigger]);
-  
 
   const [formData, setFormData] = useState(initialFormData);
   const [imagePreview, setImagePreview] = useState(null);
@@ -61,7 +62,6 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
   useEffect(() => {
     dispatch(fetchAllHospitals());
   }, [dispatch]);
-  
 
   const currentUser = useSelector((state) => state?.auth?.user?.data);
 
@@ -70,7 +70,7 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
   );
   useEffect(() => {
     if (adminHospital?._id && !formData.hospital) {
-      setFormData(prev => ({...prev, hospital: adminHospital._id}));
+      setFormData((prev) => ({ ...prev, hospital: adminHospital._id }));
     }
   }, [adminHospital, formData.hospital]);
   const handleChange = (e) => {
@@ -102,7 +102,7 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
     try {
       // Validation
       if (!formData.testName || !formData.testPrice || !formData.hospital) {
-        console.log("form data .hospital", formData.hospital)
+        console.log("form data .hospital", formData.hospital);
         throw new Error("Please fill all required fields");
       }
 
@@ -123,15 +123,13 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
       }
 
       const response = await dispatch(createMedicalTest(testData)).unwrap();
-      
 
-      setRefreshTrigger(prev => prev + 1);
-    
+      setRefreshTrigger((prev) => prev + 1);
 
       notification.success({
         message: "Success",
         description: "Medical test added successfully",
-        duration: 3,
+        duration: 6,
         isClosable: true,
       });
 
@@ -217,7 +215,7 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
                     </FormLabel>
                     <InputGroup>
                       <InputLeftElement pointerEvents="none">
-                        <Icon as={DollarSign} size={18} />
+                        <Icon as={FaMoneyBill} size={18} />
                       </InputLeftElement>
                       <Input
                         name="testPrice"
@@ -339,7 +337,6 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
                 type="submit"
                 colorScheme="teal"
                 size="md"
-               
                 loadingText="Adding..."
               >
                 Add Test

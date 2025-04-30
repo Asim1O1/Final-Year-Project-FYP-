@@ -1,39 +1,40 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import {
   Box,
-  Spinner,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  Button,
   Flex,
-  Text,
-  SimpleGrid,
-  Stack,
   FormControl,
   FormLabel,
-  InputGroup,
-  InputLeftElement,
-  Input,
-  Button,
-  VStack,
   HStack,
+  Icon,
   IconButton,
   Image,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Select,
-  useToast,
-  Icon,
-  Tabs,
-  TabList,
+  SimpleGrid,
+  Spinner,
+  Stack,
   Tab,
-  TabPanels,
+  TabList,
   TabPanel,
+  TabPanels,
+  Tabs,
+  Text,
+  useToast,
+  VStack,
 } from "@chakra-ui/react";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
-import { fetchAllDoctors, handleDoctorRegistration } from "../../../features/doctor/doctorSlice";
+import { PhoneIcon } from "@chakra-ui/icons";
+import { notification, Upload } from "antd";
 import {
   Award,
   AwardIcon,
@@ -48,8 +49,10 @@ import {
   User,
   X,
 } from "lucide-react";
-import { PhoneIcon } from "@chakra-ui/icons";
-import { notification, Upload } from "antd";
+import {
+  fetchAllDoctors,
+  handleDoctorRegistration,
+} from "../../../features/doctor/doctorSlice";
 
 import PREDEFINED_SPECIALTIES from "../../../../../constants/Specialties";
 
@@ -64,9 +67,9 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = React.useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const[currentPage, setCurrentPage] = useState(1);
- const currentUser = useSelector((state) => state?.auth?.user?.data);
- const hospitalId = currentUser?.hospital;
+  const [currentPage, setCurrentPage] = useState(1);
+  const currentUser = useSelector((state) => state?.auth?.user?.data);
+  const hospitalId = currentUser?.hospital;
   const [qualificationForm, setQualificationForm] = useState({
     degree: "",
     university: "",
@@ -138,7 +141,6 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
       });
     }
   };
-  
 
   const removeQualification = (key) => {
     setFormData((prev) => {
@@ -155,7 +157,6 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
     (state) => state?.hospitalSlice?.hospitals?.hospitals
   );
 
-
   const adminHospital = hospitals?.find(
     (hospital) => hospital._id === currentUser?.hospital
   );
@@ -165,9 +166,9 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
   }, [dispatch]);
   useEffect(() => {
     if (adminHospital?._id) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        hospital: adminHospital._id
+        hospital: adminHospital._id,
       }));
     }
   }, [adminHospital]);
@@ -262,16 +263,16 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
       ).unwrap();
 
       console.log("The response is", response);
-       await   dispatch(
-               fetchAllDoctors({
-                 page: currentPage,
-                 limit: 10,
-                 hospital: hospitalId,
-               })
-             )
+      await dispatch(
+        fetchAllDoctors({
+          page: currentPage,
+          limit: 10,
+          hospital: hospitalId,
+        })
+      );
 
       notification.success({
-        title: "Success",
+        message: "Success",
         description: response.message,
         status: "success",
         duration: 3,

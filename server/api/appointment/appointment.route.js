@@ -1,4 +1,5 @@
 import express from "express";
+import protectRoute from "../../middlewares/protectRoute.js";
 import {
   bookDoctorAppointment,
   deleteAppointments,
@@ -8,7 +9,6 @@ import {
   getUserAppointments,
   updateAppointmentStatus,
 } from "./appointment.controller.js";
-import protectRoute from "../../middlewares/protectRoute.js";
 
 const router = express.Router();
 
@@ -28,7 +28,7 @@ router.get(
 
 router.get("/:appointmentId", protectRoute, getAppointmentById);
 
-router.patch("/:appointmentId/status", updateAppointmentStatus);
+router.patch("/:appointmentId/status", protectRoute, updateAppointmentStatus);
 
 router.post("/delete", protectRoute, deleteAppointments);
 

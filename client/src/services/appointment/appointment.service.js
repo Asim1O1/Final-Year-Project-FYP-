@@ -121,7 +121,8 @@ const getDoctorAppointmentsService = async (doctorId, status = "all") => {
 const updateAppointmentStatusService = async (
   appointmentId,
   status,
-  rejectionReason = ""
+  rejectionReason = "",
+  paymentStatus = null
 ) => {
   try {
     // Fix status mapping
@@ -130,9 +131,16 @@ const updateAppointmentStatusService = async (
       rejected: "canceled",
     };
 
-    const payload = { status: statusMap[status] || status };
+    const payload = {
+      status: statusMap[status] || status,
+    };
+
     if (payload.status === "canceled") {
       payload.rejectionReason = rejectionReason || "No reason provided";
+    }
+
+    if (paymentStatus) {
+      payload.paymentStatus = paymentStatus; // Only include if provided
     }
 
     const response = await axiosInstance.patch(

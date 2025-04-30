@@ -1,38 +1,37 @@
-import React, { useEffect, useState } from "react";
 import {
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   Badge,
+  Box,
+  Button,
   Flex,
   IconButton,
-  Spinner,
-  Text,
-  useDisclosure,
-  Box,
   Image,
-  AlertDialog,
-  AlertDialogOverlay,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogBody,
-  AlertDialogFooter,
-  Button,
+  Table,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { Edit2, Trash2 } from "lucide-react";
-import Pagination from "../../../utils/Pagination";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchAllHospitals,
   handleHospitalDeletion,
 } from "../../../features/hospital/hospitalSlice";
+import Pagination from "../../../utils/Pagination";
 
-import UpdateHospitalForm from "./UpdateHospitalForm";
 import { notification } from "antd";
 import CustomLoader from "../../common/CustomSpinner";
+import UpdateHospitalForm from "./UpdateHospitalForm";
 
 const HospitalList = () => {
   const dispatch = useDispatch();

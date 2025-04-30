@@ -1,55 +1,50 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useDispatch, useSelector } from "react-redux";
-
 import {
-  CameraIcon,
-  Send,
-  CheckCheck,
-  Search,
-  MessageSquare,
-  Phone,
-  Video,
-  FileText,
-  Paperclip,
-} from "lucide-react";
-import {
-  Box,
-  Flex,
-  Text,
-  Heading,
-  Input,
-  Divider,
   Avatar,
+  Badge,
+  Box,
+  Divider,
+  Flex,
+  Heading,
   IconButton,
+  Input,
+  keyframes,
   Spinner,
+  Text,
   useColorModeValue,
 } from "@chakra-ui/react";
+import { CameraIcon, CheckCheck, FileText, Search, Send } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
+  addNewMessageToState,
+  handleGetContactsForSideBar,
   handleGetMessages,
   handleSendMessage,
-  handleMarkMessagesAsRead,
-  handleGetContactsForSideBar,
-  setImage,
-  setImagePreview,
   setCurrentChat,
+  setImage,
   setNewMessage,
-  addNewMessageToState,
   updateContactWithLatestMessage,
 } from "../../../features/messages/messageSlice";
 import { useSocket } from "../../../hooks/useSocketNotification";
 
 const DoctorChatPage = () => {
   const dispatch = useDispatch();
+  const typingTimeoutRef = useRef(null);
+
+  const bounce = keyframes`
+    0%, 100% {
+      transform: translateY(0);
+      opacity: 0.3;
+    }
+    50% {
+      transform: translateY(-6px);
+      opacity: 1;
+    }
+  `;
+
   const { contacts, messages, currentChat, newMessage, image, isLoading } =
     useSelector((state) => state.messageSlice);
-    console.log("The current chat is", currentChat)
-  const doctorId = useSelector((state) => state?.auth?.user?.data?._id);
-  const { getSocket } = useSocket();
-  const socket = getSocket();
-
-  // Local state
   const [imagePreview, setImagePreview] = useState(null);
-  const [isTyping, setIsTyping] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef();
   const [page, setPage] = useState(1);
@@ -58,10 +53,67 @@ const DoctorChatPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const scrollRef = useRef();
 
-  // Filter contacts based on search term
+  const bgMessageOther = useColorModeValue("white", "gray.700");
+  const textSecondary = useColorModeValue("gray.600", "gray.400");
+
   const filteredContacts = contacts.filter((contact) =>
     contact.fullName.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const doctorId = useSelector((state) => state?.auth?.user?.data?._id);
+  const { getSocket, onlineUsers } = useSocket();
+  const socket = getSocket();
+
+  console.log("🧠 Doctor ID:", doctorId);
+
+  console.log("📡 Socket:", socket);
+  const [localTypingUsers, setLocalTypingUsers] = useState({});
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleTyping = (senderId) => {
+      console.log("LOCAL typing handler: received from", senderId);
+      setLocalTypingUsers((prev) => ({ ...prev, [senderId]: true }));
+    };
+
+    const handleStopTyping = (senderId) => {
+      console.log("LOCAL stop typing handler: received from", senderId);
+      setLocalTypingUsers((prev) => {
+        const newState = { ...prev };
+        delete newState[senderId];
+        return newState;
+      });
+    };
+
+    socket.on("typing", handleTyping);
+    socket.on("stop-typing", handleStopTyping);
+
+    return () => {
+      socket.off("typing", handleTyping);
+      socket.off("stop-typing", handleStopTyping);
+    };
+  }, [socket]);
+
+  // Send "typing" status to the server
+  const sendTypingStatus = (receiverId) => {
+    if (socket && socket.connected) {
+      socket.emit("typing", { senderId: doctorId, receiverId });
+    }
+  };
+
+  // Send "stop typing" status to the server
+  const sendStopTypingStatus = (receiverId) => {
+    if (socket && socket.connected) {
+      socket.emit("stop-typing", { senderId: doctorId, receiverId });
+    }
+  };
+
+  // Online/Typing indicators
+  const isChatUserOnline = currentChat && onlineUsers.includes(currentChat._id);
+  console.log("🔋 Chat user online?", isChatUserOnline);
+  const isChatUserTyping = currentChat && localTypingUsers[currentChat._id];
+
+  console.log("⏳ Chat user typing?", isChatUserTyping);
 
   // Fetch contacts for sidebar
   useEffect(() => {
@@ -79,50 +131,38 @@ const DoctorChatPage = () => {
 
   // Socket listeners
   useEffect(() => {
-    console.log("scoekt   doctor id", socket, doctorId)
-    if (!socket || !doctorId) return;
+    if (!socket || !doctorId) {
+      console.warn("Socket or doctorId not available");
+      return;
+    }
 
     if (!socket.connected) {
-      console.log("Socket not connected, trying to connect");
+      console.log("Connecting socket...");
       socket.connect();
     }
 
     const handleIncomingMessage = (message) => {
-      // Get latest messages from state rather than using stale closure
       dispatch((dispatch, getState) => {
         const currentState = getState();
         const currentMessages = currentState?.messageSlice?.messages || [];
         const currentChat = currentState?.messageSlice?.currentChat;
-        console.log("The curretnt chat is", currentChat);
-
-        // Check if we already have this message in state
+        console.log("The current chat is", currentChat);
+        console.log("The current chat id is", currentChat._id);
+        const unreadCount = currentState?.messageSlice?.unreadCount || {};
         const isDuplicate = currentMessages.some(
           (msg) => msg._id === message._id
         );
-
-        if (isDuplicate) {
-          console.log("Duplicate message detected, ignoring");
-          return;
-        }
+        if (isDuplicate) return;
 
         dispatch(addNewMessageToState(message));
-
         dispatch(updateContactWithLatestMessage({ message, doctorId }));
       });
     };
 
-    const handleTyping = (senderId) => {
-      if (senderId === currentChat?._id) setIsTyping(true);
-    };
-
     socket.on("message", handleIncomingMessage);
-    socket.on("typing", handleTyping);
-    socket.on("stop-typing", () => setIsTyping(false));
 
     return () => {
       socket.off("message", handleIncomingMessage);
-      socket.off("typing", handleTyping);
-      socket.off("stop-typing");
     };
   }, [currentChat?._id, doctorId, socket, dispatch]);
 
@@ -143,6 +183,12 @@ const DoctorChatPage = () => {
       dispatch(setNewMessage(""));
       setImagePreview(null);
       dispatch(setImage(null));
+
+      if (currentChat) {
+        console.log("if current chat :", currentChat);
+        sendStopTypingStatus(currentChat._id);
+      }
+
       await dispatch(
         handleSendMessage({
           receiverId: currentChat._id,
@@ -150,13 +196,45 @@ const DoctorChatPage = () => {
           image: pendingImage,
         })
       ).unwrap();
-      dispatch(setNewMessage(""));
-      setImagePreview(null);
     } catch (err) {
       console.error("Failed to send:", err);
     } finally {
       setIsSending(false);
     }
+  };
+
+  // Get patient display name
+  const getDisplayName = (patient) => {
+    if (patient?.fullName) {
+      return patient?.fullName;
+    }
+    return patient?.fullName || "Unknown Patient";
+  };
+  // Typing handler
+  const handleInputTyping = (e) => {
+    const value = e.target.value;
+    dispatch(setNewMessage(value));
+
+    if (!currentChat || !socket) {
+      console.warn("Cannot send typing - missing currentChat or socket");
+      return;
+    }
+
+    console.log("💡 User typing, sending to:", currentChat._id);
+
+    // Clear any existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Send typing status immediately
+    sendTypingStatus(currentChat._id);
+
+    // Set timeout to stop typing after 2s inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      console.log("⏱️ Auto-stop typing after inactivity");
+      sendStopTypingStatus(currentChat._id);
+    }, 3000);
   };
 
   // Handle image upload
@@ -174,14 +252,6 @@ const DoctorChatPage = () => {
     }
   };
 
-  // Get patient display name
-  const getDisplayName = (patient) => {
-    if (patient?.fullName) {
-      return patient?.fullName;
-    }
-    return patient?.fullName || "Unknown Patient";
-  };
-
   useEffect(() => {
     const container = messagesEndRef.current?.parentElement;
     if (
@@ -193,15 +263,21 @@ const DoctorChatPage = () => {
     }
   }, [messages]);
 
+  // Clean up typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <Flex
       h="calc(100vh - 120px)"
       bg="gray.50"
       className="shadow-sm border-gray-100 border-2"
     >
-      {isTyping && <div>Patient is typing...</div>}
-      <div ref={messagesEndRef} />
-      {/* Patients sidebar */}
       <Box
         w="320px"
         bg="white"
@@ -235,49 +311,68 @@ const DoctorChatPage = () => {
         </Box>
 
         <Box className="max-h-[calc(100vh-250px)] overflow-y-auto">
-          {filteredContacts?.map((contact) => (
-            <Box key={contact._id}>
-              <Flex
-                p={4}
-                cursor="pointer"
-                alignItems="center"
-                className={`
-                  transition duration-200 ease-in-out 
-                  ${
-                    currentChat?._id === contact._id
-                      ? "bg-blue-50 hover:bg-blue-100"
-                      : "hover:bg-gray-100"
-                  }
-                `}
-                onClick={() => dispatch(setCurrentChat(contact))}
-              >
-                <Avatar
-                  name={getDisplayName(contact)}
-                  bg="blue.500"
-                  color="white"
-                  size="md"
-                  className="ring-2 ring-blue-300"
-                />
-                <Box ml={3}>
-                  <Text
-                    fontWeight="semibold"
-                    color="gray.800"
-                    className="text-gray-900 font-medium"
-                  >
-                    {getDisplayName(contact)}
-                  </Text>
-                  <Text
-                    fontSize="sm"
-                    color="gray.500"
-                    className="text-gray-500"
-                  >
-                    {contact.role === "doctor" ? "Doctor" : "Patient"}
-                  </Text>
-                </Box>
-              </Flex>
-              <Divider borderColor="gray.200" />
-            </Box>
-          ))}
+          {filteredContacts?.map((contact) => {
+            const isOnline = onlineUsers?.includes(contact._id);
+
+            return (
+              <Box key={contact._id}>
+                <Flex
+                  p={4}
+                  cursor="pointer"
+                  alignItems="center"
+                  className={`
+            transition duration-200 ease-in-out
+            ${
+              currentChat?._id === contact._id
+                ? "bg-blue-50 hover:bg-blue-100"
+                : "hover:bg-gray-100"
+            }
+          `}
+                  onClick={() => dispatch(setCurrentChat(contact))}
+                >
+                  <Avatar
+                    name={getDisplayName(contact)}
+                    bg="blue.500"
+                    color="white"
+                    size="md"
+                    className={`ring-2 ${
+                      isOnline ? "ring-green-500" : "ring-gray-300"
+                    }`}
+                  />
+                  <Box ml={3} flex="1" overflow="hidden">
+                    <Flex justify="space-between" align="center">
+                      <Text
+                        fontWeight="semibold"
+                        color="gray.800"
+                        className="text-gray-900 font-medium truncate"
+                      >
+                        {getDisplayName(contact)}
+                      </Text>
+                      {isOnline && (
+                        <Badge colorScheme="green" ml={2} fontSize="xs">
+                          Online
+                        </Badge>
+                      )}
+                    </Flex>
+                    <Text
+                      fontSize="sm"
+                      color="gray.500"
+                      className="text-gray-500 truncate"
+                    >
+                      {isChatUserTyping ? (
+                        <span className="text-blue-500 italic">Typing...</span>
+                      ) : contact.role === "Patient" ? (
+                        "Patient"
+                      ) : (
+                        "Doctor"
+                      )}
+                    </Text>
+                  </Box>
+                </Flex>
+                <Divider borderColor="gray.200" />
+              </Box>
+            );
+          })}
         </Box>
       </Box>
 
@@ -310,13 +405,16 @@ const DoctorChatPage = () => {
                   >
                     {getDisplayName(currentChat)}
                   </Text>
-                  <Text
-                    fontSize="sm"
-                    color="gray.500"
-                    className="text-gray-500"
-                  >
-                    Patient ID: {currentChat._id.substring(0, 8)}
-                  </Text>
+                  <Flex align="center">
+                    <Text
+                      fontSize="sm"
+                      color={isChatUserTyping ? "green.500" : "blackAlpha.200"}
+                    >
+                      {isChatUserTyping
+                        ? "Typing..."
+                        : currentChat.role === "Doctor"}
+                    </Text>
+                  </Flex>
                 </Box>
               </Flex>
               <IconButton
@@ -328,11 +426,11 @@ const DoctorChatPage = () => {
               />
             </Flex>
 
-            {/* Messages */}
+            {/* Messages Container */}
             <Box
               flex="1"
               p={4}
-              overflow="auto"
+              overflowY="auto"
               className="bg-gray-50 scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-gray-100"
             >
               {isLoading ? (
@@ -344,87 +442,130 @@ const DoctorChatPage = () => {
                 </Flex>
               ) : (
                 <Flex direction="column" gap={4}>
-                  {messages.map((message, index) => {
-                    const isMine =
-                      (message.senderId?._id === doctorId ||
-                        message.senderId === doctorId) &&
-                      !(
-                        message.receiverId?._id === doctorId ||
-                        message.receiverId === doctorId
-                      );
+                  {/* Messages List */}
+                  {messages.length === 0 ? (
+                    <Flex justify="center" align="center" h="200px">
+                      <Text color="gray.500">
+                        No messages yet. Start the conversation!
+                      </Text>
+                    </Flex>
+                  ) : (
+                    messages.map((message, index) => {
+                      const isMine =
+                        message.senderId === doctorId ||
+                        message.senderId?._id === doctorId;
+                      const isLastMessage = index === messages.length - 1;
 
-                    console.log("the message is", message);
-                    console.log("The meesage is mine", isMine);
-
-                    return (
-                      <Flex
-                        key={`${message._id}-${index}`}
-                        justify={isMine ? "flex-end" : "flex-start"}
-                        ref={
-                          index === messages.length - 1 ? scrollRef : undefined
-                        }
-                      >
-                        <Box
-                          maxW="xs"
-                          borderRadius="xl"
-                          px={4}
-                          py={2}
-                          className={`
-                            ${
-                              isMine
-                                ? "bg-blue-500 text-white"
-                                : "bg-white text-gray-800"
-                            }
-                            shadow-md
-                          `}
+                      return (
+                        <Flex
+                          key={message._id || `msg-${index}`}
+                          justify={isMine ? "flex-end" : "flex-start"}
+                          ref={isLastMessage ? scrollRef : undefined}
                         >
-                          {message?.text && (
-                            <Text mb={1} className="text-sm">
-                              {message?.text}
-                            </Text>
-                          )}
-                          {message.image && (
-                            <Box
-                              mt={2}
-                              borderRadius="md"
-                              overflow="hidden"
-                              className="hover:scale-105 transition duration-300"
-                            >
-                              <img
-                                src={message.image}
-                                alt="Message attachment"
-                                className="max-h-60 w-auto rounded-lg"
-                              />
-                            </Box>
-                          )}
-                          <Flex
-                            justify="flex-end"
-                            fontSize="xs"
-                            mt={1}
-                            className={`
-                              ${isMine ? "text-blue-100" : "text-gray-500"}
-                            `}
+                          <Box
+                            maxW={{ base: "70%", md: "xs" }}
+                            borderRadius="xl"
+                            px={4}
+                            py={2}
+                            bg={isMine ? "blue.500" : "white"}
+                            color={isMine ? "white" : "gray.800"}
+                            boxShadow="md"
+                            position="relative"
                           >
-                            {new Date(message.createdAt).toLocaleTimeString(
-                              [],
-                              {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
+                            {/* Message text */}
+                            {message.text && (
+                              <Text
+                                mb={message.image ? 2 : 0}
+                                className="text-sm"
+                              >
+                                {message.text}
+                              </Text>
                             )}
-                            {isMine && (
-                              <Box ml={1}>
-                                <CheckCheck
-                                  size={16}
-                                  opacity={message.read ? 1 : 0.5}
+
+                            {/* Image attachment */}
+                            {message.image && (
+                              <Box
+                                mt={message.text ? 2 : 0}
+                                borderRadius="md"
+                                overflow="hidden"
+                                className="hover:scale-105 transition duration-300"
+                              >
+                                <img
+                                  src={message.image}
+                                  alt="Message attachment"
+                                  className="max-h-60 w-auto rounded-lg"
+                                  loading="lazy"
                                 />
                               </Box>
                             )}
+
+                            {/* Message metadata */}
+                            <Flex
+                              justify="flex-end"
+                              align="center"
+                              fontSize="xs"
+                              mt={1}
+                              color={isMine ? "blue.100" : "gray.500"}
+                            >
+                              {new Date(message.createdAt).toLocaleTimeString(
+                                [],
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
+                              {isMine && (
+                                <Box ml={1} display="inline-flex">
+                                  <CheckCheck
+                                    size={16}
+                                    opacity={message.read ? 1 : 0.5}
+                                  />
+                                </Box>
+                              )}
+                            </Flex>
+                          </Box>
+                        </Flex>
+                      );
+                    })
+                  )}
+
+                  {/* Typing indicator */}
+                  {isChatUserTyping && (
+                    <Flex align="center" ml={10} mb={2}>
+                      <Box
+                        bg={bgMessageOther}
+                        py={2}
+                        px={4}
+                        borderRadius="xl"
+                        display="inline-flex"
+                        alignItems="center"
+                        boxShadow="sm"
+                      >
+                        <Flex
+                          direction="column"
+                          align="flex-start"
+                          justify="center"
+                        >
+                          <Text fontSize="sm" color={textSecondary} mb={1}>
+                            {currentChat.fullName.split(" ")[0]} is typing...
+                          </Text>
+                          <Flex gap="6px">
+                            {[0, 1, 2].map((_, i) => (
+                              <Box
+                                key={i}
+                                w="8px"
+                                h="8px"
+                                borderRadius="full"
+                                bg={textSecondary}
+                                animation={`${bounce} 1.4s infinite`}
+                                animationDelay={`${i * 0.2}s`}
+                              />
+                            ))}
                           </Flex>
-                        </Box>
-                      </Flex>
-                    );
-                  })}
+                        </Flex>
+                      </Box>
+                    </Flex>
+                  )}
                 </Flex>
               )}
             </Box>
@@ -492,7 +633,8 @@ const DoctorChatPage = () => {
               <Input
                 placeholder="Type a message..."
                 value={newMessage}
-                onChange={(e) => dispatch(setNewMessage(e.target.value))}
+                // onChange={(e) => dispatch(setNewMessage(e.target.value))}
+                onChange={handleInputTyping}
                 ml={2}
                 mr={2}
                 borderRadius="full"

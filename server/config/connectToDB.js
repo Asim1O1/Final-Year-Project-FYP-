@@ -5,7 +5,6 @@ const mongoURI = appConfig.mongo_uri;
 
 const initializeDbConnection = async (retries = 5, delay = 5000) => {
   try {
-    // MongoDB Event Listeners (only set once)
     mongoose.connection.once("connected", () => {
       console.log("✅ Successfully connected to MongoDB");
     });
@@ -19,7 +18,7 @@ const initializeDbConnection = async (retries = 5, delay = 5000) => {
     });
 
     // Connect to MongoDB
-    await mongoose.connect(mongoURI); // Removed deprecated options
+    await mongoose.connect(mongoURI);
   } catch (error) {
     console.error(`❌ Failed to connect to MongoDB: ${error.message}`);
 

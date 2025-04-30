@@ -1,11 +1,11 @@
-import hospitalModel from "../../models/hospital.model.js";
-import doctorModel from "../../models/doctor.model.js";
-import medicalTestModel from "../../models/medicalTest.model.js";
-import { validateHospitalInput } from "../../utils/validationUtils.js";
-import createResponse from "../../utils/responseBuilder.js";
 import fs from "fs";
 import cloudinary from "../../imageUpload/cloudinaryConfig.js";
+import doctorModel from "../../models/doctor.model.js";
+import hospitalModel from "../../models/hospital.model.js";
+import medicalTestModel from "../../models/medicalTest.model.js";
 import { paginate } from "../../utils/paginationUtil.js";
+import createResponse from "../../utils/responseBuilder.js";
+import { validateHospitalInput } from "../../utils/validationUtils.js";
 import { logActivity } from "../activity/activity.controller.js";
 
 /**
@@ -166,7 +166,7 @@ export const fetchHospitals = async (req, res, next) => {
         createResponse({
           isSuccess: true,
           statusCode: 200,
-          message: "Hospitals with medical tests fetched successfully.",
+          message: "Hospitals fetched successfully.",
           data: {
             hospitals,
             pagination: null,

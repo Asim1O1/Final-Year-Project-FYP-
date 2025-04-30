@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from "react";
+import { Trash } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Calendar, Trash } from "lucide-react";
 
-import {
-  fetchDoctorAppointments,
-  updateAppointmentStatus,
-  deleteAppointments,
-} from "../../features/appointment/appointmentSlice.jsx";
-import AppointmentDetailsModal from "../../component/doctor/appointment/AppointmentDetailModal.jsx";
-import RejectionModal from "../../component/doctor/appointment/RejectionModal.jsx";
-import DeleteConfirmationModal from "../../component/doctor/appointment/DeleteConfirmationModal.jsx";
-import AppointmentTabs from "../../component/doctor/appointment/AppointmentTabs.jsx";
-import BulkSelectionHeader from "../../component/doctor/appointment/BulkSelectionHeader.jsx";
-import EmptyState from "../../component/doctor/appointment/EmptyState.jsx";
-import AppointmentList from "../../component/doctor/appointment/AppointmentList.jsx";
 import { notification } from "antd";
 import CustomLoader from "../../component/common/CustomSpinner.jsx";
+import AppointmentDetailsModal from "../../component/doctor/appointment/AppointmentDetailModal.jsx";
+import AppointmentList from "../../component/doctor/appointment/AppointmentList.jsx";
+import AppointmentTabs from "../../component/doctor/appointment/AppointmentTabs.jsx";
+import BulkSelectionHeader from "../../component/doctor/appointment/BulkSelectionHeader.jsx";
+import DeleteConfirmationModal from "../../component/doctor/appointment/DeleteConfirmationModal.jsx";
+import EmptyState from "../../component/doctor/appointment/EmptyState.jsx";
+import RejectionModal from "../../component/doctor/appointment/RejectionModal.jsx";
+import {
+  deleteAppointments,
+  fetchDoctorAppointments,
+  updateAppointmentStatus,
+} from "../../features/appointment/appointmentSlice.jsx";
 
 const Appointments = () => {
   const dispatch = useDispatch();

@@ -1,13 +1,11 @@
-import createResponse from "../../utils/responseBuilder.js";
 import Campaign from "../../models/campaign.model.js";
 import Hospital from "../../models/hospital.model.js";
 import Notification from "../../models/notification.model.js";
 import userModel from "../../models/user.model.js";
-import { sendEmail } from "../../utils/sendEmail.js";
-import { emailTemplates } from "../../utils/emailTemplates.js";
-import { paginate } from "../../utils/paginationUtil.js";
-import { logActivity } from "../activity/activity.controller.js";
 import { onlineUsers } from "../../server.js";
+import { paginate } from "../../utils/paginationUtil.js";
+import createResponse from "../../utils/responseBuilder.js";
+import { logActivity } from "../activity/activity.controller.js";
 
 export const createCampaign = async (req, res, next) => {
   const {
@@ -363,17 +361,16 @@ export const getAllCampaigns = async (req, res, next) => {
 
     const query = {};
 
-    // Filter by hospital
     if (hospital) {
       query.hospital = hospital;
     }
+    console.log("📌 Query param - hospital:", hospital);
 
-    // Search by campaign name
     if (search) {
       query.name = { $regex: search, $options: "i" };
     }
+    console.log("🔍 Search param - search:", search);
 
-    // Filter by date range
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) {
@@ -383,76 +380,75 @@ export const getAllCampaigns = async (req, res, next) => {
         query.createdAt.$lte = new Date(endDate);
       }
     }
+    console.log("📅 Date filter - startDate:", startDate, "endDate:", endDate);
+    console.log("🧾 Final query object:", query);
 
     const sortOrder = sort.startsWith("-") ? -1 : 1;
     const sortField = sort.replace("-", "");
     const sortOptions = { [sortField]: sortOrder };
 
-    const pageNum = parseInt(page, 10);
-    const limitNum = parseInt(limit, 10);
-
-    // If pagination is not requested
-    if (!pageNum && !limitNum) {
-      const campaignsRaw = await Campaign.find(query)
-        .populate({
+    const paginationOptions = {
+      page,
+      limit,
+      sort: sortOptions,
+      populate: [
+        {
           path: "hospital",
           select: "name address isDeleted",
-          match: { isDeleted: false },
-        })
-        .populate("createdBy", "name email")
-        .populate("volunteers", "name email");
-
-      // Filter out campaigns with deleted hospitals
-      const campaigns = campaignsRaw.filter((c) => c.hospital);
-
-      return res.status(200).json(
-        createResponse({
-          isSuccess: true,
-          statusCode: 200,
-          message: "All campaigns fetched successfully",
-          data: {
-            campaigns,
-            pagination: null,
+          match: {
+            $or: [{ isDeleted: { $exists: false } }, { isDeleted: false }],
           },
-          error: null,
-        })
-      );
-    }
+        },
+        {
+          path: "createdBy",
+          select: "fullName email",
+        },
+        {
+          path: "volunteers",
+          select: "fullName email",
+        },
+      ],
+    };
 
-    // With pagination
-    const campaignsRaw = await Campaign.find(query)
-      .skip((pageNum - 1) * limitNum)
-      .limit(limitNum)
-      .sort(sortOptions)
-      .populate({
-        path: "hospital",
-        select: "name address isDeleted",
-        match: { isDeleted: false },
-      })
-      .populate("createdBy", "name email")
-      .populate("volunteers", "name email");
+    console.log("📦 Pagination options:", paginationOptions);
 
-    const campaigns = campaignsRaw.filter((c) => c.hospital);
+    const {
+      data: campaigns,
+      totalCount,
+      currentPage,
+      totalPages,
+    } = await paginate(Campaign, query, paginationOptions);
 
-    const totalCount = campaigns.length;
-    const totalPages = Math.ceil(totalCount / limitNum);
+    const filteredCampaigns = campaigns.filter((c) => c.hospital);
+
+    console.log("📊 Filtered campaigns length:", filteredCampaigns.length);
+    console.log(
+      "📈 Pagination result - totalCount:",
+      totalCount,
+      "currentPage:",
+      currentPage,
+      "totalPages:",
+      totalPages
+    );
 
     return res.status(200).json(
       createResponse({
         isSuccess: true,
         statusCode: 200,
         message: "Campaigns retrieved successfully",
-        data: campaigns.map((campaign) => campaign.toObject()),
-        pagination: {
-          totalCount,
-          currentPage: pageNum,
-          totalPages,
+        data: {
+          campaigns: filteredCampaigns.map((campaign) => campaign.toObject()),
+          pagination: {
+            totalCount,
+            currentPage,
+            totalPages,
+          },
         },
         error: null,
       })
     );
   } catch (error) {
-    console.error("Error fetching campaigns:", error);
+    console.error("❌ Error in getAllCampaigns:", error);
     return next(error);
   }
 };
@@ -682,7 +678,7 @@ export const getAllVolunteerRequests = async (req, res, next) => {
     const result = await paginate(
       Campaign,
       {
-        hospitalId: hospitalId,
+        hospital: hospitalId,
         volunteerRequests: { $exists: true, $ne: [] },
       },
       {
@@ -696,13 +692,14 @@ export const getAllVolunteerRequests = async (req, res, next) => {
             select: "name email",
           },
           {
-            path: "hospitalId",
+            path: "hospital",
             model: "Hospital",
             select: "name location",
           },
         ],
       }
     );
+    console.log("The result is", result);
 
     return res.status(200).json({
       isSuccess: true,

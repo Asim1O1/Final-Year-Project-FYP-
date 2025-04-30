@@ -1,49 +1,48 @@
+import { DeleteIcon, EditIcon, TimeIcon } from "@chakra-ui/icons";
 import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
+  Badge,
   Box,
   Button,
+  Card,
+  CardBody,
+  CardHeader,
   Divider,
   Flex,
   Grid,
   Heading,
+  HStack,
   Icon,
+  Image,
   Text,
   useColorModeValue,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
   useDisclosure,
-  Card,
-  CardHeader,
-  CardBody,
-  Badge,
- 
-  Image,
-  HStack,
   VStack,
 } from "@chakra-ui/react";
-import React, { useState,useEffect } from "react";
+import { notification } from "antd";
 import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
   BriefcaseMedical,
-  DollarSign,
   Building2,
+  Mail,
+  MapPin,
+  Phone,
+  User,
 } from "lucide-react";
-import { DeleteIcon, EditIcon, TimeIcon } from "@chakra-ui/icons";
+import React, { useEffect, useState } from "react";
+import { FaMoneyBill } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import UpdateDoctorForm from "./UpdateDoctor";
-import Pagination from "../../../utils/Pagination";
 import {
   fetchAllDoctors,
   handleDoctorDeletion,
 } from "../../../features/doctor/doctorSlice";
-import { notification } from "antd";
+import Pagination from "../../../utils/Pagination";
 import CustomLoader from "../../common/CustomSpinner";
+import UpdateDoctorForm from "./UpdateDoctor";
 
 const DoctorList = () => {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -54,8 +53,8 @@ const DoctorList = () => {
     onClose: onDeleteClose,
   } = useDisclosure();
   const [currentPage, setCurrentPage] = useState(1);
- const currentUser = useSelector((state) => state?.auth?.user?.data);
- const hospitalId = currentUser?.hospital;
+  const currentUser = useSelector((state) => state?.auth?.user?.data);
+  const hospitalId = currentUser?.hospital;
   const dispatch = useDispatch();
   const { doctors, isLoading, totalPages } = useSelector(
     (state) => state.doctorSlice
@@ -70,11 +69,13 @@ const DoctorList = () => {
   // Fetch doctors when the component mounts or when currentPage/filters change
   useEffect(() => {
     if (hospitalId) {
-      dispatch(fetchAllDoctors({ 
-        page: currentPage, 
-        limit: 10,
-        hospital: hospitalId
-      }));
+      dispatch(
+        fetchAllDoctors({
+          page: currentPage,
+          limit: 10,
+          hospital: hospitalId,
+        })
+      );
     }
   }, [dispatch, currentPage, hospitalId]);
 
@@ -99,10 +100,18 @@ const DoctorList = () => {
         notification.success({
           message: "Doctor Deleted",
           description: "The doctor has been successfully deleted.",
-        }); 
+          status: "success",
+          duration: 8,
+        });
         setSelectedDoctor(null);
         onDeleteClose();
-        dispatch(fetchAllDoctors({ page: currentPage, limit: 10, hospital: hospitalId }));
+        dispatch(
+          fetchAllDoctors({
+            page: currentPage,
+            limit: 10,
+            hospital: hospitalId,
+          })
+        );
       } catch (error) {
         notification.error({
           message: "Failed to delete doctor",
@@ -214,8 +223,8 @@ const DoctorList = () => {
                           text={`${doctor.yearsOfExperience} years`}
                         />
                         <InfoItem
-                          icon={DollarSign}
-                          text={`$${doctor.consultationFee}`}
+                          icon={FaMoneyBill}
+                          text={`Rs ${doctor.consultationFee}`}
                         />
                       </Grid>
 
@@ -252,12 +261,6 @@ const DoctorList = () => {
                       minW={{ base: "full", md: "120px" }}
                       justify={{ base: "stretch", md: "flex-start" }}
                     >
-                      <UpdateDoctorForm
-                        isOpen={isOpen}
-                        onClose={handleCloseModal}
-                        doctorData={selectedDoctor}
-                      />
-
                       <Button
                         leftIcon={<EditIcon />}
                         colorScheme="blue"
@@ -285,6 +288,14 @@ const DoctorList = () => {
               ))
             )}
           </Flex>
+        )}
+
+        {selectedDoctor && (
+          <UpdateDoctorForm
+            isOpen={isOpen}
+            onClose={handleCloseModal}
+            doctorData={selectedDoctor}
+          />
         )}
         <Pagination
           currentPage={currentPage}

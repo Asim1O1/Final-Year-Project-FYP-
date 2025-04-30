@@ -1,39 +1,36 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
+  Alert,
+  AlertIcon,
   Box,
   Button,
-  Badge,
   Card,
   CardBody,
+  Container,
+  Divider,
   Flex,
+  FormControl,
+  FormLabel,
   Grid,
   GridItem,
   Heading,
+  HStack,
+  Icon,
   Input,
-  FormControl,
-  FormLabel,
-  Textarea,
-  Text,
-  Select,
   List,
   ListItem,
-  Stack,
-  useColorModeValue,
-  Spinner,
-  Alert,
-  AlertIcon,
-  Image,
-  Icon,
-  RadioGroup,
   Radio,
-  Toast,
+  RadioGroup,
+  Select,
+  Stack,
+  Text,
+  Textarea,
+  useColorModeValue,
   VStack,
-  HStack,
-  Divider,
-  Container,
 } from "@chakra-ui/react";
+import { notification } from "antd";
 import {
   AlertCircle,
   ArrowLeft,
@@ -41,22 +38,20 @@ import {
   CheckCircle,
   Clock,
   CreditCard,
-  DollarSign,
   MapPin,
   Phone,
-  Star,
 } from "lucide-react";
-import { fetchSingleMedicalTest } from "../../features/medical_test/medicalTestSlice";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FaClipboardList, FaHospital, FaMoneyBillWave } from "react-icons/fa";
-import { notification } from "antd";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { fetchSingleMedicalTest } from "../../features/medical_test/medicalTestSlice";
 import {
   completePayment,
   initiatePayment,
 } from "../../features/payment/paymentSlice";
 
-import { bookMedicalTest } from "../../features/medical_test/medicalTestSlice";
 import { InfoIcon } from "@chakra-ui/icons";
+import CustomLoader from "../../component/common/CustomSpinner";
+import { bookMedicalTest } from "../../features/medical_test/medicalTestSlice";
 
 export function TestDetail() {
   const { testId } = useParams();
@@ -212,22 +207,22 @@ export function TestDetail() {
           paymentResponse.data?.payment_url;
       } else {
         notification.success({
-          title: "Test Booked Successfully",
+          message: "Test Booked Successfully",
           description: `Your test is confirmed. Token number: ${result.tokenNumber}`,
           status: "success",
           duration: 5000,
           isClosable: true,
         });
-        navigate("/bookings");
+        // navigate("/bookings");
       }
     } catch (error) {
       console.error("Booking error:", error);
       notification.error({
-        title: "Booking Failed",
+        message: "Booking Failed",
         description:
           error?.message || "An error occurred while booking the test",
         status: "error",
-        duration: 5000,
+        duration: 5,
         isClosable: true,
       });
     } finally {
@@ -238,7 +233,7 @@ export function TestDetail() {
   if (loading) {
     return (
       <Flex justify="center" align="center" minH="300px">
-        <Spinner size="xl" />
+        <CustomLoader size="xl" />
       </Flex>
     );
   }
@@ -284,8 +279,6 @@ export function TestDetail() {
       >
         <GridItem colSpan={[1, null, null, 1]}>
           <Stack spacing={8}>
-           
-
             <Card
               variant="outline"
               borderColor={borderColor}
@@ -300,15 +293,6 @@ export function TestDetail() {
                       <Heading as="h1" size="xl" fontWeight="bold">
                         {medicalTest.testName}
                       </Heading>
-                      <Badge
-                        colorScheme="blue"
-                        fontSize="sm"
-                        py={1}
-                        px={2}
-                        borderRadius="md"
-                      >
-                        Popular
-                      </Badge>
                     </HStack>
 
                     <Flex align="center" color={mutedColor} mb={4}>
@@ -477,7 +461,7 @@ export function TestDetail() {
           >
             <Box bg={accentColor} py={4} px={6}>
               <Heading size="md" color="white" fontWeight="semibold">
-                Book Your Appointment
+                Book Your Medical Test
               </Heading>
             </Box>
 
@@ -499,7 +483,7 @@ export function TestDetail() {
                         fontWeight="bold"
                         color={accentColor}
                       >
-                        ${medicalTest.testPrice?.toFixed(2) || "0.00"}
+                        Rs {medicalTest.testPrice?.toFixed(2) || "0.00"}
                       </Text>
                       {medicalTest.originalPrice && (
                         <Text
@@ -507,7 +491,7 @@ export function TestDetail() {
                           textDecoration="line-through"
                           fontSize="md"
                         >
-                          ${medicalTest.originalPrice.toFixed(2)}
+                          RS. {medicalTest.originalPrice.toFixed(2)}
                         </Text>
                       )}
                     </Flex>
@@ -699,10 +683,7 @@ export function TestDetail() {
                           size="lg"
                           borderColor={borderColor}
                         >
-                          <Flex align="center">
-                            <DollarSign size={16} className="mr-1.5" />
-                            Pay at Hospital
-                          </Flex>
+                          <Flex align="center">Pay at Hospital</Flex>
                         </Radio>
                         <Radio
                           value="pay_now"
@@ -749,9 +730,6 @@ export function TestDetail() {
                     className="mr-1.5"
                     color={mutedColor}
                   />
-                  <Text fontSize="sm" color={mutedColor}>
-                    You can reschedule up to 24 hours before your appointment
-                  </Text>
                 </Flex>
               </Stack>
             </CardBody>

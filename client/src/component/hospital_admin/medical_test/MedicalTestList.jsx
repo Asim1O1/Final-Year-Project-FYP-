@@ -1,3 +1,4 @@
+import { DeleteIcon, EditIcon, PhoneIcon } from "@chakra-ui/icons";
 import {
   AlertDialog,
   AlertDialogBody,
@@ -20,25 +21,17 @@ import {
   useColorModeValue,
   useDisclosure,
 } from "@chakra-ui/react";
+import { notification } from "antd";
+import { Activity, Building, FileText, MapPin } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { FaMoneyBill } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import CustomLoader from "../../common/CustomSpinner";
 import {
   deleteMedicalTest,
   fetchAllMedicalTests,
 } from "../../../features/medical_test/medicalTestSlice";
-import { notification } from "antd";
-import {
-  Activity,
-  Badge,
-  Building,
-  Clock,
-  DollarSign,
-  FileText,
-  MapPin,
-} from "lucide-react";
-import { DeleteIcon, EditIcon, PhoneIcon } from "@chakra-ui/icons";
 import Pagination from "../../../utils/Pagination";
+import CustomLoader from "../../common/CustomSpinner";
 import UpdateMedicalTestForm from "./UpdateMedicalTest";
 
 const MedicalTestList = () => {
@@ -243,8 +236,8 @@ const MedicalTestList = () => {
                           iconColor="blue.500"
                         />
                         <InfoItem
-                          icon={DollarSign}
-                          text={`$${test.testPrice}`}
+                          icon={FaMoneyBill}
+                          text={`Rs ${test.testPrice}`}
                           label="Price"
                           iconColor="green.500"
                         />
@@ -288,12 +281,6 @@ const MedicalTestList = () => {
                       justify={{ base: "space-between", md: "flex-start" }}
                       align={{ base: "center", md: "stretch" }}
                     >
-                      <UpdateMedicalTestForm
-                        isOpen={isOpen}
-                        onClose={handleCloseModal}
-                        testData={selectedTest}
-                      />
-
                       <Button
                         leftIcon={<EditIcon />}
                         colorScheme="blue"
@@ -326,6 +313,11 @@ const MedicalTestList = () => {
             )}
           </Flex>
         )}
+        <UpdateMedicalTestForm
+          isOpen={isOpen}
+          onClose={handleCloseModal}
+          testData={selectedTest}
+        />
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages || 1}

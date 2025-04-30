@@ -1,24 +1,23 @@
 // VolunteerRequestModal.jsx
-import React, { useState, useEffect } from "react";
 import {
+  Button,
+  Checkbox,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
   Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Button,
-  FormControl,
-  FormLabel,
-  Input,
-  Textarea,
-  Checkbox,
-  VStack,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Text,
-  FormErrorMessage,
+  Textarea,
   useToast,
+  VStack,
 } from "@chakra-ui/react";
+import React, { useEffect, useState } from "react";
 
 export const VolunteerRequestModal = ({
   isOpen,
@@ -150,7 +149,8 @@ export const VolunteerRequestModal = ({
                 )}
 
                 <FormErrorMessage>
-                  {errors[`question_${index}`]}
+                  {errors[`question_${index}`] ||
+                    "Unknow error! Please try again."}
                 </FormErrorMessage>
               </FormControl>
             ))}
@@ -177,10 +177,10 @@ export const VolunteerRequestModal = ({
 
 // VolunteerRequestButton.jsx
 
-import { useDisclosure, Box } from "@chakra-ui/react";
+import { Box, useDisclosure } from "@chakra-ui/react";
 import { HeartHandshake } from "lucide-react";
 
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { volunteerForCampaign } from "../../features/campaign/campaignSlice";
 
 export const VolunteerRequestButton = ({ campaign }) => {
@@ -200,7 +200,7 @@ export const VolunteerRequestButton = ({ campaign }) => {
     (request) => request?.user === user?.data?._id
   );
 
-  console.log("The ids are", )
+  console.log("The ids are");
   console.log("hasRequested:", hasRequested);
 
   const isVolunteer = campaign?.volunteers?.some(

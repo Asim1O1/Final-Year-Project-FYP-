@@ -1,14 +1,13 @@
-import createResponse from "../../utils/responseBuilder.js";
 import appointmentModel from "../../models/appointment.model.js";
-import generateTimeSlots from "../../utils/generateTimeSlots.js";
-import userModel from "../../models/user.model.js";
 import doctorModel from "../../models/doctor.model.js";
 import hospitalModel from "../../models/hospital.model.js";
-import { sendEmail } from "../../utils/sendEmail.js";
-import { emailTemplates } from "../../utils/emailTemplates.js";
 import Notification from "../../models/notification.model.js";
-import { onlineUsers } from "../../server.js";
+import userModel from "../../models/user.model.js";
+import { emailTemplates } from "../../utils/emailTemplates.js";
+import generateTimeSlots from "../../utils/generateTimeSlots.js";
 import { paginate } from "../../utils/paginationUtil.js";
+import createResponse from "../../utils/responseBuilder.js";
+import { sendEmail } from "../../utils/sendEmail.js";
 
 export const bookDoctorAppointment = async (req, res, next) => {
   const {
@@ -342,6 +341,10 @@ export const updateAppointmentStatus = async (req, res, next) => {
 
     // Update appointment status
     appointment.status = status;
+    // If status is completed, set payment status to paid
+    if (status === "completed") {
+      appointment.paymentStatus = "paid";
+    }
     if (status === "canceled") {
       appointment.rejectionReason = rejectionReason || "No reason provided";
     }
@@ -356,6 +359,7 @@ export const updateAppointmentStatus = async (req, res, next) => {
       date: new Date(appointment.date).toLocaleDateString(),
       startTime: appointment.startTime,
       rejectionReason: rejectionReason || "",
+      paymentStatus: appointment.paymentStatus,
     };
 
     let subject, template;
@@ -405,7 +409,9 @@ export const updateAppointmentStatus = async (req, res, next) => {
     if (status === "canceled") {
       const doctorMessage = `Appointment with ${user.fullName} on ${new Date(
         appointment.date
-      ).toLocaleDateString()} at ${appointment.startTime} was canceled by the user.`;
+      ).toLocaleDateString()} at ${
+        appointment.startTime
+      } was canceled by the user.`;
       const doctorNotification = new Notification({
         user: doctor._id,
         message: doctorMessage,

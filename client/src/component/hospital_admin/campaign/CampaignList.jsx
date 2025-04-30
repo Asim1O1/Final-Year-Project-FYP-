@@ -1,59 +1,54 @@
-import React, { useEffect, useRef, useState } from "react";
 import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
+  Badge,
   Box,
   Button,
+  Divider,
   Flex,
   Heading,
-  Text,
-  Stack,
+  Icon,
   IconButton,
   Menu,
   MenuButton,
-  MenuList,
   MenuItem,
-  useToast,
-  Skeleton,
-  AlertDialogFooter,
-  AlertDialogOverlay,
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogBody,
-  Badge,
-  Icon,
-  Divider,
+  MenuList,
   SimpleGrid,
+  Skeleton,
+  Stack,
+  Text,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { Link } from "react-router-dom";
+import { notification } from "antd";
 import {
+  AlertCircle,
+  Building,
+  Calendar,
+  CalendarX,
+  Edit,
   MapPin,
   MoreVertical,
-  Edit,
-  Trash,
-  Building,
-  AlertCircle,
-  RefreshCw,
-  CalendarX,
   Plus,
-  ChevronsLeft,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsRight,
-  Calendar,
+  RefreshCw,
+  Trash,
   Users,
 } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Link } from "react-router-dom";
 import {
   fetchAllCampaigns,
   handleCampaignDeletion,
 } from "../../../features/campaign/campaignSlice";
 import Pagination from "../../../utils/Pagination";
-import { notification } from "antd";
 
 const CampaignList = ({ onEdit }) => {
   const dispatch = useDispatch();
-  const toast = useToast();
+
   const currentUser = useSelector((state) => state?.auth?.user?.data);
   const hospitalId = currentUser?.hospital;
 
@@ -66,8 +61,9 @@ const CampaignList = ({ onEdit }) => {
   const { campaigns, isLoading, error } = useSelector(
     (state) => state?.campaignSlice?.campaigns
   );
+  console.log("the campaigns are", campaigns);
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages  = useSelector(
+  const totalPages = useSelector(
     (state) => state?.campaignSlice?.campaigns?.pagination?.totalPages
   );
 
@@ -110,19 +106,48 @@ const CampaignList = ({ onEdit }) => {
 
   const handleDeleteConfirm = async () => {
     if (selectedCampaign) {
-      const result = await dispatch(
-        handleCampaignDeletion(selectedCampaign._id)
-      );
-      console.log("the result is", result);
-      notification.success({
-        title: "Campaign deleted",
-        description: `"${selectedCampaign.title}" has been removed successfully.`,
-        status: "success",
-        duration: 2.3,
-        isClosable: true,
-        position: "top-right",
-      });
-      onDeleteClose();
+      try {
+        const resultAction = await dispatch(
+          handleCampaignDeletion(selectedCampaign._id)
+        );
+
+        if (handleCampaignDeletion.fulfilled.match(resultAction)) {
+          notification.success({
+            message: "Campaign Deleted",
+            description: `"${selectedCampaign.title}" has been removed successfully.`,
+            duration: 5.3,
+            isClosable: true,
+            position: "top-right",
+          });
+
+          dispatch(
+            fetchAllCampaigns({
+              page: currentPage,
+              limit: 10,
+              hospital: hospitalId,
+            })
+          );
+
+          onDeleteClose();
+        } else {
+          notification.error({
+            message: "Deletion Failed",
+            description: "Something went wrong. Please try again.",
+            duration: 5.3,
+            isClosable: true,
+            position: "top-right",
+          });
+        }
+      } catch (error) {
+        console.error("Error deleting campaign:", error);
+        notification.error({
+          message: "Error",
+          description: "An unexpected error occurred.",
+          duration: 5.3,
+          isClosable: true,
+          position: "top-right",
+        });
+      }
     }
   };
 

@@ -1,29 +1,30 @@
-import { useState, useEffect } from "react";
 import {
+  Calendar,
   Home,
   Hospital,
-  DollarSign,
   LogIn,
-  User,
   LogOut,
-  Calendar,
   MessageSquare,
+  TestTubeIcon,
+  User,
   X,
 } from "lucide-react";
-import MedConnectLogo from "../../assets/MedConnect_Logo3-removebg.png";
-import { useSelector, useDispatch } from "react-redux";
-import { logoutUser } from "../../features/auth/authSlice";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import MedConnectLogo from "../../assets/MedConnect_Logo3-removebg.png";
+import { logoutUser } from "../../features/auth/authSlice";
 import Notifications from "../common/Notification";
 
+import { Menu } from "@chakra-ui/react";
+import { FaProjectDiagram } from "react-icons/fa";
+import { clearUnreadCountForChat } from "../../features/messages/messageSlice";
 import {
   handleClearAllNotifications,
   handleGetNotifications,
   handleMarkAllNotificationsAsRead,
   handleMarkNotificationAsRead,
 } from "../../features/notification/notificationSlice";
-import { Menu } from "@chakra-ui/react";
-import { clearUnreadCountForChat } from "../../features/messages/messageSlice";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -35,12 +36,12 @@ const Navbar = () => {
   const unreadChatCount = useSelector(
     (state) => state?.messageSlice?.unreadCount
   );
-  console.log("The unread chat count os", unreadChatCount);
+  // console.log("The unread chat count os", unreadChatCount);
   const totalUnreadCount = unreadChatCount.reduce(
     (total, chat) => total + chat.count,
     0
   );
-  console.log("The total unread count is", totalUnreadCount);
+  // console.log("The total unread count is", totalUnreadCount);
   // Get notifications from Redux store
   const { notifications } = useSelector((state) => state?.notifications);
 
@@ -110,8 +111,9 @@ const Navbar = () => {
   const NavLinks = [
     { href: "/", label: "Home", icon: Home },
     { href: "/hospitals", label: "Hospitals", icon: Hospital },
-    { href: "/medicalTests", label: "Medical Tests", icon: DollarSign },
+    { href: "/medicalTests", label: "Medical Tests", icon: TestTubeIcon },
     { href: "/book-appointment", label: "Book Appointment", icon: Calendar },
+    { href: "/campaigns", label: "Campaigns", icon: FaProjectDiagram },
   ];
 
   const unreadCount =

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import appointmentModel from "../../models/appointment.model.js";
 import MedicalReport from "../../models/medicalReport.model.js";
 import paymentModel from "../../models/payment.model.js";
@@ -5,12 +6,10 @@ import TestBooking from "../../models/testBooking.model.js";
 import userModel from "../../models/user.model.js";
 import { paginate } from "../../utils/paginationUtil.js";
 import createResponse from "../../utils/responseBuilder.js";
-import mongoose from "mongoose";
 
 export const getUserById = async (req, res, next) => {
   const userId = req.params.id;
   try {
-    // Validate if the ID is a valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json(
         createResponse({
@@ -21,10 +20,11 @@ export const getUserById = async (req, res, next) => {
       );
     }
 
-    // Find user by ID, populate hospital and appointments details, exclude password
     const user = await userModel
       .findById(userId)
-      .select("-password")
+      .select(
+        "-password -resetPasswordOTP -resetPasswordOTPExpiry -resetPasswordAttempts -resetPasswordLockUntil -__v"
+      )
       .populate("hospital")
       .populate({
         path: "appointments",
@@ -41,7 +41,6 @@ export const getUserById = async (req, res, next) => {
       );
     }
 
-    // Return successful response with user data
     return res.status(200).json(
       createResponse({
         isSuccess: true,
@@ -112,9 +111,30 @@ export const updateUser = async (req, res, next) => {
   const userId = req.params.id;
   const updateData = req.body;
 
+  console.log("[UpdateUser] Incoming request to update user with ID:", userId);
+  console.log("[UpdateUser] Update data received:", updateData);
+  console.log("[UpdateUser] Logged-in user ID:", req.user?.id);
+
+  // Check if the logged-in user is trying to update their own profile
+  if (req.user.id !== userId) {
+    console.warn(
+      `[UpdateUser] Unauthorized update attempt by user ID: ${req.user.id} on user ID: ${userId}`
+    );
+    return res.status(403).json(
+      createResponse({
+        isSuccess: false,
+        statusCode: 403,
+        message: "You are not authorized to update this user's profile.",
+        error:
+          "Unauthorized action: User is trying to update another user's profile.",
+      })
+    );
+  }
+
   try {
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
+      console.error("[UpdateUser] Invalid user ID format:", userId);
       return res.status(400).json(
         createResponse({
           isSuccess: false,
@@ -123,6 +143,8 @@ export const updateUser = async (req, res, next) => {
         })
       );
     }
+
+    console.log("[UpdateUser] User ID is valid. Proceeding with update...");
 
     // Update user and return the new document
     const updatedUser = await userModel
@@ -138,6 +160,7 @@ export const updateUser = async (req, res, next) => {
       });
 
     if (!updatedUser) {
+      console.error("[UpdateUser] User not found for ID:", userId);
       return res.status(404).json(
         createResponse({
           isSuccess: false,
@@ -146,6 +169,8 @@ export const updateUser = async (req, res, next) => {
         })
       );
     }
+
+    console.log("[UpdateUser] User updated successfully:", updatedUser);
 
     return res.status(200).json(
       createResponse({
@@ -156,7 +181,7 @@ export const updateUser = async (req, res, next) => {
       })
     );
   } catch (error) {
-    console.error(error);
+    console.error("[UpdateUser] Server Error:", error);
     return res.status(500).json(
       createResponse({
         isSuccess: false,

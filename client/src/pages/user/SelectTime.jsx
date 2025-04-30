@@ -1,61 +1,58 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, useParams } from "react-router-dom";
 import {
-  Box,
-  Container,
-  Heading,
-  Flex,
-  Text,
-  Avatar,
-  Button,
-  SimpleGrid,
-  Divider,
-  Badge,
-  IconButton,
-  HStack,
-  Alert,
-  AlertIcon,
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  VStack,
-  Card,
-  CardBody,
-  useColorModeValue,
-  Spinner,
-  Grid,
-  GridItem,
-  Icon,
-  Tooltip,
-  Tag,
-  useToast,
-  Skeleton,
-  Fade,
-  ScaleFade,
-} from "@chakra-ui/react";
-import {
+  CalendarIcon,
+  CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   TimeIcon,
-  CalendarIcon,
-  InfoIcon,
-  CheckIcon,
 } from "@chakra-ui/icons";
 import {
+  Alert,
+  AlertIcon,
+  Avatar,
+  Badge,
+  Box,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  Button,
+  Card,
+  CardBody,
+  Container,
+  Divider,
+  Flex,
+  Grid,
+  GridItem,
+  Heading,
+  HStack,
+  Icon,
+  IconButton,
+  ScaleFade,
+  SimpleGrid,
+  Skeleton,
+  Spinner,
+  Text,
+  Tooltip,
+  useColorModeValue,
+  useToast,
+  VStack,
+} from "@chakra-ui/react";
+import { notification } from "antd";
+import React, { useEffect, useState } from "react";
+import {
+  FaCloudSun,
+  FaMapMarkerAlt,
+  FaMoon,
+  FaPhoneAlt,
   FaRegCalendarAlt,
   FaRegClock,
   FaSun,
-  FaCloudSun,
-  FaMoon,
   FaUserMd,
-  FaMapMarkerAlt,
   FaVideo,
-  FaPhoneAlt,
 } from "react-icons/fa";
-import { fetchAvailableTimeSlots } from "../../features/appointment/appointmentSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
 import StepIndicator from "../../component/common/StepIndicator";
-import { notification } from "antd";
+import { fetchAvailableTimeSlots } from "../../features/appointment/appointmentSlice";
 import { fetchSingleDoctor } from "../../features/doctor/doctorSlice";
 
 const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -94,7 +91,7 @@ const SelectTime = () => {
         await dispatch(fetchSingleDoctor(doctorId)).unwrap();
       } catch (error) {
         notification.error({
-          title: "Error Loading Doctor Information",
+          message: "Error Loading Doctor Information",
           description: error.message || "Could not fetch doctor details",
           status: "error",
           duration: 3000,
@@ -210,10 +207,10 @@ const SelectTime = () => {
   // Handle navigation to the next step
   const handleNext = () => {
     if (!selectedSlot) {
-      toast({
-        title: "Please select a time slot",
+      notification.error({
+        message: "Please select a time slot",
         status: "warning",
-        duration: 3000,
+        duration: 3,
         isClosable: true,
         position: "top",
       });
@@ -461,7 +458,11 @@ const SelectTime = () => {
                     ) : doctorError ? (
                       <Alert status="error" borderRadius="md">
                         <AlertIcon />
-                        <Text>{doctorError?.message || doctorError?.error || "An unexpected error occurred"}</Text>
+                        <Text>
+                          {doctorError?.message ||
+                            doctorError?.error ||
+                            "An unexpected error occurred"}
+                        </Text>
                       </Alert>
                     ) : doctor ? (
                       <>

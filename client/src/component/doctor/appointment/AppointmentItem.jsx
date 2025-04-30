@@ -1,5 +1,5 @@
+import { Calendar, Check, Trash, X } from "lucide-react";
 import React from "react";
-import { Calendar, Check, X, Download, RefreshCcw, Trash } from "lucide-react";
 import StatusBadge from "../../../component/doctor/appointment/StatusBadge.jsx";
 
 const AppointmentItem = ({
@@ -81,7 +81,7 @@ const AppointmentItem = ({
                 Approve
               </button>
               <button
-                className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center"
+                className="px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 flex items-center"
                 onClick={() => handleRejectClick(appointment)}
               >
                 <X size={14} className="mr-1" />
@@ -99,29 +99,7 @@ const AppointmentItem = ({
                 Mark Completed
               </button>
             )}
-          {activeTab === "upcoming" && (
-            <button
-              className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300"
-              onClick={() => handleReschedule(appointment)}
-            >
-              Reschedule
-            </button>
-          )}
-          {activeTab === "completed" && (
-            <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center">
-              <Download size={14} className="mr-1" />
-              Download Report
-            </button>
-          )}
-          {activeTab === "cancelled" && (
-            <button
-              className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center"
-              onClick={() => handleReschedule(appointment)}
-            >
-              <RefreshCcw size={14} className="mr-1" />
-              Reschedule
-            </button>
-          )}
+
           <button
             className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center"
             onClick={() => handleDeleteClick(appointment)}

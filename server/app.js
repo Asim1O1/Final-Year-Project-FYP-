@@ -1,21 +1,21 @@
-import express from "express";
-import cors from "cors";
 import cookieParser from "cookie-parser";
+import cors from "cors";
+import express from "express";
 
-import authRoute from "./api/auth/auth.route.js";
-import hospitalRoute from "./api/hospital/hospital.route.js";
-import doctorRoute from "./api/doctor/doctor.route.js";
-import hospitalAdminRoute from "./api/hospital_admin/hospital_admin.route.js";
+import activityRoute from "./api/activity/activity.route.js";
 import appointmentRoute from "./api/appointment/appointment.route.js";
+import authRoute from "./api/auth/auth.route.js";
 import campaignRoute from "./api/campaign/campaign.route.js";
-import notificationRoute from "./api/notification/notification.route.js";
-import userRoute from "./api/user/user.route.js";
-import paymentRoute from "./api/payment/payment.route.js";
-import messageRoute from "./api/message/message.route.js";
+import doctorRoute from "./api/doctor/doctor.route.js";
+import hospitalRoute from "./api/hospital/hospital.route.js";
+import hospitalAdminRoute from "./api/hospital_admin/hospital_admin.route.js";
 import reportRoute from "./api/medical_report/medicalReport.route.js";
 import medicalTestRoute from "./api/medical_test/medical_test.route.js";
+import messageRoute from "./api/message/message.route.js";
+import notificationRoute from "./api/notification/notification.route.js";
+import paymentRoute from "./api/payment/payment.route.js";
 import systemAdminRoute from "./api/system_admin/system_admin.route.js";
-import activityRoute from "./api/activity/activity.route.js";
+import userRoute from "./api/user/user.route.js";
 
 import globalErrorHandler from "./middlewares/globalErrorHandler.js";
 

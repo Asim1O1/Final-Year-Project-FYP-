@@ -1,26 +1,42 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
 import {
-  Calendar,
-  Clock,
-  User,
-  Stethoscope,
-  Building,
-  FileText,
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  Container,
+  Flex,
+  Grid,
+  GridItem,
+  Heading,
+  HStack,
+  Icon,
+  Text,
+  useColorModeValue,
+  VStack,
+} from "@chakra-ui/react";
+import {
   AlertCircle,
-  CreditCard,
-  ChevronLeft,
+  Building,
+  Calendar,
   CheckCircle,
-  XCircle,
+  ChevronLeft,
+  Clock,
+  CreditCard,
+  FileText,
   Loader,
-  ExternalLink,
+  Stethoscope,
+  User,
+  XCircle,
 } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
 import { fetchAppointmentById } from "../../features/appointment/appointmentSlice";
 
 const AppointmentDetail = () => {
   const { id } = useParams();
-  console.log("The appointment id", id)
+  console.log("The appointment id", id);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -30,6 +46,7 @@ const AppointmentDetail = () => {
   const appointment = useSelector(
     (state) => state.appointmentSlice.appointment
   );
+  console.log("The appointment", appointment);
 
   useEffect(() => {
     if (id) {
@@ -59,6 +76,7 @@ const AppointmentDetail = () => {
   };
 
   // Get status badge color
+  // Get status badge color
   const getStatusColor = (status) => {
     switch (status) {
       case "pending":
@@ -74,17 +92,20 @@ const AppointmentDetail = () => {
     }
   };
 
+  const cardBg = useColorModeValue("white", "gray.800");
+  const sectionBg = useColorModeValue("gray.50", "gray.700");
+  const pageBg = useColorModeValue("gray.50", "gray.900");
   // Get payment status badge color
-  const getPaymentStatusColor = (status) => {
+  const getPaymentStatusColorScheme = (status) => {
     switch (status) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        return "yellow";
       case "paid":
-        return "bg-green-100 text-green-800";
+        return "green";
       case "not_required":
-        return "bg-gray-100 text-gray-800";
+        return "gray";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "gray";
     }
   };
 
@@ -126,7 +147,9 @@ const AppointmentDetail = () => {
         <h2 className="mt-4 text-xl font-bold text-gray-800">
           Error Loading Appointment
         </h2>
-        <p className="mt-2 text-gray-600">{error}</p>
+        <p className="mt-2 text-gray-600">
+          {error?.message || "An unexpected error has occured, try again later"}
+        </p>
         <button
           onClick={handleBackClick}
           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
@@ -163,45 +186,52 @@ const AppointmentDetail = () => {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <Box bg={pageBg} minH="100vh" py={8}>
+      <Container maxW="4xl" px={4}>
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <button
+        <Flex justify="space-between" align="center" mb={6}>
+          <Button
+            variant="ghost"
+            leftIcon={<Icon as={ChevronLeft} />}
             onClick={handleBackClick}
-            className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
-            aria-label="Back to notifications"
+            color="gray.600"
+            _hover={{ color: "blue.600" }}
           >
-            <ChevronLeft size={20} />
-            <span>Back to Notifications</span>
-          </button>
-          <h1 className="text-2xl font-bold text-gray-800">
+            Back to Notifications
+          </Button>
+          <Heading size="lg" color="gray.800">
             Appointment Details
-          </h1>
-        </div>
+          </Heading>
+        </Flex>
 
         {/* Main content */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+        <Card
+          bg={cardBg}
+          rounded="xl"
+          overflow="hidden"
+          shadow="md"
+          borderWidth="1px"
+          borderColor="gray.200"
+        >
           {/* Appointment Status Banner */}
-          <div
-            className={`p-4 ${
-              appointment.status === "canceled"
-                ? "bg-red-500"
-                : appointment.status === "completed"
-                ? "bg-green-500"
-                : "bg-blue-500"
-            } text-white`}
+          <Box
+            p={4}
+            bg={`${getStatusColor(appointment.status)}.500`}
+            color="white"
           >
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                {appointment.status === "canceled" ? (
-                  <XCircle size={24} aria-label="Canceled" />
-                ) : appointment.status === "completed" ? (
-                  <CheckCircle size={24} aria-label="Completed" />
-                ) : (
-                  <Calendar size={24} aria-label="Pending" />
-                )}
-                <h2 className="text-lg font-semibold">
+            <Flex justify="space-between" align="center">
+              <HStack spacing={2}>
+                <Icon
+                  as={
+                    appointment.status === "canceled"
+                      ? XCircle
+                      : appointment.status === "completed"
+                      ? CheckCircle
+                      : Calendar
+                  }
+                  boxSize={6}
+                />
+                <Text fontSize="lg" fontWeight="semibold">
                   {appointment.status === "canceled"
                     ? "Canceled Appointment"
                     : appointment.status === "completed"
@@ -209,236 +239,274 @@ const AppointmentDetail = () => {
                     : appointment.status === "confirmed"
                     ? "Confirmed Appointment"
                     : "Pending Appointment"}
-                </h2>
-              </div>
-              <div
-                className={`px-3 py-1 rounded-full ${getStatusColor(
-                  appointment.status
-                )} text-sm font-medium`}
+                </Text>
+              </HStack>
+              <Badge
+                colorScheme={getStatusColor(appointment.status)}
+                fontSize="sm"
+                px={3}
+                py={1}
+                borderRadius="full"
               >
                 {appointment.status.charAt(0).toUpperCase() +
                   appointment.status.slice(1)}
-              </div>
-            </div>
-          </div>
+              </Badge>
+            </Flex>
+          </Box>
 
           {/* Appointment Details */}
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <CardBody p={6}>
+            <Grid
+              templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+              gap={6}
+            >
               {/* Left Column */}
-              <div className="space-y-6">
-                {/* Date & Time */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">
-                    Date & Time
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Calendar
-                        className="w-5 h-5 text-blue-600"
-                        aria-label="Date"
-                      />
-                      <div className="text-gray-800">
-                        {formatDate(appointment.date)}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Clock
-                        className="w-5 h-5 text-blue-600"
-                        aria-label="Time"
-                      />
-                      <div className="text-gray-800">
-                        {appointment.startTime} - {appointment.endTime}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <GridItem>
+                <VStack spacing={6} align="stretch">
+                  {/* Date & Time */}
+                  <Card
+                    bg={sectionBg}
+                    variant="outline"
+                    borderRadius="lg"
+                    shadow="sm"
+                  >
+                    <CardBody p={4}>
+                      <Text
+                        fontSize="sm"
+                        fontWeight="medium"
+                        color="gray.500"
+                        mb={2}
+                      >
+                        Date & Time
+                      </Text>
+                      <VStack spacing={3} align="stretch">
+                        <HStack spacing={3}>
+                          <Icon as={Calendar} boxSize={5} color="blue.500" />
+                          <Text color="gray.800">
+                            {formatDate(appointment.date)}
+                          </Text>
+                        </HStack>
+                        <HStack spacing={3}>
+                          <Icon as={Clock} boxSize={5} color="blue.500" />
+                          <Text color="gray.800">
+                            {appointment.startTime} - {appointment.endTime}
+                          </Text>
+                        </HStack>
+                      </VStack>
+                    </CardBody>
+                  </Card>
 
-                {/* Doctor & Hospital */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">
-                    Healthcare Provider
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Stethoscope
-                        className="w-5 h-5 text-blue-600"
-                        aria-label="Doctor"
-                      />
-                      <div>
-                        <div className="text-gray-800 font-medium">
-                          {appointment.doctor.fullName}
-                        </div>
-                        <div className="text-gray-600 text-sm">
-                          {appointment.doctor.specialty}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Building
-                        className="w-5 h-5 text-blue-600"
-                        aria-label="Hospital"
-                      />
-                      <div>
-                        <div className="text-gray-800 font-medium">
-                          {appointment.hospital.name}
-                        </div>
-                        <div className="text-gray-600 text-sm">
-                          {appointment.hospital.location}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  {/* Doctor & Hospital */}
+                  <Card
+                    bg={sectionBg}
+                    variant="outline"
+                    borderRadius="lg"
+                    shadow="sm"
+                  >
+                    <CardBody p={4}>
+                      <Text
+                        fontSize="sm"
+                        fontWeight="medium"
+                        color="gray.500"
+                        mb={2}
+                      >
+                        Healthcare Provider
+                      </Text>
+                      <VStack spacing={3} align="stretch">
+                        <HStack spacing={3} align="start">
+                          <Icon as={Stethoscope} boxSize={5} color="blue.500" />
+                          <Box>
+                            <Text color="gray.800" fontWeight="medium">
+                              {appointment.doctor.fullName}
+                            </Text>
+                            <Text color="gray.600" fontSize="sm">
+                              {appointment.doctor.specialty}
+                            </Text>
+                          </Box>
+                        </HStack>
+                        <HStack spacing={3} align="start">
+                          <Icon as={Building} boxSize={5} color="blue.500" />
+                          <Box>
+                            <Text color="gray.800" fontWeight="medium">
+                              {appointment.hospital.name}
+                            </Text>
+                            <Text color="gray.600" fontSize="sm">
+                              {appointment.hospital.location}
+                            </Text>
+                          </Box>
+                        </HStack>
+                      </VStack>
+                    </CardBody>
+                  </Card>
 
-                {/* Patient Details */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">
-                    Patient Information
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <User
-                        className="w-5 h-5 text-blue-600"
-                        aria-label="Patient"
-                      />
-                      <div>
-                        <div className="text-gray-800 font-medium">
-                          {appointment.user.fullName}
-                        </div>
-                        <div className="text-gray-600 text-sm">
-                          {appointment.user.email}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                  {/* Patient Details */}
+                  <Card
+                    bg={sectionBg}
+                    variant="outline"
+                    borderRadius="lg"
+                    shadow="sm"
+                  >
+                    <CardBody p={4}>
+                      <Text
+                        fontSize="sm"
+                        fontWeight="medium"
+                        color="gray.500"
+                        mb={2}
+                      >
+                        Patient Information
+                      </Text>
+                      <HStack spacing={3} align="start">
+                        <Icon as={User} boxSize={5} color="blue.500" />
+                        <Box>
+                          <Text color="gray.800" fontWeight="medium">
+                            {appointment.user.fullName}
+                          </Text>
+                          <Text color="gray.600" fontSize="sm">
+                            {appointment.user.email}
+                          </Text>
+                        </Box>
+                      </HStack>
+                    </CardBody>
+                  </Card>
+                </VStack>
+              </GridItem>
 
               {/* Right Column */}
-              <div className="space-y-6">
-                {/* Appointment Reason */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">
-                    Reason for Visit
-                  </h3>
-                  <div className="flex items-start gap-3">
-                    <FileText
-                      className="w-5 h-5 text-blue-600 mt-1"
-                      aria-label="Reason"
-                    />
-                    <p className="text-gray-800">{appointment.reason}</p>
-                  </div>
-                </div>
-
-                {/* Payment Details */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">
-                    Payment Information
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <CreditCard
-                        className="w-5 h-5 text-blue-600"
-                        aria-label="Payment method"
-                      />
-                      <div>
-                        <div className="text-gray-800 font-medium">
-                          Payment Method
-                        </div>
-                        <div className="text-gray-600">
-                          {getPaymentMethodText(appointment.paymentMethod)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-5 h-5 flex items-center justify-center">
-                        <div
-                          className={`px-2 py-1 rounded-full ${getPaymentStatusColor(
-                            appointment.paymentStatus
-                          )} text-xs font-medium`}
-                        >
-                          {appointment.paymentStatus.charAt(0).toUpperCase() +
-                            appointment.paymentStatus.slice(1)}
-                        </div>
-                      </div>
-                      {appointment.paymentId && (
-                        <div className="text-gray-600 text-sm">
-                          Payment ID: {appointment.paymentId}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Rejection Reason (if applicable) */}
-                {appointment.status === "canceled" &&
-                  appointment.rejectionReason && (
-                    <div className="bg-red-50 p-4 rounded-lg border border-red-100">
-                      <h3 className="text-sm font-medium text-red-500 mb-2">
-                        Cancellation Reason
-                      </h3>
-                      <div className="flex items-start gap-3">
-                        <AlertCircle
-                          className="w-5 h-5 text-red-500 mt-1"
-                          aria-label="Cancellation reason"
-                        />
-                        <p className="text-gray-800">
-                          {appointment.rejectionReason}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                {/* Action Buttons */}
-                <div className="flex flex-col gap-3 mt-6">
-                  {appointment.status === "confirmed" && (
-                    <button
-                      className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
-                      aria-label="Get directions"
-                    >
-                      <ExternalLink size={16} />
-                      Get Directions to Hospital
-                    </button>
-                  )}
-
-                  {appointment.status === "pending" && (
-                    <button
-                      className="px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
-                      aria-label="Cancel appointment"
-                    >
-                      <XCircle size={16} />
-                      Cancel Appointment
-                    </button>
-                  )}
-
-                  {appointment.paymentStatus === "pending" &&
-                    appointment.paymentMethod === "pay_now" && (
-                      <button
-                        className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
-                        aria-label="Complete payment"
+              <GridItem>
+                <VStack spacing={6} align="stretch">
+                  {/* Appointment Reason */}
+                  <Card
+                    bg={sectionBg}
+                    variant="outline"
+                    borderRadius="lg"
+                    shadow="sm"
+                  >
+                    <CardBody p={4}>
+                      <Text
+                        fontSize="sm"
+                        fontWeight="medium"
+                        color="gray.500"
+                        mb={2}
                       >
-                        <CreditCard size={16} />
-                        Complete Payment
-                      </button>
-                    )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+                        Reason for Visit
+                      </Text>
+                      <HStack spacing={3} align="start">
+                        <Icon
+                          as={FileText}
+                          boxSize={5}
+                          color="blue.500"
+                          mt={1}
+                        />
+                        <Text color="gray.800">{appointment.reason}</Text>
+                      </HStack>
+                    </CardBody>
+                  </Card>
 
-        {/* Created At / Updated At */}
-        <div className="mt-4 text-right text-xs text-gray-500">
-          <p>Created: {new Date(appointment.createdAt).toLocaleString()}</p>
-          {appointment.updatedAt !== appointment.createdAt && (
-            <p>
-              Last updated: {new Date(appointment.updatedAt).toLocaleString()}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
+                  {/* Payment Details */}
+                  <Card
+                    bg={sectionBg}
+                    variant="outline"
+                    borderRadius="lg"
+                    shadow="sm"
+                  >
+                    <CardBody p={4}>
+                      <Text
+                        fontSize="sm"
+                        fontWeight="medium"
+                        color="gray.500"
+                        mb={2}
+                      >
+                        Payment Information
+                      </Text>
+                      <VStack spacing={3} align="stretch">
+                        <HStack spacing={3}>
+                          <Icon as={CreditCard} boxSize={5} color="blue.500" />
+                          <Box>
+                            <Text color="gray.800" fontWeight="medium">
+                              Payment Method
+                            </Text>
+                            <Text color="gray.600">
+                              {getPaymentMethodText(appointment.paymentMethod)}
+                            </Text>
+                          </Box>
+                        </HStack>
+                        <HStack spacing={3}>
+                          <Flex align="center">
+                            <Badge
+                              colorScheme={getPaymentStatusColorScheme(
+                                appointment.paymentStatus
+                              )}
+                              borderRadius="full"
+                              px={3}
+                              py={1}
+                              fontSize="xs"
+                            >
+                              {appointment.paymentStatus
+                                .charAt(0)
+                                .toUpperCase() +
+                                appointment.paymentStatus.slice(1)}
+                            </Badge>
+                          </Flex>
+                        </HStack>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+
+                  {/* Rejection Reason (if applicable) */}
+                  {appointment.status === "canceled" &&
+                    appointment.rejectionReason && (
+                      <Card
+                        bg="red.50"
+                        borderColor="red.100"
+                        borderWidth="1px"
+                        borderRadius="lg"
+                        shadow="sm"
+                      >
+                        <CardBody p={4}>
+                          <Text
+                            fontSize="sm"
+                            fontWeight="medium"
+                            color="red.500"
+                            mb={2}
+                          >
+                            Cancellation Reason
+                          </Text>
+                          <HStack spacing={3} align="start">
+                            <Icon
+                              as={AlertCircle}
+                              boxSize={5}
+                              color="red.500"
+                              mt={1}
+                            />
+                            <Text color="gray.800">
+                              {appointment.rejectionReason}
+                            </Text>
+                          </HStack>
+                        </CardBody>
+                      </Card>
+                    )}
+
+                  {/* Action Buttons */}
+                  <VStack spacing={3} mt={2}>
+                    {appointment.status === "pending" && (
+                      <Button
+                        colorScheme="red"
+                        leftIcon={<Icon as={XCircle} />}
+                        size="lg"
+                        width="full"
+                        shadow="sm"
+                      >
+                        Cancel Appointment
+                      </Button>
+                    )}
+                  </VStack>
+                </VStack>
+              </GridItem>
+            </Grid>
+          </CardBody>
+        </Card>
+      </Container>
+    </Box>
   );
 };
 

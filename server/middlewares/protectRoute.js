@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import appConfig from "../config/appConfig.js";
-import userModel from "../models/user.model.js";
 import doctorModel from "../models/doctor.model.js"; // Import doctor model
+import userModel from "../models/user.model.js";
 import createResponse from "../utils/responseBuilder.js";
 
 const protectRoute = async (req, res, next) => {

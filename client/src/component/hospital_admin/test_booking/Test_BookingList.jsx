@@ -1,63 +1,58 @@
-import { useSelector, useDispatch } from "react-redux";
 import {
-  Box,
-  Heading,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Badge,
-  Select,
-  HStack,
-  Text,
-  Flex,
-  Spinner,
+  CalendarIcon,
+  CheckCircleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  SearchIcon,
+} from "@chakra-ui/icons";
+import {
   Alert,
   AlertIcon,
-  useToast,
+  Avatar,
+  Badge,
+  Box,
   Button,
-  Input,
+  Card,
+  CardBody,
+  CardFooter,
+  CardHeader,
+  Container,
+  Divider,
+  Flex,
+  Heading,
+  HStack,
   IconButton,
-  useColorModeValue,
+  Input,
   InputGroup,
   InputLeftElement,
+  Select,
+  Spinner,
+  Table,
+  Tag,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr,
+  useColorModeValue,
+  VStack,
 } from "@chakra-ui/react";
+import { notification } from "antd";
+import {
+  ClipboardIcon,
+  ClockIcon,
+  FilterIcon,
+  RefreshCwIcon,
+  UserIcon,
+  XCircleIcon,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   fetchHospitalTestBookings,
   updateTestBookingStatus,
 } from "../../../features/medical_test/medicalTestSlice";
-import {
-  SearchIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CheckCircleIcon,
-  CalendarIcon,
-} from "@chakra-ui/icons";
-import {
-  Tag,
-  Avatar,
-  Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
-  Container,
-  VStack,
-  Divider,
-} from "@chakra-ui/react";
-import {
-  XCircleIcon,
-  ClipboardIcon,
-  FilterIcon,
-  UserIcon,
-  RefreshCwIcon,
-  ClockIcon,
-} from "lucide-react";
-import { useEffect, useState } from "react";
-import { notification } from "antd";
-
-
 
 const TestBookingList = () => {
   const dispatch = useDispatch();
@@ -334,7 +329,9 @@ const TestBookingList = () => {
           ) : error ? (
             <Alert status="error" borderRadius="md">
               <AlertIcon />
-              {error?.message || error?.error || "Server down right now,  please! try again"}
+              {error?.message ||
+                error?.error ||
+                "Server down right now,  please! try again"}
             </Alert>
           ) : filteredBookings.length === 0 ? (
             <Alert status="info" borderRadius="md" variant="subtle">
@@ -388,7 +385,7 @@ const TestBookingList = () => {
                             {booking.testId.testName}
                           </Text>
                           <Tag size="sm" mt={1} colorScheme="green">
-                            ₹{booking.testId.testPrice?.toFixed(2)}
+                            Rs. {booking.testId.testPrice?.toFixed(2)}
                           </Tag>
                         </Td>
                         <Td>

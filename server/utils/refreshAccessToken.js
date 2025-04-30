@@ -1,7 +1,7 @@
-import createResponse from "./responseBuilder.js";
-import { generateAccessToken } from "./generateAuthToken.js";
-import appConfig from "../config/appConfig.js";
 import jwt from "jsonwebtoken";
+import appConfig from "../config/appConfig.js";
+import { generateAccessToken } from "./generateAuthToken.js";
+import createResponse from "./responseBuilder.js";
 
 const handleRefreshAccessToken = async (req, res, next) => {
   const refreshToken = req?.cookies?.refreshToken;
@@ -84,6 +84,7 @@ const handleRefreshAccessToken = async (req, res, next) => {
         error: error.message,
       })
     );
+
   }
 };
 export default handleRefreshAccessToken;

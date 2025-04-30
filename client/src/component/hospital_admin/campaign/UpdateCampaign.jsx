@@ -1,26 +1,25 @@
-import React, { useState, useEffect } from "react";
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
   Button,
   FormControl,
-  FormLabel,
   FormErrorMessage,
+  FormLabel,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Stack,
-  useToast,
   Textarea,
 } from "@chakra-ui/react";
-import { Input, DatePicker, Select, notification } from "antd";
+import { DatePicker, Input, notification } from "antd";
 import dayjs from "dayjs";
+import React, { useEffect, useState } from "react";
 import { handleCampaignUpdate } from "../../../features/campaign/campaignSlice";
 
-import { fetchAllCampaigns } from "../../../features/campaign/campaignSlice";
 import { useDispatch, useSelector } from "react-redux";
+import { fetchAllCampaigns } from "../../../features/campaign/campaignSlice";
 
 const UpdateCampaignForm = ({ isOpen, onClose, campaignData, hospitals }) => {
   console.log("UpdateCampaignForm campaignData", campaignData);
@@ -246,22 +245,6 @@ const UpdateCampaignForm = ({ isOpen, onClose, campaignData, hospitals }) => {
                 onChange={handleInputChange}
               />
               <FormErrorMessage>{errors.location}</FormErrorMessage>
-            </FormControl>
-
-            <FormControl isInvalid={errors.hospital}>
-              <FormLabel>Hospital</FormLabel>
-              <Select
-                placeholder="Select hospital"
-                value={formData.hospital}
-                onChange={handleHospitalChange}
-              >
-                {hospitals?.map((hospital) => (
-                  <option key={hospital.value} value={hospital.value}>
-                    {hospital.label}
-                  </option>
-                ))}
-              </Select>
-              <FormErrorMessage>{errors.hospital}</FormErrorMessage>
             </FormControl>
           </Stack>
         </ModalBody>

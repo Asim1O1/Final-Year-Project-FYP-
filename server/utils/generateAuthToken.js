@@ -1,6 +1,6 @@
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import appConfig from "../config/appConfig.js";
-import crypto from "crypto";
 export const generateAccessToken = (userId, accountType) => {
   try {
     const jwtSecret = appConfig.jwt_secret;

@@ -1,60 +1,58 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import {
-  Card,
-  CardHeader,
-  CardBody,
-  Heading,
-  Flex,
-  Icon,
-  TableContainer,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  VStack,
-  Skeleton,
-  Text,
-  Tag,
-  HStack,
   Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Flex,
+  Heading,
+  HStack,
+  Icon,
+  Skeleton,
+  Table,
+  TableContainer,
+  Tag,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr,
   useColorModeValue,
   useDisclosure,
+  VStack,
 } from "@chakra-ui/react";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 import {
   AlertCircle,
-  ArrowRight,
   Calendar,
   CheckCircle,
   Clock,
-  CreditCard,
   Eye,
   X,
-  XCircle,
 } from "lucide-react";
 
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
   FormControl,
   FormLabel,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Textarea,
 } from "@chakra-ui/react";
 
-import { useNavigate } from "react-router-dom";
-import { fetchUserAppointments } from "../../features/appointment/appointmentSlice";
-import Pagination from "../../utils/Pagination";
-import { updateAppointmentStatus } from "../../features/appointment/appointmentSlice";
 import { notification } from "antd";
-import { deleteAppointments } from "../../features/appointment/appointmentSlice";
+import { useNavigate } from "react-router-dom";
+import {
+  fetchUserAppointments,
+  updateAppointmentStatus,
+} from "../../features/appointment/appointmentSlice";
+import Pagination from "../../utils/Pagination";
 
 const AppointmentsTab = () => {
   const dispatch = useDispatch();
@@ -197,13 +195,6 @@ const AppointmentsTab = () => {
       default:
         return AlertCircle;
     }
-  };
-
-  // Handle appointment cancellation
-  const handleCancelAppointment = (appointmentId) => {
-    // Implement your cancel appointment logic here
-    console.log("Cancelling appointment:", appointmentId);
-    // dispatch(cancelAppointment(appointmentId));
   };
 
   return (

@@ -1,14 +1,15 @@
-import userModel from "../../models/user.model.js";
-import hospitalModel from "../../models/hospital.model.js";
 import bcrypt from "bcryptjs";
-import createResponse from "../../utils/responseBuilder.js";
+import hospitalModel from "../../models/hospital.model.js";
+import userModel from "../../models/user.model.js";
 import { paginate } from "../../utils/paginationUtil.js";
+import createResponse from "../../utils/responseBuilder.js";
 import { logActivity } from "../activity/activity.controller.js";
 
-import Doctor from "../../models/doctor.model.js";
 import Appointment from "../../models/appointment.model.js";
 import Campaign from "../../models/campaign.model.js";
+import Doctor from "../../models/doctor.model.js";
 import MedicalTest from "../../models/medicalTest.model.js";
+import TestBooking from "../../models/testBooking.model.js";
 
 export const createHospitalAdmin = async (req, res, next) => {
   try {
@@ -295,36 +296,36 @@ export const getAllHospitalAdmins = async (req, res, next) => {
 export const getDashboardStatsForHospitalAdmin = async (req, res, next) => {
   try {
     const hospitalId = req.user.hospital; // Assuming req.user has the hospital ID
+    console.log("The hospital ID is", hospitalId);
 
-    // Count only those associated with the hospital
+    // Count associated documents
     const totalDoctors = await Doctor.countDocuments({ hospital: hospitalId });
     const totalAppointments = await Appointment.countDocuments({
       hospital: hospitalId,
-      status: "active",
     });
     const totalCampaigns = await Campaign.countDocuments({
       hospital: hospitalId,
+      $or: [{ isDeleted: { $exists: false } }, { isDeleted: false }],
     });
-    const medicalTestsToday = await MedicalTest.countDocuments({
+    const totalMedicalTests = await MedicalTest.countDocuments({
       hospital: hospitalId,
-      createdAt: {
-        $gte: new Date(new Date().setHours(0, 0, 0, 0)), // Start of today
-        $lt: new Date(new Date().setHours(23, 59, 59, 999)), // End of today
-      },
+    });
+    const totalTestBookings = await TestBooking.countDocuments({
+      hospital: hospitalId,
     });
 
     const stats = [
       {
         label: "Total Doctors",
         number: totalDoctors.toString(),
-        change: "+5%", // Optional placeholder
-        isIncrease: true,
       },
       {
-        label: "Medical Tests Today",
-        number: medicalTestsToday.toString(),
-        change: "-3%", // Optional placeholder
-        isIncrease: false,
+        label: "Total Medical Tests",
+        number: totalMedicalTests.toString(),
+      },
+      {
+        label: "Total Test Bookings",
+        number: totalTestBookings.toString(),
       },
     ];
 
@@ -337,7 +338,8 @@ export const getDashboardStatsForHospitalAdmin = async (req, res, next) => {
           totalDoctors,
           totalAppointments,
           totalCampaigns,
-          totalMedicalTestsToday: medicalTestsToday,
+          totalMedicalTests,
+          totalTestBookings,
           stats,
         },
       })

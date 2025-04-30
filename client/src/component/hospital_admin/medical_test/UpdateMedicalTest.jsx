@@ -1,53 +1,47 @@
-import React, { useState, useEffect, useRef } from "react";
+import { DeleteIcon, EditIcon } from "@chakra-ui/icons";
 import {
+  Badge,
+  Box,
+  Button,
+  Flex,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
+  Icon,
+  Image,
+  Input,
   Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Button,
-  FormControl,
-  FormLabel,
-  Input,
-  Select,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  VStack,
-  Textarea,
-  Box,
-  Flex,
-  FormErrorMessage,
-  useToast,
-  Badge,
-  Tabs,
-  TabList,
-  TabPanels,
   Tab,
+  TabList,
   TabPanel,
+  TabPanels,
+  Tabs,
   Text,
-  Icon,
-  IconButton,
-  Image,
+  Textarea,
+  useToast,
+  VStack,
 } from "@chakra-ui/react";
-import {
-  ChevronDownIcon,
-  CloseIcon,
-  DeleteIcon,
-  EditIcon,
-} from "@chakra-ui/icons";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
+import { notification } from "antd";
+import { UploadIcon } from "lucide-react";
+import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
 import {
   fetchAllMedicalTests,
   updateMedicalTest,
 } from "../../../features/medical_test/medicalTestSlice";
-import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
-import { UploadIcon } from "lucide-react";
 
 const UpdateMedicalTestForm = ({ isOpen, onClose, testData }) => {
   const dispatch = useDispatch();
@@ -268,11 +262,11 @@ const UpdateMedicalTestForm = ({ isOpen, onClose, testData }) => {
       console.log("Update response:", response);
 
       if (response.isSuccess) {
-        toast({
-          title: "Medical Test updated",
+        notification.success({
+          message: "Medical Test updated",
           description: "Medical test information has been updated successfully",
           status: "success",
-          duration: 5000,
+          duration: 5,
           isClosable: true,
         });
 
@@ -280,22 +274,22 @@ const UpdateMedicalTestForm = ({ isOpen, onClose, testData }) => {
         dispatch(fetchAllMedicalTests({ page: 1, limit: 10, isAdmin: true }));
         onClose();
       } else {
-        toast({
-          title: "Error",
+        notification.error({
+          message: "Error",
           description: response.message || "Failed to update medical test",
           status: "error",
-          duration: 5000,
+          duration: 5,
           isClosable: true,
         });
       }
     } catch (error) {
       console.error("Error updating medical test:", error);
-      toast({
-        title: "Error",
+      notification.error({
+        message: "Error",
         description:
           error.message || "An error occurred while updating the medical test",
         status: "error",
-        duration: 5000,
+        duration: 5,
         isClosable: true,
       });
     } finally {

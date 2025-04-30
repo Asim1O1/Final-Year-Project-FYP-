@@ -1,20 +1,18 @@
-
-import { useSearchParams } from "react-router-dom";
+import { CheckCircleIcon } from "@chakra-ui/icons";
 import {
+  Badge,
   Box,
-  Flex,
-  Heading,
-  Text,
   Button,
-  VStack,
-  Icon,
-  useColorModeValue,
   Container,
   Divider,
-  Badge,
+  Flex,
+  Heading,
+  Icon,
+  Text,
+  useColorModeValue,
+  VStack,
 } from "@chakra-ui/react";
-import { CheckCircleIcon } from "@chakra-ui/icons";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -22,9 +20,17 @@ const PaymentSuccess = () => {
 
   // Get transaction details from URL parameters
   const transactionId = searchParams.get("transaction_id");
-  const amount = searchParams.get("amount");
+  const amountInPaisa = searchParams.get("amount");
   const purchaseOrderId = searchParams.get("purchase_order_id");
   const pidx = searchParams.get("pidx");
+
+  /// Convert paisa to NPR (1 NPR = 100 paisa)
+  const amountInNPR = amountInPaisa ? parseInt(amountInPaisa) / 100 : null;
+
+  // Format the NPR amount with commas for thousands
+  const formattedAmount = amountInNPR
+    ? amountInNPR.toLocaleString("en-NP")
+    : "N/A";
 
   // Current date for display
   const date = new Date().toLocaleString();
@@ -35,7 +41,7 @@ const PaymentSuccess = () => {
   const secondaryBgColor = useColorModeValue("green.50", "green.900");
 
   // Handle case where transaction details are missing
-  if (!transactionId && !amount) {
+  if (!transactionId && !amountInPaisa) {
     return (
       <Container maxW="container.md" py={10}>
         <Flex
@@ -140,7 +146,7 @@ const PaymentSuccess = () => {
             </Flex>
             <Flex justify="space-between" wrap="wrap">
               <Text fontWeight="medium">Amount:</Text>
-              <Text fontWeight="bold">NPR {amount || "N/A"}</Text>
+              <Text fontWeight="bold">NPR {formattedAmount}</Text>
             </Flex>
             <Flex justify="space-between" wrap="wrap">
               <Text fontWeight="medium">Date & Time:</Text>
@@ -171,16 +177,6 @@ const PaymentSuccess = () => {
             onClick={() => navigate("/")}
           >
             Return to Home
-          </Button>
-          <Button
-            variant="outline"
-            colorScheme="purple"
-            size="lg"
-            px={8}
-            className="hover:bg-purple-50 transition-all duration-300"
-            onClick={() => navigate("/")}
-          >
-            View Dashboard
           </Button>
         </Flex>
       </Flex>

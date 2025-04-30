@@ -1,11 +1,11 @@
 import express from "express";
+import protectRoute from "../../middlewares/protectRoute.js";
 import {
   getAllUsers,
   getUserById,
+  getUserStats,
   updateUser,
-  getUserStats, // 👈 Import the new controller
 } from "./user.controller.js";
-import protectRoute from "../../middlewares/protectRoute.js";
 
 const router = express.Router();
 

@@ -120,26 +120,10 @@ const getCampaignByIdService = async (campaignId) => {
   }
 };
 
-const getAllCampaignsService = async ({
-  page = 1,
-  limit = 10,
-  sort = "createdAt",
-  hospital = null,
-  search = null,
-  startDate = null,
-  endDate = null,
-} = {}) => {
+const getAllCampaignsService = async (params = {}) => {
   try {
-    const params = { page, limit, sort };
-
-    // Add optional parameters to the request
-    if (hospital) params.hospital = hospital;
-    if (search) params.search = search;
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
-
     const response = await axiosInstance.get("/api/campaigns", { params });
-
+    console.log("The response is", response);
     if (!response?.data?.isSuccess) {
       throw createApiResponse({
         isSuccess: false,
@@ -148,15 +132,15 @@ const getAllCampaignsService = async ({
       });
     }
 
-    return createApiResponse({
-      isSuccess: true,
-      message: response?.data?.message || "Campaigns fetched successfully",
-      data: {
-        campaigns: response.data?.data,
-        pagination: response.data?.pagination || null,
-      },
-    });
+    // Ensure we return both data and pagination
+    return {
+      isSuccess: response.data.isSuccess,
+      message: response.data.message,
+      data: response.data?.data,
+      error: null,
+    };
   } catch (error) {
+    // Error handling remains the same
     console.error("Error fetching campaigns:", error);
     throw createApiResponse({
       isSuccess: false,
@@ -174,7 +158,7 @@ const volunteerForCampaignService = async (campaignId, answers) => {
     const response = await axiosInstance.post(
       `/api/campaigns/${campaignId}/volunteer`,
       {
-        answers, // Send answers to required questions
+        answers,
       }
     );
 

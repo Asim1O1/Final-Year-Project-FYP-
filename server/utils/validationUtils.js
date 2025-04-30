@@ -1,4 +1,5 @@
 import Joi from "joi";
+
 export const validateRegisterInput = Joi.object({
   fullName: Joi.string().min(3).required(),
   userName: Joi.string().alphanum().min(3).required(),
@@ -10,7 +11,7 @@ export const validateRegisterInput = Joi.object({
     .pattern(/^[0-9]+$/)
     .min(10)
     .required(),
-  gender: Joi.string().valid("male", "female").required(),
+  gender: Joi.string().valid("male", "female", "other").required(),
 });
 
 export const validateLoginInput = Joi.object({

@@ -1,56 +1,66 @@
-import React, { useEffect } from "react";
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
+  Badge,
   Box,
+  Button,
+  ButtonGroup,
+  Center,
+  CloseButton,
   Flex,
-  SimpleGrid,
   Grid,
+  Heading,
+  HStack,
+  Icon,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
+  SimpleGrid,
   Stat,
   StatLabel,
   StatNumber,
-  StatHelpText,
-  StatArrow,
-  Heading,
   Text,
-  Icon,
+  Tooltip,
   useColorModeValue,
-  Divider,
-  Alert,
-  AlertIcon,
-  Center,
-  HStack,
   VStack,
-  Button,
-  Badge,
-  Menu,
-  MenuButton,
-  IconButton,
-  MenuList,
-  MenuItem,
 } from "@chakra-ui/react";
-import { handleGetDashboardStats } from "../../features/hospital_admin/hospitalAdminSlice";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useEffect } from "react";
 import {
-  handleGetNotifications,
+  FaBell,
+  FaBellSlash,
+  FaCalendarAlt,
+  FaCalendarCheck,
+  FaChartBar,
+  FaCheck,
+  FaChevronLeft,
+  FaChevronRight,
+  FaClock,
+  FaEllipsisV,
+  FaExclamationTriangle,
+  FaFlask,
+  FaHistory,
+  FaProjectDiagram,
+  FaTrash,
+  FaUser,
+  FaUserCog,
+  FaUserMd,
+} from "react-icons/fa";
+import { RiFileTextLine } from "react-icons/ri";
+import { useDispatch, useSelector } from "react-redux";
+import CustomLoader from "../../component/common/CustomSpinner";
+
+import { Hospital } from "lucide-react";
+import { handleGetDashboardStats } from "../../features/hospital_admin/hospitalAdminSlice";
+import {
   handleClearAllNotifications,
+  handleGetNotifications,
   handleMarkAllNotificationsAsRead,
   handleMarkNotificationAsRead,
 } from "../../features/notification/notificationSlice";
-import CustomLoader from "../../component/common/CustomSpinner";
-import {
-  FaCalendarAlt,
-  FaCalendarCheck,
-  FaFlask,
-  FaProjectDiagram,
-  FaUserMd,
-  FaBell,
-  FaCheck,
-  FaTrash,
-  FaClock,
-  FaCircleNotch,
-  FaEllipsisV,
-} from "react-icons/fa";
-
-import { RiFileTextLine } from "react-icons/ri";
 import { handleGetRecentActivities } from "../../features/recent_activity/recentActivitySlice";
 
 export const HospitalAdminDashboard = () => {
@@ -65,7 +75,6 @@ export const HospitalAdminDashboard = () => {
   } = useSelector((state) => state.recentActivitySlice || {});
   const { currentPage, totalPages } = pagination;
 
-  // Add notifications state
   const {
     notifications,
     isLoading: notificationsLoading,
@@ -76,22 +85,43 @@ export const HospitalAdminDashboard = () => {
   const statCardBg = useColorModeValue("blue.50", "blue.900");
   const headingColor = useColorModeValue("blue.600", "blue.200");
   const borderColor = useColorModeValue("gray.200", "gray.700");
-  const unreadNotificationBg = useColorModeValue("blue.50", "blue.900");
-  const notificationHoverBg = useColorModeValue("gray.100", "gray.700");
+  const subtleHoverBg = useColorModeValue("gray.50", "gray.700");
 
-  // Icons for stat cards
-  const statIcons = {
-    "Total Doctors": FaUserMd,
-    "Total Appointments": FaCalendarCheck,
-    "Total Campaigns": FaProjectDiagram,
-    "Medical Tests Today": FaFlask,
-  };
   const activityIcons = {
     doctor_created: FaUserMd,
     campaign_created: FaCalendarAlt,
     medical_test_created: FaFlask,
     appointment_created: FaCalendarCheck,
   };
+
+  const gradients = {
+    "Total Doctors": "linear(to-br, purple.400, purple.600)",
+    "Total Hospitals": "linear(to-br, teal.400, teal.600)",
+    "Total Tests": "linear(to-br, orange.400, orange.600)",
+    "Total Appointments": "linear(to-br, pink.400, pink.600)",
+    "Total Campaigns": "linear(to-br, green.400, green.600)",
+  };
+
+  const statIcons = {
+    "Total Doctors": FaUserMd,
+    "Total Hospitals": Hospital,
+    "Total Medical Tests": FaFlask,
+    "Total Appointments": FaCalendarCheck,
+    "Total Campaigns": FaProjectDiagram,
+  };
+
+  const allStats = [
+    ...(dashboardStats?.stats?.map((stat) => ({
+      label: stat.label,
+      value: stat.number,
+    })) || []),
+    {
+      label: "Total Appointments",
+      value: dashboardStats?.totalAppointments || 0,
+    },
+    { label: "Total Campaigns", value: dashboardStats?.totalCampaigns || 0 },
+  ];
+
   const getStatusColor = (type) => {
     const colors = {
       new_hospital_admin: "blue",
@@ -115,6 +145,7 @@ export const HospitalAdminDashboard = () => {
 
   const formatTime = (dateString) => {
     const date = new Date(dateString);
+    return date.toLocaleString();
   };
 
   const handlePageChange = (newPage) => {
@@ -122,12 +153,10 @@ export const HospitalAdminDashboard = () => {
   };
 
   const handleMarkAsRead = (notificationId) => {
-    console.log("eneterd the mark as read");
     dispatch(handleMarkNotificationAsRead(notificationId));
   };
 
   const handleMarkAllAsRead = () => {
-    console.log("entered the handle mark all as read");
     dispatch(handleMarkAllNotificationsAsRead());
   };
 
@@ -135,318 +164,495 @@ export const HospitalAdminDashboard = () => {
     dispatch(handleClearAllNotifications());
   };
 
-  if (isLoading || notificationsLoading) return <CustomLoader size="xl" />;
-
-  if (error)
+  if (isLoading || notificationsLoading) {
     return (
-      <Alert status="error">
+      <Center h="60vh">
+        <VStack spacing={4}>
+          <CustomLoader size="xl" />
+          <Text color="gray.500">Loading dashboard data...</Text>
+        </VStack>
+      </Center>
+    );
+  }
+
+  if (error || notificationsError) {
+    return (
+      <Alert status="error" variant="left-accent" borderRadius="md" my={4}>
         <AlertIcon />
-        {error}
+        <Box>
+          <AlertTitle mb={1}>Error Loading Dashboard</AlertTitle>
+          <AlertDescription>
+            {error?.message ||
+              notificationsError?.message ||
+              "An error occurred"}
+          </AlertDescription>
+        </Box>
+        <CloseButton position="absolute" right="8px" top="8px" />
       </Alert>
     );
+  }
 
-  // Check if dashboardStats exists and has stats array
-  if (!dashboardStats || !dashboardStats.stats)
+  if (!dashboardStats || !dashboardStats.stats) {
     return (
-      <Alert status="info">
-        <AlertIcon />
-        No dashboard data available
-      </Alert>
+      <Box
+        p={10}
+        textAlign="center"
+        borderRadius="xl"
+        bg={cardBg}
+        shadow="md"
+        borderWidth="1px"
+        borderColor={borderColor}
+      >
+        <Icon as={FaChartBar} boxSize={12} color="gray.300" mb={4} />
+        <Heading size="md" color="gray.500" mb={2}>
+          No Dashboard Data Available
+        </Heading>
+        <Text color="gray.400">
+          Statistics will appear here once data is available.
+        </Text>
+        <Button mt={6} colorScheme="blue">
+          Refresh Data
+        </Button>
+      </Box>
     );
+  }
 
   return (
-    <Box p={5} bg={useColorModeValue("gray.50", "gray.900")} borderRadius="xl">
-      {/* Summary Stats - Enhanced with gradients and icons */}
-      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={8}>
-        {dashboardStats.stats.map((stat) => (
+    <Box
+      p={{ base: 4, md: 6 }}
+      bg={useColorModeValue("gray.50", "gray.900")}
+      borderRadius="xl"
+    >
+      {/* Stats Cards */}
+      <SimpleGrid
+        columns={{ base: 1, sm: 2, md: 3, lg: 5 }} // Reduced columns to make each card wider
+        spacing={6} // Balanced spacing
+        mb={8}
+      >
+        {allStats.map((stat) => (
           <Box
             key={stat.label}
-            bg={cardBg}
+            bg={statCardBg}
             p={6}
             rounded="xl"
             shadow="md"
             borderWidth="1px"
             borderColor={borderColor}
-            transition="transform 0.3s, box-shadow 0.3s"
-            _hover={{ transform: "translateY(-5px)", shadow: "lg" }}
-          >
-            <Stat>
-              <Flex justify="space-between" align="center" mb={2}>
-                <StatLabel fontSize="md" fontWeight="medium" color="gray.600">
-                  {stat.label}
-                </StatLabel>
-                <Box
-                  p={2}
-                  bg={stat.isIncrease ? "green.100" : "red.100"}
-                  borderRadius="full"
-                >
-                  <StatArrow
-                    type={stat.isIncrease ? "increase" : "decrease"}
-                    color={stat.isIncrease ? "green.500" : "red.500"}
-                  />
-                </Box>
-              </Flex>
-              <StatNumber fontSize="2xl" fontWeight="bold" my={2}>
-                {stat.number}
-              </StatNumber>
-              <StatHelpText
-                fontSize="sm"
-                color={stat.isIncrease ? "green.500" : "red.500"}
-                fontWeight="medium"
-              >
-                {stat.change} from last month
-              </StatHelpText>
-            </Stat>
-          </Box>
-        ))}
-      </SimpleGrid>
-
-      {/* Additional Stats - With icons and improved styling */}
-      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={8}>
-        {Object.entries({
-          "Total Appointments": dashboardStats.totalAppointments,
-          "Total Campaigns": dashboardStats.totalCampaigns,
-        }).map(([label, value]) => (
-          <Box
-            key={label}
-            bg={statCardBg}
-            p={6}
-            rounded="xl"
-            shadow="md"
             position="relative"
             overflow="hidden"
+            transition="all 0.3s ease"
+            minW="200px" // Minimum width constraint
+            flex="1" // Allow cards to grow
+            _hover={{
+              transform: "translateY(-5px)",
+              shadow: "lg",
+              borderColor: "blue.300",
+            }}
           >
-            <Box position="absolute" top={0} right={0} p={4} opacity={0.2}>
-              <Icon as={statIcons[label]} boxSize={12} color="blue.600" />
+            {/* Gradient background overlay */}
+            <Box
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
+              bgGradient={gradients[stat.label]}
+              opacity={0.1}
+              borderRadius="xl"
+            />
+
+            {/* Icon with better positioning */}
+            <Box
+              position="absolute"
+              top={4}
+              right={3.5}
+              opacity={0.3}
+              _hover={{ opacity: 0.6 }}
+            >
+              <Icon as={statIcons[stat.label]} boxSize={7} color="blue.500" />
             </Box>
-            <Stat>
-              <StatLabel fontSize="md" fontWeight="medium" color="gray.600">
-                {label}
+
+            {/* Stat content with better spacing */}
+            <Stat position="relative">
+              <StatLabel
+                fontSize="md" // Slightly larger font
+                fontWeight="medium"
+                color="gray.600"
+                mb={5} // Increased margin
+                noOfLines={2} // Ensure long labels wrap nicely
+                minH="48px" // Consistent height for labels
+              >
+                {stat.label}
               </StatLabel>
               <StatNumber
-                fontSize="3xl"
+                fontSize="2xl"
                 fontWeight="bold"
-                color="blue.600"
-                my={2}
+                color={useColorModeValue("blue.700", "blue.300")}
+                mt={2} // More spacing
+                lineHeight="1.2"
               >
-                {value}
+                {stat.value.toLocaleString()}
               </StatNumber>
             </Stat>
           </Box>
         ))}
       </SimpleGrid>
 
-      <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={6}>
-        {/* Recent Activity - Enhanced with subtle styling */}
+      {/* Recent Activity + Notifications */}
+      <Grid
+        templateColumns={{ base: "1fr", lg: "2fr 1fr" }}
+        gap={{ base: 6, lg: 8 }}
+      >
+        {/* Recent Activity Panel */}
         <Box
           bg={cardBg}
-          p={6}
+          p={{ base: 4, md: 6 }}
           rounded="xl"
           shadow="md"
           borderWidth="1px"
           borderColor={borderColor}
+          height="fit-content"
         >
-          <Flex justify="space-between" align="center" mb={4}>
-            <Heading size="md" color={headingColor} fontWeight="semibold">
-              Recent Activity
-            </Heading>
+          <Flex
+            justify="space-between"
+            align="center"
+            mb={4}
+            pb={3}
+            borderBottom="1px"
+            borderColor={borderColor}
+          >
+            <HStack>
+              <Icon as={FaHistory} color={headingColor} boxSize={5} />
+              <Heading size="md" color={headingColor} fontWeight="semibold">
+                Recent Activity
+              </Heading>
+            </HStack>
           </Flex>
-          <Divider mb={4} />
 
-          {/* Actual Recent Activities List */}
-          <VStack spacing={4} align="stretch" maxH="400px" overflowY="auto">
+          {/* Activities List */}
+          <VStack
+            spacing={3}
+            align="stretch"
+            maxH="500px"
+            overflowY="auto"
+            pr={2}
+            css={{
+              "&::-webkit-scrollbar": {
+                width: "8px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "transparent",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "var(--chakra-colors-gray-300)",
+                borderRadius: "4px",
+              },
+            }}
+          >
             {activities.length > 0 ? (
               activities.map((activity) => (
-                <HStack
+                <Box
                   key={activity._id}
                   p={4}
-                  bg="gray.50"
-                  rounded="md"
-                  spacing={4}
-                  _hover={{ bg: "gray.100" }}
+                  bg={useColorModeValue("white", "gray.750")}
+                  rounded="lg"
+                  borderWidth="1px"
+                  borderColor={borderColor}
+                  _hover={{
+                    bg: subtleHoverBg,
+                    transform: "translateX(2px)",
+                  }}
+                  transition="all 0.2s ease"
                 >
-                  <Box p={2} bg="blue.500" color="white" rounded="lg">
-                    <Icon
-                      as={activityIcons[activity.type] || RiFileTextLine}
-                      boxSize={5}
-                    />
-                  </Box>
+                  <Flex align="flex-start" gap={4}>
+                    <Box
+                      p={3}
+                      bg={useColorModeValue("blue.100", "blue.800")}
+                      color={useColorModeValue("blue.700", "blue.200")}
+                      rounded="xl"
+                      height="fit-content"
+                    >
+                      <Icon
+                        as={activityIcons[activity.type] || RiFileTextLine}
+                        boxSize={5}
+                      />
+                    </Box>
 
-                  <Box flex={1}>
-                    <Text fontWeight="medium">{activity.title}</Text>
-                    <Text fontSize="sm" color="gray.600">
-                      {activity.description}
-                    </Text>
-                    <Text fontSize="xs" color="gray.500">
-                      Performed by: {activity.performedBy?.name || "System"}
-                    </Text>
-                  </Box>
-
-                  <Text fontSize="sm" color="gray.500">
-                    {formatTime(activity.createdAt)}
-                  </Text>
-                </HStack>
+                    <Box flex={1}>
+                      <Text fontWeight="semibold" mb={1}>
+                        {activity.title}
+                      </Text>
+                      <Text fontSize="sm" color="gray.600" mb={2}>
+                        {activity.description}
+                      </Text>
+                      <Flex
+                        justify="space-between"
+                        align="center"
+                        fontSize="xs"
+                        color="gray.500"
+                      >
+                        <HStack>
+                          <Icon as={FaUser} boxSize={3} />
+                          <Text>{activity.performedBy?.name || "System"}</Text>
+                        </HStack>
+                        <Flex align="center" gap={1}>
+                          <Icon as={FaClock} boxSize={3} />
+                          <Text>{formatTime(activity.createdAt)}</Text>
+                        </Flex>
+                      </Flex>
+                    </Box>
+                  </Flex>
+                </Box>
               ))
             ) : (
-              <Center p={8}>
-                <Text color="gray.500">No recent activities found</Text>
+              <Center p={12} borderRadius="lg" bg={subtleHoverBg}>
+                <VStack spacing={3}>
+                  <Icon as={FaHistory} boxSize={10} color="gray.300" />
+                  <Text color="gray.500" fontWeight="medium">
+                    No recent activities found
+                  </Text>
+                  <Text fontSize="sm" color="gray.400" textAlign="center">
+                    Recent activities will appear here as they occur
+                  </Text>
+                </VStack>
               </Center>
             )}
-            {totalPages > 1 && (
-              <Flex justify="center" mt={4}>
-                <HStack spacing={2}>
-                  <Button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    isDisabled={currentPage <= 1}
-                  >
-                    Previous
-                  </Button>
-                  <Text>
-                    Page {currentPage} of {totalPages}
-                  </Text>
-                  <Button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    isDisabled={currentPage >= totalPages}
-                  >
-                    Next
-                  </Button>
-                </HStack>
-              </Flex>
-            )}
           </VStack>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Flex
+              justify="center"
+              mt={6}
+              pt={4}
+              borderTop="1px"
+              borderColor={borderColor}
+            >
+              <ButtonGroup size="sm" isAttached variant="outline">
+                <IconButton
+                  icon={<FaChevronLeft />}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  isDisabled={currentPage <= 1}
+                  aria-label="Previous page"
+                />
+                <Button variant="outline" isDisabled>
+                  Page {currentPage} of {totalPages}
+                </Button>
+                <IconButton
+                  icon={<FaChevronRight />}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  isDisabled={currentPage >= totalPages}
+                  aria-label="Next page"
+                />
+              </ButtonGroup>
+            </Flex>
+          )}
         </Box>
 
-        {/* Notifications Section */}
+        {/* Notifications Panel */}
         <Box
           bg={cardBg}
-          p={6}
+          p={{ base: 4, md: 6 }}
           rounded="xl"
           shadow="md"
           borderWidth="1px"
           borderColor={borderColor}
+          height="fit-content"
         >
           {/* Header Section */}
-          <HStack justify="space-between" mb={5}>
-            <Heading size="md" color={headingColor} fontWeight="semibold">
-              Notifications
-            </Heading>
-            <HStack spacing={2}>
-              <Button
-                leftIcon={<FaCheck />}
-                size="sm"
-                variant="outline"
-                onClick={handleMarkAllAsRead}
-                isDisabled={
-                  !notifications ||
-                  notifications.length === 0 ||
-                  notifications.every((n) => n.isRead)
-                }
-                _hover={{ bg: "blue.50" }}
-              >
-                Mark all as read
-              </Button>
-              <Button
-                leftIcon={<FaTrash />}
-                size="sm"
-                variant="outline"
-                colorScheme="red"
-                onClick={handleClearAll}
-                isDisabled={!notifications || notifications.length === 0}
-              >
-                Clear all
-              </Button>
+          <Flex
+            justify="space-between"
+            align="center"
+            mb={4}
+            pb={3}
+            borderBottom="1px"
+            borderColor={borderColor}
+          >
+            <HStack>
+              <Icon as={FaBell} color={headingColor} boxSize={5} />
+              <Heading size="md" color={headingColor} fontWeight="semibold">
+                Notifications
+              </Heading>
+              {notifications &&
+                notifications.filter((n) => !n.read).length > 0 && (
+                  <Badge colorScheme="blue" borderRadius="full" px={2}>
+                    {notifications.filter((n) => !n.read).length}
+                  </Badge>
+                )}
             </HStack>
-          </HStack>
-          <Divider mb={4} />
+            <HStack spacing={2}>
+              <Tooltip label="Mark all as read" hasArrow placement="top">
+                <IconButton
+                  icon={<FaCheck />}
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleMarkAllAsRead}
+                  isDisabled={
+                    !notifications ||
+                    notifications.length === 0 ||
+                    notifications.every((n) => n.read)
+                  }
+                  aria-label="Mark all as read"
+                />
+              </Tooltip>
+              <Tooltip label="Clear all notifications" hasArrow placement="top">
+                <IconButton
+                  icon={<FaTrash />}
+                  size="sm"
+                  variant="ghost"
+                  colorScheme="red"
+                  onClick={handleClearAll}
+                  isDisabled={!notifications || notifications.length === 0}
+                  aria-label="Clear all notifications"
+                />
+              </Tooltip>
+            </HStack>
+          </Flex>
 
           {/* Notifications List */}
-          <VStack spacing={3} align="stretch" maxH="400px" overflowY="auto">
+          <VStack
+            spacing={3}
+            align="stretch"
+            maxH="500px"
+            overflowY="auto"
+            pr={2}
+            css={{
+              "&::-webkit-scrollbar": {
+                width: "8px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "transparent",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "var(--chakra-colors-gray-300)",
+                borderRadius: "4px",
+              },
+            }}
+          >
             {notifications && notifications.length > 0 ? (
               notifications.map((notification) => (
                 <Box
                   key={notification._id}
                   p={4}
-                  bg={notification.isRead ? "white" : "blue.50"}
-                  border="1px"
-                  borderColor={notification.isRead ? "gray.200" : "blue.200"}
-                  rounded="lg"
-                  _hover={{ bg: notification.isRead ? "gray.50" : "blue.100" }}
+                  bg={
+                    notification.read
+                      ? "transparent"
+                      : useColorModeValue("blue.50", "blue.900")
+                  }
+                  borderLeft="4px"
+                  borderColor={
+                    notification.read
+                      ? borderColor
+                      : `${getStatusColor(notification.type)}.500`
+                  }
+                  borderWidth="1px"
+                  borderRadius="md"
+                  _hover={{
+                    bg: notification.read
+                      ? subtleHoverBg
+                      : useColorModeValue("blue.100", "blue.800"),
+                  }}
                   transition="all 0.2s"
+                  position="relative"
                 >
-                  <HStack justify="space-between" mb={2}>
-                    <HStack>
-                      <Text
-                        fontWeight={notification.isRead ? "medium" : "semibold"}
-                      >
-                        {notification.title}
-                      </Text>
-                      {!notification.isRead && (
-                        <Badge
-                          colorScheme="blue"
-                          variant="subtle"
-                          borderRadius="full"
+                  <Flex direction="column">
+                    <Flex justify="space-between" align="center" mb={2}>
+                      <HStack>
+                        {notification.type && (
+                          <Icon
+                            as={
+                              notification.type.includes("campaign")
+                                ? FaCalendarAlt
+                                : notification.type.includes("appointment")
+                                ? FaCalendarCheck
+                                : notification.type.includes("admin")
+                                ? FaUserCog
+                                : notification.type.includes("system")
+                                ? FaExclamationTriangle
+                                : FaBell
+                            }
+                            color={`${getStatusColor(notification.type)}.500`}
+                            boxSize={4}
+                          />
+                        )}
+                        <Text
+                          fontWeight={notification.read ? "medium" : "bold"}
                         >
-                          New
+                          {notification.title}
+                        </Text>
+                        {!notification.read && (
+                          <Badge
+                            colorScheme="blue"
+                            variant="solid"
+                            fontSize="xs"
+                            borderRadius="full"
+                          >
+                            New
+                          </Badge>
+                        )}
+                      </HStack>
+                      <Menu>
+                        <MenuButton
+                          as={IconButton}
+                          icon={<FaEllipsisV />}
+                          size="sm"
+                          variant="ghost"
+                          aria-label="Options"
+                        />
+                        <MenuList>
+                          {!notification.read && (
+                            <MenuItem
+                              icon={<FaCheck />}
+                              onClick={() => handleMarkAsRead(notification._id)}
+                            >
+                              Mark as read
+                            </MenuItem>
+                          )}
+                        </MenuList>
+                      </Menu>
+                    </Flex>
+
+                    <Text
+                      fontSize="sm"
+                      color={notification.read ? "gray.600" : "gray.700"}
+                      mb={3}
+                    >
+                      {notification.message}
+                    </Text>
+
+                    <Flex
+                      justify="space-between"
+                      align="center"
+                      mt={1}
+                      fontSize="xs"
+                    >
+                      <HStack spacing={1}>
+                        <Icon as={FaClock} color="gray.400" boxSize={3} />
+                        <Text color="gray.500">
+                          {formatTime(notification.createdAt)}
+                        </Text>
+                      </HStack>
+                      {notification.type && (
+                        <Badge
+                          colorScheme={getStatusColor(notification.type)}
+                          variant="subtle"
+                          textTransform="capitalize"
+                        >
+                          {notification.type.replace(/_/g, " ")}
                         </Badge>
                       )}
-                    </HStack>
-                    <Menu>
-                      <MenuButton
-                        as={IconButton}
-                        icon={<FaEllipsisV />}
-                        size="sm"
-                        variant="ghost"
-                      />
-                      <MenuList>
-                        {!notification.isRead && (
-                          <MenuItem
-                            icon={<FaCheck />}
-                            onClick={() => handleMarkAsRead(notification._id)}
-                          >
-                            Mark as read
-                          </MenuItem>
-                        )}
-                        <MenuItem icon={<FaTrash />} color="red.500">
-                          Delete
-                        </MenuItem>
-                      </MenuList>
-                    </Menu>
-                  </HStack>
-
-                  <Text
-                    fontSize="sm"
-                    color={notification.isRead ? "gray.600" : "gray.700"}
-                    mb={2}
-                  >
-                    {notification.message}
-                  </Text>
-
-                  <HStack justify="space-between">
-                    <HStack spacing={1}>
-                      <Icon as={FaClock} color="gray.400" boxSize={3} />
-                      <Text fontSize="xs" color="gray.500">
-                        {formatTime(notification.createdAt)}
-                      </Text>
-                    </HStack>
-                    {notification.type && (
-                      <Badge
-                        colorScheme={getStatusColor(notification.type)}
-                        variant="subtle"
-                      >
-                        {notification.type.replace(/_/g, " ")}
-                      </Badge>
-                    )}
-                  </HStack>
+                    </Flex>
+                  </Flex>
                 </Box>
               ))
             ) : (
-              <Center p={10}>
+              <Center p={12} borderRadius="lg" bg={subtleHoverBg}>
                 <VStack spacing={3}>
-                  <Icon as={FaBell} boxSize={8} color="gray.300" />
+                  <Icon as={FaBellSlash} boxSize={10} color="gray.300" />
                   <Text color="gray.500" fontWeight="medium">
                     No notifications available
                   </Text>
-                  <Text fontSize="sm" color="gray.400">
+                  <Text fontSize="sm" color="gray.400" textAlign="center">
                     You're all caught up!
                   </Text>
                 </VStack>

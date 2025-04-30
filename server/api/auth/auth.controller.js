@@ -1,9 +1,9 @@
 import bcryptjs from "bcryptjs";
+import crypto from "crypto";
+import doctorModel from "../../models/doctor.model.js";
+import hospitalModel from "../../models/hospital.model.js";
 import userModel from "../../models/user.model.js";
-import {
-  validateLoginInput,
-  validateRegisterInput,
-} from "../../utils/validationUtils.js";
+import { emailTemplates } from "../../utils/emailTemplates.js";
 import {
   generateAccessToken,
   generatePasswordResetToken,
@@ -11,10 +11,10 @@ import {
 } from "../../utils/generateAuthToken.js";
 import createResponse from "../../utils/responseBuilder.js";
 import { sendEmail } from "../../utils/sendEmail.js";
-import crypto from "crypto";
-import doctorModel from "../../models/doctor.model.js";
-import hospitalModel from "../../models/hospital.model.js";
-import { emailTemplates } from "../../utils/emailTemplates.js";
+import {
+  validateLoginInput,
+  validateRegisterInput,
+} from "../../utils/validationUtils.js";
 import { logActivity } from "../activity/activity.controller.js";
 
 /**
@@ -23,7 +23,7 @@ import { logActivity } from "../activity/activity.controller.js";
 export const handleUserRegistration = async (req, res, next) => {
   try {
     // Validate input
-    await validateRegisterInput.validateAsync(req.body);
+    await validateRegisterInput.validateAsync(req.body, { abortEarly: false });
 
     const {
       fullName,
@@ -219,7 +219,13 @@ export const handleUserLogin = async (req, res, next) => {
     const refreshToken = generateRefreshToken(account._id, accountType);
 
     const accountObject = account.toObject();
+    // Remove sensitive or unnecessary fields
     delete accountObject.password;
+    delete accountObject.resetPasswordOTP;
+    delete accountObject.resetPasswordOTPExpiry;
+    delete accountObject.resetPasswordAttempts;
+    delete accountObject.resetPasswordLockUntil;
+    delete accountObject.__v;
 
     // Set cookies for tokens
     res.cookie("accessToken", accessToken, {

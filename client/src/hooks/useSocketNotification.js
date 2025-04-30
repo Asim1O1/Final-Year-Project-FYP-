@@ -1,16 +1,19 @@
-import { useCallback, useEffect, useState, useRef } from "react";
-import { addNewNotification } from "../features/notification/notificationSlice";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { io } from "socket.io-client";
 import {
   addNewMessageToState,
   updateUnreadCount,
 } from "../features/messages/messageSlice";
+import { addNewNotification } from "../features/notification/notificationSlice";
 
 export const useSocket = () => {
   const socketRef = useRef(null);
   const messageTracker = useRef(new Set());
+  const typingTimeouts = useRef({});
   const [isConnected, setIsConnected] = useState(false);
+  const [typingUsers, setTypingUsers] = useState({});
+  const [onlineUsers, setOnlineUsers] = useState([]);
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth?.user?.data);
   const reconnectAttempts = useRef(0);
@@ -20,6 +23,8 @@ export const useSocket = () => {
   const userRole = user?.role || user?.data?.role || "user";
 
   const initializeSocket = useCallback(() => {
+    console.log("Initializing socket for user:", userId); // Add this
+
     if (!userId || socketRef.current) return socketRef.current;
 
     socketRef.current = io("http://localhost:4001", {
@@ -32,12 +37,17 @@ export const useSocket = () => {
 
     messageTracker.current.clear();
 
+    // In your initializeSocket function
     socketRef.current.on("connect", () => {
+      console.log("✅ Socket connected, joining room:", userId); // Add this
       setIsConnected(true);
       reconnectAttempts.current = 0;
-      socketRef.current.emit("join-room", { id: userId, role: userRole });
+      console.log("🏠 Joining room with:", { id: userId, role: userRole }); // Add this
+      socketRef.current.emit("join-room", {
+        id: userId,
+        role: userRole,
+      });
     });
-
     socketRef.current.on("disconnect", () => {
       setIsConnected(false);
     });
@@ -47,13 +57,15 @@ export const useSocket = () => {
       setTimeout(() => socketRef.current?.connect(), 5000);
     });
 
+    socketRef.current.on("update-online-users", (users) => {
+      setOnlineUsers(users);
+    });
+
     socketRef.current.on("message", (message) => {
-      console.log("message in the use socket is", message);
       if (!messageTracker.current.has(message._id)) {
         messageTracker.current.add(message._id);
 
         dispatch((dispatch, getState) => {
-          // Use Redux Thunk's getState
           const state = getState();
           const currentChat = state.messageSlice.currentChat;
 
@@ -64,8 +76,6 @@ export const useSocket = () => {
             (!currentChat || currentChat._id !== message.senderId) &&
             message.read === false
           ) {
-            console.log("entered the conditin to update message count");
-
             dispatch(updateUnreadCount({ chatId: message.senderId, count: 1 }));
           }
         });
@@ -73,41 +83,55 @@ export const useSocket = () => {
     });
 
     socketRef.current.on("chatCountUpdate", (data) => {
-      console.log("INSIDE THE SOCKET REF CHAT COUNT UPDATE", data);
       dispatch(updateUnreadCount({ chatId: data.chatId, count: data.count }));
     });
 
     return socketRef.current;
   }, [userId, userRole, dispatch]);
 
-  // Typing indicators
+  // Setup typing event listeners
   useEffect(() => {
+    if (!isConnected || !socketRef.current) return;
+
     const socket = socketRef.current;
-    if (!socket) return;
 
     const handleTyping = (senderId) => {
-      console.log("Typing from:", senderId);
+      console.log("👂 Received typing from:", senderId);
+      console.log("Previous typing users:", JSON.stringify(typingUsers));
+
+      // Force a state update with a new object
+      setTypingUsers((prev) => {
+        const newState = { ...prev };
+        newState[senderId] = true;
+        console.log("New typing users state:", JSON.stringify(newState));
+        return newState;
+      });
+    };
+
+    const handleStopTyping = (senderId) => {
+      console.log("👂 Received stop typing from:", senderId);
+      console.log("Previous typing users:", JSON.stringify(typingUsers));
+
+      setTypingUsers((prev) => {
+        const newState = { ...prev };
+        delete newState[senderId];
+        console.log("New typing users state:", JSON.stringify(newState));
+        return newState;
+      });
     };
 
     socket.on("typing", handleTyping);
-    socket.on("stop-typing", handleTyping);
+    socket.on("stop-typing", handleStopTyping);
 
     return () => {
       socket.off("typing", handleTyping);
-      socket.off("stop-typing", handleTyping);
+      socket.off("stop-typing", handleStopTyping);
     };
-  }, []);
+  }, [isConnected]);
 
   useEffect(() => {
-    console.log("entered inside the notification listener");
     const socket = socketRef.current;
-    if (!socket || !isConnected) {
-      console.log(
-        "Socket not ready or not connected, skipping notification setup"
-      );
-      return;
-    }
-    console.log("🔄 Setting up notification listeners for user:", userId);
+    if (!socket || !isConnected) return;
 
     const notificationTypes = [
       "appointment",
@@ -118,19 +142,9 @@ export const useSocket = () => {
       "medical_report",
     ];
 
-    // Either use your new handler function...
     const listeners = notificationTypes.map((type) => {
-      console.log(`🔊 Setting up listener for ${type} notifications`);
       const handler = (data) => {
-        console.log(`📥 Received ${type} notification:`, data);
-
-        // Check if data exists and has necessary properties
         if (!data || !data.id) {
-          console.warn(
-            `⚠️ Received malformed ${type} notification data:`,
-            data
-          );
-          // Still dispatch with whatever data we have
           dispatch(addNewNotification({ ...data, type }));
           return;
         }
@@ -141,7 +155,6 @@ export const useSocket = () => {
       return { type, handler };
     });
 
-    // Add debug catch-all to see all events
     socket.onAny((event, ...args) => {
       console.log("📡 Socket event received:", event, args);
     });
@@ -149,35 +162,23 @@ export const useSocket = () => {
     return () => {
       listeners.forEach(({ type, handler }) => {
         socket.off(type, handler);
-        console.log(`❌ Unsubscribed from ${type} notifications`);
       });
       socket.offAny();
     };
-  }, [dispatch, isConnected, userId]); // Add isConnected and userId
+  }, [dispatch, isConnected, userId]);
 
-  // Initialize socket on mount or when userId is ready
   useEffect(() => {
-    if (!userId) {
-      console.log("No userId available, skipping socket initialization");
-      return;
-    }
-
-    console.log("🔄 Initializing socket for user:", userId);
+    if (!userId) return;
     const socket = initializeSocket();
 
-    // Log socket state immediately after initialization
     if (socket) {
       console.log("✅ Socket initialized:", socket.id);
-    } else {
-      console.warn("⚠️ Socket initialization failed");
     }
 
     return () => {
       if (socket) {
-        console.log("🧹 Cleaning up socket connection");
         socket.off("connect");
         socket.off("disconnect");
-        // Don't disconnect here - let the disconnect function handle this
       }
     };
   }, [userId, initializeSocket]);
@@ -190,10 +191,61 @@ export const useSocket = () => {
     }
     setIsConnected(false);
   }, []);
+  // In your socket setup (frontend)
+  const sendTypingStatus = useCallback(
+    (receiverId) => {
+      if (!socketRef.current || !userId || !receiverId) return;
+
+      // Clear any existing timeout to avoid duplicate "stop-typing" events
+      if (typingTimeouts.current[receiverId]) {
+        clearTimeout(typingTimeouts.current[receiverId]);
+      }
+
+      // Emit typing event
+      socketRef.current.emit("typing", {
+        senderId: userId,
+        receiverId,
+        timestamp: Date.now(), // Optional: helps with ordering
+      });
+
+      // Set timeout to automatically send stop-typing after 3 seconds of inactivity
+      typingTimeouts.current[receiverId] = setTimeout(() => {
+        socketRef.current.emit("stop-typing", {
+          senderId: userId,
+          receiverId,
+        });
+        delete typingTimeouts.current[receiverId];
+      }, 3000); // 3 seconds is more standard
+    },
+    [userId]
+  );
+
+  const sendStopTypingStatus = useCallback(
+    (receiverId) => {
+      if (!socketRef.current || !userId || !receiverId) return;
+
+      // Clear timeout if it exists
+      if (typingTimeouts.current[receiverId]) {
+        clearTimeout(typingTimeouts.current[receiverId]);
+        delete typingTimeouts.current[receiverId];
+      }
+
+      // Immediately send stop-typing
+      socketRef.current.emit("stop-typing", {
+        senderId: userId,
+        receiverId,
+      });
+    },
+    [userId]
+  );
 
   return {
     isConnected,
     disconnect,
     getSocket: () => socketRef.current,
+    typingUsers,
+    onlineUsers,
+    sendTypingStatus,
+    sendStopTypingStatus,
   };
 };

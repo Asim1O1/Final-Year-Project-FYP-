@@ -75,6 +75,7 @@ const getAllUsersService = async (filters = { page: 1, limit: 10 }) => {
 const updateUserService = async (userId, userData) => {
   try {
     const response = await axiosInstance.put(`/api/user/${userId}`, userData);
+    console.log("Response from updateUserService:", response);
 
     if (!response?.data?.isSuccess) {
       throw createApiResponse({

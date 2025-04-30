@@ -1,24 +1,23 @@
 import {
   Box,
   Container,
-  Heading,
-  Text,
-  SimpleGrid,
-  VStack,
-  Button,
+  Divider,
   Flex,
+  Heading,
+  Icon,
+  SimpleGrid,
   Skeleton,
   SkeletonText,
-  Icon,
+  Text,
   useColorModeValue,
-  Divider,
+  VStack,
 } from "@chakra-ui/react";
-import DoctorCard from "../common/DoctorCard";
-import { useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import DoctorCard from "../common/DoctorCard";
 // import { fetchFeaturedDoctors } from "../../features/doctor/doctorSlice";
-import { Stethoscope, ArrowRight } from "lucide-react";
+import { Stethoscope } from "lucide-react";
 import { fetchAllDoctors } from "../../features/doctor/doctorSlice";
 
 const DoctorSection = () => {
@@ -27,7 +26,7 @@ const DoctorSection = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch featured doctors for the homepage
- useEffect(() => {
+  useEffect(() => {
     const fetchDoctors = async () => {
       try {
         await dispatch(fetchAllDoctors({ page: 1, limit: 3 })).unwrap();
@@ -87,22 +86,22 @@ const DoctorSection = () => {
               <Icon as={Stethoscope} w={8} h={8} color={accentColor} />
             </Flex>
             <Heading
-                mb={4}
-                fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }}
-                fontWeight="bold"
-                color={headingColor}
-                letterSpacing="tight"
-                lineHeight="shorter"
+              mb={4}
+              fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }}
+              fontWeight="bold"
+              color={headingColor}
+              letterSpacing="tight"
+              lineHeight="shorter"
+            >
+              Our Expert{" "}
+              <Text
+                as="span"
+                bgGradient="linear(to-r, blue.400, teal.400)"
+                bgClip="text"
               >
-                Our Expert{" "}
-                <Text
-                  as="span"
-                  bgGradient="linear(to-r, blue.400, teal.400)"
-                  bgClip="text"
-                >
-                  Doctors
-                </Text>
-              </Heading>
+                Doctors
+              </Text>
+            </Heading>
             <Text
               color={subheadingColor}
               fontSize={{ base: "md", md: "lg" }}
@@ -171,25 +170,7 @@ const DoctorSection = () => {
             </SimpleGrid>
           )}
 
-          <Flex justify="center" width="full" mt={{ base: 6, md: 10 }}>
-            <Button
-              colorScheme="blue"
-              size="lg"
-              onClick={() => navigate("/doctors")}
-              px={8}
-              py={6}
-              isLoading={isLoading}
-              rightIcon={<ArrowRight size={18} />}
-              _hover={{
-                transform: "translateY(-2px)",
-                boxShadow: "md",
-              }}
-              fontWeight="medium"
-              borderRadius="lg"
-            >
-              View All Doctors
-            </Button>
-          </Flex>
+          <Flex justify="center" width="full" mt={{ base: 6, md: 10 }}></Flex>
         </VStack>
       </Container>
     </Box>

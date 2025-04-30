@@ -1,72 +1,67 @@
-import React, { useState, useEffect } from "react";
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
+  Avatar,
+  Badge,
   Box,
-  VStack,
-  Heading,
-  FormControl,
-  FormLabel,
-  Textarea,
-  RadioGroup,
-  Radio,
-  Button,
-  Stack,
-  useToast,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
-  Text,
-  Flex,
-  Avatar,
-  Divider,
-  Badge,
-  Skeleton,
-  Container,
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Icon,
-  useColorModeValue,
+  Container,
+  Divider,
+  Flex,
+  FormControl,
+  FormLabel,
+  Heading,
   HStack,
-  SimpleGrid,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
-  Progress,
-  Image,
-  Tooltip,
+  Icon,
   Link,
+  Progress,
+  Radio,
+  RadioGroup,
+  SimpleGrid,
+  Skeleton,
   Spacer,
+  Stack,
+  Text,
+  Textarea,
+  Tooltip,
+  useColorModeValue,
+  VStack,
 } from "@chakra-ui/react";
+import { notification } from "antd";
+import React, { useEffect, useState } from "react";
+import {
+  FaArrowLeft,
+  FaArrowRight,
+  FaCalendarAlt,
+  FaClock,
+  FaCreditCard,
+  FaEnvelope,
+  FaHospital,
+  FaInfoCircle,
+  FaMapMarkerAlt,
+  FaMoneyBill,
+  FaMoneyBillWave,
+  FaShieldAlt,
+  FaStethoscope,
+  FaUserGraduate,
+  FaUserMd,
+} from "react-icons/fa";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { bookAppointment } from "../../features/appointment/appointmentSlice";
 import { fetchSingleDoctor } from "../../features/doctor/doctorSlice";
-import { useDispatch, useSelector } from "react-redux";
 import {
-  FaCalendarAlt,
-  FaClock,
-  FaMapMarkerAlt,
-  FaUserMd,
-  FaMoneyBillWave,
-  FaHospital,
-  FaStethoscope,
-  FaUserGraduate,
-  FaCheckCircle,
-  FaInfoCircle,
-  FaArrowLeft,
-  FaArrowRight,
-  FaShieldAlt,
-  FaCreditCard,
-  FaMoneyBill,
-  FaPhone,
-  FaEnvelope,
-  FaStar,
-} from "react-icons/fa";
-import { notification } from "antd";
-import {
-  initiatePayment,
   completePayment,
-} from "../../features/payment/paymentSlice"; // Import payment thunks
+  initiatePayment,
+} from "../../features/payment/paymentSlice";
 
 const PatientDetails = () => {
   const { doctorId, date, startTime } = useParams();
@@ -78,7 +73,7 @@ const PatientDetails = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingDoctor, setIsLoadingDoctor] = useState(true);
   const [searchParams] = useSearchParams();
-  const toast = useToast();
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -114,7 +109,9 @@ const PatientDetails = () => {
           if (result.IsSuccess) {
             notification.success({
               message: "Payment Successful",
-              description: "Your payment has been completed successfully.",
+              description:
+                result?.message ||
+                "Your payment has been completed successfully.",
               duration: 3,
               placement: "topRight",
             });
@@ -149,7 +146,7 @@ const PatientDetails = () => {
           title: "Error Loading Doctor Information",
           description: error.message || "Could not fetch doctor details",
           status: "error",
-          duration: 3000,
+          duration: 3,
           isClosable: true,
         });
       } finally {
@@ -158,7 +155,7 @@ const PatientDetails = () => {
     };
 
     loadDoctorInfo();
-  }, [dispatch, doctorId, toast]);
+  }, [dispatch, doctorId]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -220,11 +217,10 @@ const PatientDetails = () => {
       // First, create the appointment regardless of payment method
       const result = await dispatch(bookAppointment(appointmentData)).unwrap();
       console.log("the result in book appointment ", result);
-
+      const appointmentId = result.data.appointmentId;
       if (formData.paymentMethod === "pay_now") {
         console.log("enetered the pay_now");
         // Get the appointmentId from the result
-        const appointmentId = result.data.appointmentId;
 
         // Now initiate Khalti payment with the new appointmentId
         const paymentResponse = await dispatch(
@@ -242,22 +238,22 @@ const PatientDetails = () => {
       } else {
         // For pay_on_site, just show success and redirect
         notification.success({
-          title: "Appointment Booked",
+          message: "Appointment Booked",
           description: result.message,
           status: "success",
-          duration: 5000,
+          duration: 13.5,
           isClosable: true,
         });
-        navigate("/appointment-success");
+        navigate(`/appointments/${appointmentId}`);
       }
     } catch (error) {
       console.log("The error is", error);
       notification.error({
-        title: "Booking Failed",
+        message: "Booking Failed",
         description:
           error?.message || "An error occurred while booking the appointment",
         status: "error",
-        duration: 5000,
+        duration: 2.5,
         isClosable: true,
       });
     } finally {
@@ -752,7 +748,7 @@ const PatientDetails = () => {
                             <Box>
                               <Text fontWeight="medium">Pay Now</Text>
                               <Text fontSize="xs" color={mutedColor}>
-                                Secure online payment
+                                Khalti
                               </Text>
                             </Box>
                           </Flex>

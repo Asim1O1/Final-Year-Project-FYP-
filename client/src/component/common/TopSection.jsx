@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import { MapPin, Search, Filter, X, Trash2, RefreshCw } from "lucide-react";
+import { Filter, MapPin, RefreshCw, Search, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 
-import { fetchAllHospitals } from "../../features/hospital/hospitalSlice";
 import PREDEFINED_SPECIALTIES from "../../../../constants/Specialties.js";
+import { fetchAllHospitals } from "../../features/hospital/hospitalSlice";
 
 function TopSection() {
   const dispatch = useDispatch();

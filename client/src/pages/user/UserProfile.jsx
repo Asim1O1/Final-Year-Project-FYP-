@@ -1,80 +1,94 @@
-import { useState, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
 import {
-  User,
-  Mail,
-  Phone,
-  Calendar,
-  Edit,
-  Save,
-  X,
-  AlertCircle,
-  Eye,
-  FileText,
-  MapPin,
-  Download,
-  CheckCircle,
-  CreditCard,
-  Currency,
-} from "lucide-react";
-import {
-  Box,
-  Flex,
-  Text,
   Avatar,
+  AvatarBadge,
+  Box,
   Button,
-  Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
-  Input,
-  FormControl,
-  FormLabel,
-  Select,
-  useColorModeValue,
-  Container,
-  VStack,
-  HStack,
-  Heading,
-  useToast,
-  SimpleGrid,
-  Icon,
   Card,
   CardBody,
   CardHeader,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
-  Skeleton,
-  Tag,
+  Container,
+  Flex,
+  FormControl,
+  FormLabel,
+  HStack,
+  Heading,
+  Icon,
+  Input,
+  Select,
+  SimpleGrid,
   Spinner,
-  AvatarBadge,
   Stat,
   StatLabel,
   StatNumber,
-  StatHelpText,
-  StatArrow,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Table,
+  TableContainer,
+  Tabs,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr,
+  VStack,
+  useColorModeValue,
 } from "@chakra-ui/react";
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle,
+  CreditCard,
+  Currency,
+  Download,
+  Edit,
+  Eye,
+  FileText,
+  Mail,
+  MapPin,
+  Phone,
+  Save,
+  User,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
-import { fetchUserById, fetchUserStats } from "../../features/user/userSlice";
-import { fetchUserAppointments } from "../../features/appointment/appointmentSlice";
-import { fetchUserMedicalReports } from "../../features/test_report/testReportSlice";
-import { handleDownloadMedicalReport } from "../../features/test_report/testReportSlice";
-import { useNavigate } from "react-router-dom";
+import { notification } from "antd";
 import TransactionsTab from "../../component/payment/PaymentTabUsers";
+import {
+  fetchUserMedicalReports,
+  handleDownloadMedicalReport,
+} from "../../features/test_report/testReportSlice";
+import {
+  fetchUserById,
+  fetchUserStats,
+  updateUser,
+} from "../../features/user/userSlice";
 import AppointmentsTab from "./UserAppointments";
 
 const UserProfile = () => {
   const dispatch = useDispatch();
-  const toast = useToast();
-  const navigate = useNavigate();
-  const { user, isAuthenticated } = useSelector((state) => state?.auth);
-  const userData = user?.data;
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // First, ensure you're accessing the auth state correctly
+  const { isAuthenticated, user: authUser } = useSelector(
+    (state) => state?.auth || {}
+  );
+
+  // Get user data from the Redux store and handle potential null values
+  const userData = useSelector((state) => state?.userSlice?.user);
+  console.log("User Data:", userData);
+
+  // Use a useEffect to load initial user data if it's missing
+  useEffect(() => {
+    // If we have an authenticated user but no userData, fetch it
+    if (isAuthenticated && authUser?.data?._id && !userData) {
+      dispatch(fetchUserById(authUser.data._id));
+    }
+  }, [isAuthenticated, authUser, userData, dispatch]);
 
   const { userStats, isLoading, error } = useSelector(
     (state) => state.userSlice
@@ -84,11 +98,15 @@ const UserProfile = () => {
     (state) => state?.testReportSlice || { reports: [], loading: false }
   );
 
+  // Get the user ID from wherever it's available
+  const userId = userData?._id || authUser?.data?._id;
+
   useEffect(() => {
-    if (userData?._id) {
-      dispatch(fetchUserStats(userData._id)); // Dispatching to fetch user stats
+    if (userId) {
+      dispatch(fetchUserStats(userId));
     }
-  }, [dispatch, userData?._id]);
+  }, [dispatch, userId]);
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -102,35 +120,30 @@ const UserProfile = () => {
   // Tabs for profile sections
   const [activeTab, setActiveTab] = useState("personal");
 
-  // Fetch user data
   useEffect(() => {
-    if (userData?._id) {
-      dispatch(fetchUserById(userData._id));
+    if (userId && activeTab === "reports") {
+      dispatch(fetchUserMedicalReports(userId));
     }
-  }, [dispatch, userData?._id]);
-
-  useEffect(() => {
-    if (userData?._id && activeTab === "reports") {
-      dispatch(fetchUserMedicalReports(userData._id));
-    }
-  }, [dispatch, userData?._id, activeTab]);
+  }, [dispatch, userId, activeTab]);
 
   const handleDownloadReport = (reportId) => {
     dispatch(handleDownloadMedicalReport(reportId));
   };
 
+  // Updated to handle potential null values
   useEffect(() => {
-    if (userData) {
+    const userToUse = userData || authUser?.data;
+    if (userToUse) {
       setFormData({
-        fullName: userData.fullName || "",
-        userName: userData.userName || "",
-        email: userData.email || "",
-        address: userData.address || "",
-        phone: userData.phone || "",
-        gender: userData.gender || "",
+        fullName: userToUse.fullName || "",
+        userName: userToUse.userName || "",
+        email: userToUse.email || "",
+        address: userToUse.address || "",
+        phone: userToUse.phone || "",
+        gender: userToUse.gender || "",
       });
     }
-  }, [userData]);
+  }, [userData, authUser]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -140,31 +153,64 @@ const UserProfile = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Dispatch an action to update user profile
-    console.log("Updated profile data:", formData);
-    toast({
-      title: "Profile updated",
-      description: "Your profile has been successfully updated",
-      status: "success",
-      duration: 3000,
-      isClosable: true,
-      position: "top",
-    });
-    setIsEditing(false);
+
+    if (!userId) {
+      notification.error({
+        message: "Error",
+        description: "User ID not found. Cannot update profile.",
+      });
+      return;
+    }
+
+    setIsUpdating(true);
+    const updatedData = { ...formData };
+    delete updatedData.email; // Remove email before sending
+    console.log("Form Data to be updated:", updatedData);
+
+    try {
+      // 1. Update user data
+      const updateResponse = await dispatch(
+        updateUser({ userId: userId, userData: updatedData })
+      ).unwrap();
+
+      // 2. Re-fetch user data - IMPORTANT fix
+      await dispatch(fetchUserById(userId)).unwrap();
+
+      // 3. Update user stats
+      await dispatch(fetchUserStats(userId)).unwrap();
+
+      notification.success({
+        message: "Profile Updated",
+        description: updateResponse?.message || "Profile updated successfully.",
+        duration: 15,
+        position: "top",
+      });
+
+      setIsEditing(false);
+    } catch (error) {
+      notification.error({
+        message: "Update Failed",
+        description: error?.message || "Failed to update profile.",
+        duration: 5,
+        position: "top",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const cancelEdit = () => {
-    // Reset form data to original user data
-    if (userData) {
+    const userToUse = userData || authUser?.data;
+    if (userToUse) {
       setFormData({
-        fullName: userData.fullName || "",
-        userName: userData.userName || "",
-        email: userData.email || "",
-        address: userData.address || "",
-        phone: userData.phone || "",
-        gender: userData.gender || "",
+        fullName: userToUse.fullName || "",
+        userName: userToUse.userName || "",
+        email: userToUse.email || "",
+        address: userToUse.address || "",
+        phone: userToUse.phone || "",
+        gender: userToUse.gender || "",
       });
     }
     setIsEditing(false);
@@ -862,13 +908,11 @@ const UserProfile = () => {
                       </FormControl>
 
                       <FormControl
-                        bg={isEditing ? "white" : "gray.50"}
                         p={5}
                         borderRadius="lg"
-                        transition="all 0.2s"
                         borderWidth="1px"
                         borderColor={borderColor}
-                        _hover={isEditing ? { borderColor: primaryColor } : {}}
+                        bg="gray.50"
                       >
                         <FormLabel
                           fontSize="sm"
@@ -886,28 +930,13 @@ const UserProfile = () => {
                           />
                           Email
                         </FormLabel>
-                        {isEditing ? (
-                          <Input
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            focusBorderColor="blue.400"
-                            type="email"
-                            borderRadius="lg"
-                            borderColor="gray.200"
-                            bg="white"
-                            size="lg"
-                            _hover={{ borderColor: "blue.300" }}
-                          />
-                        ) : (
-                          <Text
-                            color={textColor}
-                            fontWeight="medium"
-                            fontSize="md"
-                          >
-                            {userData?.email || "Not specified"}
-                          </Text>
-                        )}
+                        <Text
+                          color={textColor}
+                          fontWeight="medium"
+                          fontSize="md"
+                        >
+                          {userData?.email || "Not specified"}
+                        </Text>
                       </FormControl>
 
                       <FormControl
@@ -1071,6 +1100,8 @@ const UserProfile = () => {
                         bg={primaryColor}
                         color="white"
                         size="lg"
+                        isLoading={isUpdating} // <-- This shows the loader automatically
+                        loadingText="Saving..."
                         leftIcon={<Icon as={Save} boxSize={5} />}
                         px={10}
                         py={6}

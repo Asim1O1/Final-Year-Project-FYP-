@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import appointmentService from "../../services/appointment/appointment.service";
 import createApiResponse from "../../utils/createApiResponse";
 
@@ -84,16 +84,19 @@ export const fetchDoctorAppointments = createAsyncThunk(
 export const updateAppointmentStatus = createAsyncThunk(
   "appointment/updateAppointmentStatus",
   async (
-    { appointmentId, status, rejectionReason = "" },
+    { appointmentId, status, rejectionReason = "", paymentStatus = null },
     { rejectWithValue }
   ) => {
     try {
       const response = await appointmentService.updateAppointmentStatusService(
         appointmentId,
         status,
-        rejectionReason
+        rejectionReason,
+        paymentStatus
       );
+
       if (!response.isSuccess) throw response;
+
       return response.data;
     } catch (error) {
       return rejectWithValue(

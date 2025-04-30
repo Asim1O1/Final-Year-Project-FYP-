@@ -47,13 +47,28 @@ const initializeServer = async () => {
         }
       });
 
-      // Handle typing event
+      // Handle typing event - Add detailed logging
       socket.on("typing", ({ senderId, receiverId }) => {
+        console.log(`✍️ Typing Event: ${senderId} → ${receiverId}`);
+
+        // Verify both users exist
+        if (!onlineUsers.has(senderId)) {
+          console.warn(`Sender ${senderId} not in online users!`);
+        }
+        if (!onlineUsers.has(receiverId)) {
+          console.warn(`Receiver ${receiverId} not online!`);
+        }
+
+        // Debug room existence
+        const rooms = io.sockets.adapter.rooms;
+        console.log(`Available rooms: ${Array.from(rooms.keys())}`);
+
         io.to(receiverId).emit("typing", senderId);
       });
 
-      // Handle stop typing event
+      // Handle stop typing event - Add logging
       socket.on("stop-typing", ({ senderId, receiverId }) => {
+        console.log(`🛑 Stop Typing: ${senderId} → ${receiverId}`);
         io.to(receiverId).emit("stop-typing", senderId);
       });
 

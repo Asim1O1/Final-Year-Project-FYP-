@@ -1,56 +1,36 @@
+import { keyframes } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import {
-  Send,
-  CheckCheck,
-  Filter,
-  Bell,
-  Search,
-  X,
-  Badge,
-  MoreVertical,
-  ImageIcon,
-  Paperclip,
-  Smile,
-  Mic,
-  Clock,
-} from "lucide-react";
+import { CheckCheck, Filter, Paperclip, Search, Send, X } from "lucide-react";
 
 import {
-  Box,
-  Flex,
-  Text,
-  Heading,
-  Input,
-  Divider,
   Avatar,
+  Box,
+  Divider,
+  Flex,
+  Heading,
   IconButton,
-  Spinner,
-  useColorModeValue,
-  Button,
-  Tooltip,
+  Input,
   InputGroup,
   InputLeftElement,
   InputRightElement,
-  AvatarBadge,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Kbd,
+  Spinner,
+  Text,
+  Tooltip,
+  useColorModeValue,
 } from "@chakra-ui/react";
 
 import {
-  handleGetMessages,
-  handleSendMessage,
-  handleMarkMessagesAsRead,
+  addNewMessageToState,
   handleGetContactsForSideBar,
+  handleGetMessages,
+  handleMarkMessagesAsRead,
+  handleSendMessage,
+  setCurrentChat,
   setImage,
   setImagePreview,
-  setCurrentChat,
   setNewMessage,
-  addNewMessageToState,
   updateContactWithLatestMessage,
   updateUnreadCount,
 } from "../../features/messages/messageSlice";
@@ -67,22 +47,49 @@ const ChatPage = () => {
 
   // All useRef calls
   const scrollRef = useRef();
+  const typingTimeoutRef = useRef(null);
+
+  const bounce = keyframes`
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+`;
 
   // All useSelector calls
   const contacts = useSelector((state) => state.messageSlice.contacts);
   const messages = useSelector((state) => state.messageSlice.messages);
   const currentChat = useSelector((state) => state.messageSlice.currentChat);
-  console.log("The currnt chat is", currentChat)
+  console.log("The currnt chat is", currentChat);
   const newMessage = useSelector((state) => state.messageSlice.newMessage);
   const image = useSelector((state) => state.messageSlice.image);
   const imagePreview = useSelector((state) => state.messageSlice.imagePreview);
   const isLoading = useSelector((state) => state.messageSlice.isLoading);
   const user = useSelector((state) => state?.auth?.user?.data);
 
-  // Derived state (not hooks)
   const userId = user?._id;
-  const { getSocket } = useSocket();
+  const {
+    getSocket,
+    typingUsers,
+    onlineUsers,
+    sendStopTypingStatus,
+    sendTypingStatus,
+  } = useSocket();
   const socket = getSocket();
+  console.log("🧠 User ID:", userId);
+  console.log("🌐 Online users:", onlineUsers);
+  console.log("✍️ Typing users:", typingUsers);
+  console.log("📡 Socket:", socket);
+
+  // Online/Typing indicators
+  const isChatUserOnline = currentChat && onlineUsers.includes(currentChat._id);
+  console.log("🔋 Chat user online?", isChatUserOnline);
+  const isChatUserTyping = currentChat && typingUsers[currentChat._id];
+  console.log("⏳ Chat user typing?", isChatUserTyping);
 
   // Chakra color mode values
   const bgMain = useColorModeValue("gray.50", "gray.900");
@@ -98,15 +105,16 @@ const ChatPage = () => {
   console.log("The messages is", messages);
   console.log("The socket is", socket);
 
-  // Fetch contacts for sidebar with pagination & search
+  // Fetch contacts
   useEffect(() => {
     const getContacts = async () => {
       try {
+        console.log("🔎 Fetching contacts for sidebar...");
         await dispatch(
           handleGetContactsForSideBar({ page, limit: 10, search })
         ).unwrap();
       } catch (err) {
-        console.error("Error fetching contacts:", err);
+        console.error("❌ Error fetching contacts:", err);
       }
     };
     getContacts();
@@ -159,19 +167,25 @@ const ChatPage = () => {
 
         dispatch(updateContactWithLatestMessage({ message, userId }));
 
-        if (message.receiverId === userId && 
+        if (
+          message.receiverId === userId &&
           (!currentChat || currentChat._id !== message.senderId) &&
-          !message.read) {
-            const previousCount = unreadCount[message.senderId] || 0;
-            dispatch(updateUnreadCount({ chatId: message.senderId, count: previousCount + 1 }));
-      }
+          !message.read
+        ) {
+          const previousCount = unreadCount[message.senderId] || 0;
+          dispatch(
+            updateUnreadCount({
+              chatId: message.senderId,
+              count: previousCount + 1,
+            })
+          );
+        }
       });
     };
 
     const handleUnreadCountUpdate = ({ chatId, count }) => {
       dispatch(updateUnreadCount({ chatId, count }));
     };
-    
 
     // Rest of the code remains the same
     const handleMessagesRead = ({ senderId, receiverId }) => {
@@ -182,7 +196,7 @@ const ChatPage = () => {
 
     // Add event listeners
     socket.on("message", handleIncomingMessage);
-     socket.off("chatCountUpdate", handleUnreadCountUpdate); 
+    socket.off("chatCountUpdate", handleUnreadCountUpdate);
     socket.on("messages-read", handleMessagesRead);
     socket.on("connect_error", (error) => {
       console.error("Socket connection error:", error);
@@ -218,6 +232,11 @@ const ChatPage = () => {
       dispatch(setImage(null));
       dispatch(setImagePreview(null));
 
+      // Send stop typing event when message is sent
+      if (currentChat) {
+        sendStopTypingStatus(currentChat._id);
+      }
+
       await dispatch(
         handleSendMessage({
           receiverId: currentChat._id,
@@ -232,6 +251,33 @@ const ChatPage = () => {
     } finally {
       setIsSending(false);
     }
+  };
+
+  // Typing handler
+  const handleInputTyping = (e) => {
+    const value = e.target.value;
+    dispatch(setNewMessage(value));
+
+    if (!currentChat || !socket) {
+      console.warn("Cannot send typing - missing currentChat or socket");
+      return;
+    }
+
+    console.log("💡 User typing, sending to:", currentChat._id);
+
+    // Clear any existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Send typing status immediately
+    sendTypingStatus(currentChat._id);
+
+    // Set timeout to stop typing after 2s inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      console.log("⏱️ Auto-stop typing after inactivity");
+      sendStopTypingStatus(currentChat._id);
+    }, 3000);
   };
 
   // Handle image upload
@@ -253,6 +299,15 @@ const ChatPage = () => {
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Clean up typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <Flex
@@ -296,7 +351,7 @@ const ChatPage = () => {
               <Search size={18} color="gray.400" />
             </InputLeftElement>
             <Input
-              placeholder="Search conversations..."
+              placeholder="Search doctors..."
               value={search}
               onChange={handleSearchChange}
               bg={inputBg}
@@ -352,6 +407,14 @@ const ChatPage = () => {
               </Flex>
             ) : (
               contacts?.map((contact) => {
+                // Fix the online status check
+                const isOnline =
+                  String(onlineUsers.includes(contact._id)) === "true" ||
+                  onlineUsers.includes(contact._id) === true;
+                console.log("Online status", isOnline);
+
+                const isTyping = typingUsers[contact._id];
+                console.log("The is typing is", isTyping);
                 return (
                   <Box
                     key={contact._id}
@@ -381,43 +444,49 @@ const ChatPage = () => {
                       onClick={() => dispatch(setCurrentChat(contact))}
                       position="relative"
                     >
-                      <Avatar
-                        name={contact.fullName}
-                        color="white"
-                        size="md"
-                        boxShadow="sm"
-                      ></Avatar>
+                      <Box position="relative">
+                        <Avatar
+                          name={contact.fullName}
+                          color="white"
+                          size="md"
+                          boxShadow="sm"
+                        />
+                        {isOnline && (
+                          <Box
+                            position="absolute"
+                            bottom="2px"
+                            right="2px"
+                            w="12px"
+                            h="12px"
+                            bg="green.400"
+                            borderRadius="full"
+                            border="2px solid"
+                            borderColor={bgSidebar}
+                          />
+                        )}
+                      </Box>
 
                       <Box ml={3} flex="1">
                         <Flex justify="space-between" align="center">
-                          <Text
-                            fontWeight="semibold"
-                            color={textPrimary}
-                            fontSize="md"
-                          >
-                            {contact.fullName}
-                          </Text>
-                          <Text
-                            fontSize="xs"
-                            color={textSecondary}
-                            display="flex"
-                            alignItems="center"
-                          >
-                            <Clock size={12} className="mr-1" />
-                            12:42 PM
-                          </Text>
-                        </Flex>
-
-                        <Flex justify="space-between" align="center">
-                          <Text
-                            fontSize="sm"
-                            color={textSecondary}
-                            noOfLines={1}
-                            maxW="180px"
-                          >
-                            {contact.role === "doctor" ? "Doctor" : "Patient"} •
-                            Last message...
-                          </Text>
+                          <Flex align="center">
+                            <Text
+                              fontWeight="semibold"
+                              color={textPrimary}
+                              fontSize="md"
+                            >
+                              {contact.fullName}
+                            </Text>
+                            {isOnline && (
+                              <Text
+                                ml={2}
+                                fontSize="xs"
+                                color="green.400"
+                                fontWeight="medium"
+                              >
+                                Active
+                              </Text>
+                            )}
+                          </Flex>
                         </Flex>
                       </Box>
                     </Flex>
@@ -453,45 +522,20 @@ const ChatPage = () => {
                   bg="blue.500"
                   color="white"
                   size="md"
-                >
-                  <AvatarBadge
-                    boxSize="1em"
-                    bg="green.500"
-                    borderColor="white"
-                  />
-                </Avatar>
+                ></Avatar>
 
                 <Box ml={3}>
                   <Text fontWeight="semibold" color={textPrimary}>
                     {currentChat.fullName}
                   </Text>
                   <Flex align="center">
-                    <Badge
-                      colorScheme="green"
-                      variant="subtle"
-                      fontSize="xs"
-                      mr={2}
-                    >
-                      Online
-                    </Badge>
                     <Text fontSize="sm" color={textSecondary}>
-                      {currentChat.role === "doctor" ? "Doctor" : "Patient"}
+                      {isChatUserTyping
+                        ? "Typing..."
+                        : currentChat.role === "Doctor"}
                     </Text>
                   </Flex>
                 </Box>
-              </Flex>
-
-              <Flex>
-                <Menu>
-                  <MenuButton
-                    as={IconButton}
-                    icon={<MoreVertical size={18} />}
-                    variant="ghost"
-                    colorScheme="blue"
-                    borderRadius="full"
-                    _hover={{ bg: "blue.50" }}
-                  />
-                </Menu>
               </Flex>
             </Flex>
 
@@ -659,6 +703,43 @@ const ChatPage = () => {
                       </Flex>
                     );
                   })}
+
+                  {isChatUserTyping && (
+                    <Flex align="center" ml={10} mb={2}>
+                      <Box
+                        bg={bgMessageOther}
+                        py={2}
+                        px={4}
+                        borderRadius="xl"
+                        display="inline-flex"
+                        alignItems="center"
+                        boxShadow="sm"
+                      >
+                        <Flex
+                          direction="column"
+                          align="flex-start"
+                          justify="center"
+                        >
+                          <Text fontSize="sm" color={textSecondary} mb={1}>
+                            {currentChat.fullName.split(" ")[0]} is typing...
+                          </Text>
+                          <Flex gap="6px">
+                            {[0, 1, 2].map((_, i) => (
+                              <Box
+                                key={i}
+                                w="8px"
+                                h="8px"
+                                borderRadius="full"
+                                bg={textSecondary}
+                                animation={`${bounce} 1.4s infinite`}
+                                animationDelay={`${i * 0.2}s`}
+                              />
+                            ))}
+                          </Flex>
+                        </Flex>
+                      </Box>
+                    </Flex>
+                  )}
                 </Flex>
               )}
             </Box>
@@ -736,7 +817,14 @@ const ChatPage = () => {
                 <Input
                   placeholder="Type a message..."
                   value={newMessage}
-                  onChange={(e) => dispatch(setNewMessage(e.target.value))}
+                  // onChange={(e) => dispatch(setNewMessage(e.target.value))}
+                  onChange={handleInputTyping}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit(e);
+                    }
+                  }}
                   borderRadius="full"
                   py={6}
                   bg={inputBg}
@@ -745,29 +833,6 @@ const ChatPage = () => {
                     boxShadow: "0 0 0 1px var(--chakra-colors-blue-400)",
                   }}
                 />
-                <InputRightElement width="4.5rem" h="100%">
-                  <Flex>
-                    <Tooltip label="Add emoji" placement="top">
-                      <IconButton
-                        icon={<Smile size={20} />}
-                        variant="ghost"
-                        colorScheme="blue"
-                        borderRadius="full"
-                        size="sm"
-                      />
-                    </Tooltip>
-                    <Tooltip label="Voice message" placement="top">
-                      <IconButton
-                        icon={<Mic size={20} />}
-                        variant="ghost"
-                        colorScheme="blue"
-                        borderRadius="full"
-                        size="sm"
-                        mr={1}
-                      />
-                    </Tooltip>
-                  </Flex>
-                </InputRightElement>
               </InputGroup>
 
               <Tooltip label="Send message" placement="top">
@@ -809,17 +874,6 @@ const ChatPage = () => {
                 Select a conversation from the sidebar to start chatting or
                 search for a specific contact.
               </Text>
-              <Flex justify="center" mb={6}>
-                <Kbd mr={2}>Ctrl</Kbd> + <Kbd mx={2}>K</Kbd>
-                <Text ml={2}>to search</Text>
-              </Flex>
-              <Button
-                colorScheme="blue"
-                leftIcon={<Paperclip size={16} />}
-                size="md"
-              >
-                Start a new conversation
-              </Button>
             </Box>
           </Flex>
         )}

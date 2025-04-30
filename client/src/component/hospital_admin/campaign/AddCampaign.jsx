@@ -1,46 +1,43 @@
-import React, { useEffect, useState } from "react";
+import { DeleteIcon } from "@chakra-ui/icons";
 import {
+  Alert,
+  AlertIcon,
+  Badge,
+  Box,
+  Button,
+  Checkbox,
+  Flex,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
+  Heading,
+  Icon,
+  IconButton,
+  Input,
+  InputGroup,
+  InputLeftElement,
   Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Button,
-  FormControl,
-  FormLabel,
-  FormErrorMessage,
-  Stack,
-  Textarea,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Select,
-  Input,
-  Checkbox,
+  Stack,
   Switch,
-  TagLabel,
-  TagCloseButton,
-  Box,
-  Tag,
-  Flex,
-  AlertIcon,
-  Alert,
   Text,
-  IconButton,
-  Badge,
-  Heading,
-  InputGroup,
-  Icon,
-  InputLeftElement,
+  Textarea,
 } from "@chakra-ui/react";
 import { notification } from "antd";
+import { Building2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
 import {
   fetchAllCampaigns,
   handleCampaignCreation,
 } from "../../../features/campaign/campaignSlice";
-import { DeleteIcon } from "@chakra-ui/icons";
-import { Building2 } from "lucide-react";
+import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
 
 const AddCampaignForm = ({ isOpen, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -228,35 +225,43 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
       const actionResult = await dispatch(
         handleCampaignCreation(submissionData)
       );
+      console.log("Action result:", actionResult);
+      if (handleCampaignCreation.fulfilled.match(actionResult)) {
+        notification.success({
+          message: "Campaign Created",
+          description: "The campaign has been created successfully.",
+          duration: 6,
+        });
 
-      console.log("Campaign creation result:", actionResult);
+        dispatch(
+          fetchAllCampaigns({
+            page: currentPage,
+            limit: 10,
+            hospital: hospitalId,
+          })
+        );
 
-      notification.success({
-        message: "Campaign created",
-        description: "The campaign has been created successfully.",
-        duration: 2.5,
-      });
+        setFormData({
+          title: "",
+          description: "",
+          date: "",
+          location: "",
+          hospital: "",
+          allowVolunteers: false,
+          maxVolunteers: 0,
+          volunteerQuestions: [],
+        });
 
-      dispatch(
-        fetchAllCampaigns({
-          page: currentPage,
-          limit: 10,
-          hospital: hospitalId,
-        })
-      );
-
-      // Also update the form data state to reflect the hospital ID
-      setFormData({
-        title: "",
-        description: "",
-        date: "",
-        location: "",
-        hospital: "",
-        allowVolunteers: false,
-        maxVolunteers: 0,
-        volunteerQuestions: [],
-      });
-      onClose();
+        onClose();
+      } else {
+        notification.error({
+          message: "Error",
+          description:
+            actionResult?.error?.message ||
+            "There was an error creating the campaign. Please try again.",
+          duration: 5,
+        });
+      }
     } catch (error) {
       console.error("Campaign creation error:", error);
       notification.error({

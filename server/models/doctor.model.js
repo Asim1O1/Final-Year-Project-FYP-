@@ -52,19 +52,7 @@ const doctorSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    availability: {
-      type: [
-        {
-          day: {
-            type: String,
-            enum: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-          },
-          startTime: { type: String, required: true },
-          endTime: { type: String, required: true },
-        },
-      ],
-      default: [],
-    },
+
     hospital: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Hospital",

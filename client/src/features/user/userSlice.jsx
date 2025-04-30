@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import userService from "../../services/user/user.service";
 import createApiResponse from "../../utils/createApiResponse";
 
@@ -41,7 +41,7 @@ export const updateUser = createAsyncThunk(
       if (!response.isSuccess) throw response;
       return response.data;
     } catch (error) {
-      return rejectWithValue(createApiResponse(error, "Failed to update user"));
+      return rejectWithValue(error);
     }
   }
 );
@@ -109,6 +109,7 @@ const userSlice = createSlice({
     builder
       .addCase(updateUser.pending, handlePending)
       .addCase(updateUser.fulfilled, (state, action) => {
+        console.log("Update User Response:", action.payload); // Log the response
         state.isLoading = false;
         state.user = action.payload;
         state.error = null;

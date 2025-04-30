@@ -1,66 +1,67 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { verifyUserAuth } from "./features/auth/authSlice";
 import CheckAuth from "./utils/CheckAuth.jsx";
 
 // Auth Pages
-import RegisterPage from "./pages/auth/RegisterPage";
-import LoginPage from "./pages/auth/LoginPage";
-import UnauthorizedPage from "./pages/auth/UnauthorizedPage.jsx";
 import ForgotPassword from "./component/auth/ForgotPassword.jsx";
 import OTPVerification from "./component/auth/OtpVerification.jsx";
 import UpdatePassword from "./component/auth/UpdatePassword.jsx";
+import LoginPage from "./pages/auth/LoginPage";
+import RegisterPage from "./pages/auth/RegisterPage";
+import UnauthorizedPage from "./pages/auth/UnauthorizedPage.jsx";
 
 // Public Pages
-import HomePage from "./pages/public/HomePage";
-import HospitalsPage from "./pages/public/HospitalsPage";
 import NotFoundPage from "./pages/public/404Page";
+import CampaignsPage from "./pages/public/CampaignsPage.jsx";
+import HomePage from "./pages/public/HomePage";
+import HospitalDetailPage from "./pages/public/HospitalDetail.jsx";
+import HospitalsPage from "./pages/public/HospitalsPage";
 import MedicalTests from "./pages/public/MedicalTests.jsx";
 import { TestDetail } from "./pages/public/TestDetail.jsx";
-import HospitalDetailPage from "./pages/public/HospitalDetail.jsx";
 
 // Payment Components
-import PaymentSuccess from "./component/payment/PaymentSuccess.jsx";
 import PaymentFailed from "./component/payment/PaymentFailed.jsx";
+import PaymentSuccess from "./component/payment/PaymentSuccess.jsx";
 
 // Admin Pages
-import { AdminDashboard } from "./pages/admin/AdminDashboard";
-import { Users } from "./pages/admin/Users";
-import { Doctors } from "./pages/admin/Doctors.jsx";
-import HospitalManagement from "./pages/admin/HospitalManagement";
-import HospitalAdminManagement from "./pages/admin/HospitalAdminManagement.jsx";
 import { AdminLayout } from "./layouts/AdminLayout";
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { Doctors } from "./pages/admin/Doctors.jsx";
+import HospitalAdminManagement from "./pages/admin/HospitalAdminManagement.jsx";
+import HospitalManagement from "./pages/admin/HospitalManagement";
+import { Users } from "./pages/admin/Users";
 
 // Hospital Admin Pages
-import { HospitalAdminDashboard } from "./pages/hospital_admin/HospitalAdminDashboard";
-import { HospitalAdminLayout } from "./layouts/HospitalAdminLayout.jsx";
-import DoctorManagement from "./pages/hospital_admin/DoctorManagement.jsx";
-import CampaignManagement from "./pages/hospital_admin/CampaignManagement.jsx";
-import MedicalTestManagement from "./pages/hospital_admin/MedicalTestManagement.jsx";
 import VolunteerRequestsManager from "./component/hospital_admin/campaign/VolunteerRequestManager.jsx";
 import TestBookingList from "./component/hospital_admin/test_booking/test_bookingList.jsx";
-import MedicalReportUpload from "./component/hospital_admin/test_report/UploadReport.jsx";
 import MedicalReports from "./component/hospital_admin/test_report/MedicalReports.jsx";
+import MedicalReportUpload from "./component/hospital_admin/test_report/UploadReport.jsx";
+import { HospitalAdminLayout } from "./layouts/HospitalAdminLayout.jsx";
+import CampaignManagement from "./pages/hospital_admin/CampaignManagement.jsx";
+import DoctorManagement from "./pages/hospital_admin/DoctorManagement.jsx";
+import { HospitalAdminDashboard } from "./pages/hospital_admin/HospitalAdminDashboard";
+import MedicalTestManagement from "./pages/hospital_admin/MedicalTestManagement.jsx";
 
 // Doctor Pages
-import DoctorLayout from "./layouts/DoctorLayout.jsx";
-import DoctorDashboard from "./pages/doctor/DoctorDashboard.jsx";
-import Appointments from "./pages/doctor/AppointmentManagement.jsx";
-import DoctorProfile from "./pages/doctor/DoctorProfile.jsx";
 import DoctorChatPage from "./component/doctor/chat/DoctorChatPage.jsx";
+import DoctorLayout from "./layouts/DoctorLayout.jsx";
+import Appointments from "./pages/doctor/AppointmentManagement.jsx";
+import DoctorDashboard from "./pages/doctor/DoctorDashboard.jsx";
+import DoctorProfile from "./pages/doctor/DoctorProfile.jsx";
 
 // User Pages
-import MainLayout from "./layouts/MainLayout.jsx";
-import SelectSpecialty from "./pages/user/SelectSpeciality.jsx";
-import SelectDoctor from "./pages/user/SelectDoctor.jsx";
-import SelectTime from "./pages/user/SelectTime.jsx";
-import PatientDetails from "./pages/user/PatientDetails.jsx";
-import ConfirmationPage from "./pages/user/ConfirmationPage.jsx";
-import UserProfile from "./pages/user/UserProfile";
-import CampaignDetails from "./component/user/CampaignDetail.jsx";
 import AppointmentDetail from "./component/user/AppointmentDetail.jsx";
+import CampaignDetails from "./component/user/CampaignDetail.jsx";
+import MainLayout from "./layouts/MainLayout.jsx";
 import ChatPage from "./pages/user/ChatPage.jsx";
+import ConfirmationPage from "./pages/user/ConfirmationPage.jsx";
+import PatientDetails from "./pages/user/PatientDetails.jsx";
+import SelectDoctor from "./pages/user/SelectDoctor.jsx";
+import SelectSpecialty from "./pages/user/SelectSpeciality.jsx";
+import SelectTime from "./pages/user/SelectTime.jsx";
+import UserProfile from "./pages/user/UserProfile";
 import ViewDoctorProfile from "./pages/user/ViewDoctorProfile.jsx";
 
 // Hooks
@@ -122,6 +123,14 @@ function App() {
           element={
             <MainLayout>
               <HospitalsPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/campaigns"
+          element={
+            <MainLayout>
+              <CampaignsPage />
             </MainLayout>
           }
         />

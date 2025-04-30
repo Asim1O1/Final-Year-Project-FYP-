@@ -1,32 +1,31 @@
-import React, { useState, useEffect } from "react";
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  Box,
+  Button,
   FormControl,
   FormLabel,
-  Input,
-  Textarea,
-  Button,
   Grid,
-  Box,
-  Tabs,
+  Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Tab,
   TabList,
-  TabPanels,
   TabPanel,
+  TabPanels,
+  Tabs,
   Text,
 } from "@chakra-ui/react";
+import { Edit } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { handleHospitalUpdate } from "../../../features/hospital/hospitalSlice";
-import { Edit, Plus } from "lucide-react";
 
-import { MedicalTestsEditor, SpecialtiesEditor } from "./MedicalTestEeditor";
-import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
 import { notification } from "antd";
+import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
+import { SpecialtiesEditor } from "./MedicalTestEeditor";
 
 const UpdateHospitalForm = ({ isOpen, onClose, hospital }) => {
   console.log("The hospital data received from the hospital list", hospital);
@@ -102,7 +101,7 @@ const UpdateHospitalForm = ({ isOpen, onClose, hospital }) => {
     const errors = handleValidation();
     if (Object.keys(errors).length > 0) {
       Object.values(errors).forEach((message) =>
-        notification({
+        notification.error({
           title: "Validation Error",
           description: message,
           status: "error",

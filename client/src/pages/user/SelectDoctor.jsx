@@ -1,63 +1,45 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { ChevronDownIcon, ChevronUpIcon, SearchIcon } from "@chakra-ui/icons";
 import {
-  Box,
-  Container,
-  Heading,
-  Flex,
-  Text,
-  Checkbox,
-  Stack,
-  RangeSlider,
-  RangeSliderTrack,
-  RangeSliderFilledTrack,
-  RangeSliderThumb,
-  SimpleGrid,
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  Spinner,
-  Center,
-  Badge,
-  HStack,
-  Icon,
-  Button,
-  Divider,
-  useColorModeValue,
-  VStack,
-  Collapse,
-  useDisclosure,
-  Tag,
-  Tooltip,
   Alert,
+  AlertDescription,
   AlertIcon,
   AlertTitle,
-  AlertDescription,
-  Fade,
-  ScaleFade,
+  Badge,
+  Box,
+  Button,
+  Center,
+  Checkbox,
+  Collapse,
+  Container,
+  Divider,
+  Flex,
+  Heading,
+  HStack,
+  Icon,
+  Input,
   InputGroup,
   InputLeftElement,
-  Input,
+  RangeSlider,
+  RangeSliderFilledTrack,
+  RangeSliderThumb,
+  RangeSliderTrack,
+  ScaleFade,
   Select,
+  SimpleGrid,
+  Spinner,
+  Stack,
+  Text,
+  Tooltip,
+  useColorModeValue,
+  useDisclosure,
+  VStack,
 } from "@chakra-ui/react";
-import {
-  ChevronRightIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  SearchIcon,
-} from "@chakra-ui/icons";
-import {
-  FaUserMd,
-  FaFilter,
-  FaRegCalendarAlt,
-  FaSortAmountDown,
-  FaRegClock,
-} from "react-icons/fa";
-import { SearchBar } from "../../component/common/SearchBar";
+import React, { useEffect, useState } from "react";
+import { FaFilter, FaRegClock, FaUserMd } from "react-icons/fa";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
 import DoctorCard from "../../component/common/DoctorCard";
 import { fetchDoctorsBySpecialization } from "../../features/doctor/doctorSlice";
-import { useParams, useNavigate } from "react-router-dom";
-import StepIndicator from "../../component/common/StepIndicator";
 import Pagination from "../../utils/Pagination";
 
 const SelectDoctor = () => {
@@ -123,7 +105,7 @@ const SelectDoctor = () => {
     filters.feeRange,
     filters.sortOption,
     filters.page,
-    filters.limit
+    filters.limit,
   ]);
 
   const doctorsList = doctors?.doctors || [];
@@ -284,16 +266,16 @@ const SelectDoctor = () => {
                     </Text>
                     <Flex justify="space-between" mb={2}>
                       <Text fontSize="sm" color={mutedColor}>
-                        ${filters.feeRange[0]}
+                        Rs. {filters.feeRange[0]}
                       </Text>
                       <Text fontSize="sm" color={mutedColor}>
-                        ${filters.feeRange[1]}
+                        Rs. {filters.feeRange[1]}
                       </Text>
                     </Flex>
                     <RangeSlider
                       value={filters.feeRange}
                       min={0}
-                      max={500}
+                      max={1500}
                       step={10}
                       colorScheme="blue"
                       onChange={handleFeeRangeChange}
@@ -301,15 +283,17 @@ const SelectDoctor = () => {
                       <RangeSliderTrack>
                         <RangeSliderFilledTrack />
                       </RangeSliderTrack>
+
                       <Tooltip
-                        label={`$${filters.feeRange[0]}`}
+                        label={`Rs ${filters.feeRange[0]}`}
                         placement="top"
                         hasArrow
                       >
                         <RangeSliderThumb index={0} boxSize={6} />
                       </Tooltip>
+
                       <Tooltip
-                        label={`$${filters.feeRange[1]}`}
+                        label={`Rs ${filters.feeRange[1]}`}
                         placement="top"
                         hasArrow
                       >

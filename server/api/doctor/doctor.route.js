@@ -1,16 +1,16 @@
 import express from "express";
+import upload from "../../imageUpload/multerConfig.js";
+import protectRoute from "../../middlewares/protectRoute.js";
 import {
   createDoctor,
-  updateDoctor,
   deleteDoctor,
   getAllDoctors,
-  getDoctorById,
-  getDoctorsBySpecialization,
-  getDoctorDashboardStats,
   getDoctorAppointmentSummary,
+  getDoctorById,
+  getDoctorDashboardStats,
+  getDoctorsBySpecialization,
+  updateDoctor,
 } from "./doctor.controller.js";
-import protectRoute from "../../middlewares/protectRoute.js";
-import upload from "../../imageUpload/multerConfig.js";
 
 const router = express.Router();
 
@@ -23,7 +23,7 @@ router.post(
   ]),
   createDoctor
 );
-// ✅ Get Doctor Dashboard Stats
+//  Get Doctor Dashboard Stats
 router.get("/dashboard/stats", protectRoute, getDoctorDashboardStats);
 router.get("/appointments/summary", protectRoute, getDoctorAppointmentSummary);
 

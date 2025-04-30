@@ -1,16 +1,16 @@
-import doctorModel from "../../models/doctor.model.js";
-import createResponse from "../../utils/responseBuilder.js";
-import cloudinary from "../../imageUpload/cloudinaryConfig.js";
-import { paginate } from "../../utils/paginationUtil.js";
-import { validateDoctorInput } from "../../utils/validationUtils.js";
-import fs from "fs";
 import bcryptjs from "bcryptjs";
+import fs from "fs";
+import moment from "moment";
+import cloudinary from "../../imageUpload/cloudinaryConfig.js";
+import Appointment from "../../models/appointment.model.js";
+import doctorModel from "../../models/doctor.model.js";
+import Message from "../../models/message.model.js";
 import Notification from "../../models/notification.model.js";
 import userModel from "../../models/user.model.js";
-import Appointment from "../../models/appointment.model.js";
-import Message from "../../models/message.model.js";
+import { paginate } from "../../utils/paginationUtil.js";
+import createResponse from "../../utils/responseBuilder.js";
+import { validateDoctorInput } from "../../utils/validationUtils.js";
 import { logActivity } from "../activity/activity.controller.js";
-import moment from "moment";
 
 export const createDoctor = async (req, res, next) => {
   try {
@@ -429,6 +429,7 @@ export const updateDoctor = async (req, res, next) => {
 };
 
 export const getAllDoctors = async (req, res, next) => {
+  console.log("Fetching all doctors with query:", req.query);
   try {
     const {
       page = 1,
@@ -468,10 +469,18 @@ export const getAllDoctors = async (req, res, next) => {
         .populate({
           path: "hospital",
           select: "name",
-          match: { isDeleted: false },
+          match: {
+            $or: [{ isDeleted: { $exists: false } }, { isDeleted: false }],
+          },
         });
 
-      const filteredDoctors = doctors.filter((doctor) => doctor.hospital); // remove if hospital is null
+      const filteredDoctors = doctors
+        .filter((doctor) => doctor.hospital)
+        .map((doctor) => {
+          const { availability, ...doctorWithoutAvailability } = doctor;
+          return doctorWithoutAvailability;
+        });
+      console.log("Filtered doctors:", filteredDoctors);
 
       return res.status(200).json(
         createResponse({
@@ -495,18 +504,26 @@ export const getAllDoctors = async (req, res, next) => {
       populate: {
         path: "hospital",
         select: "name",
-        match: { isDeleted: false },
+        match: {
+          $or: [{ isDeleted: { $exists: false } }, { isDeleted: false }],
+        },
       },
     });
 
     // Filter out doctors whose populated hospital is null (deleted)
     result.data = result.data.filter((doc) => doc.hospital);
 
+    // Remove availability from each doctor before sending the response
+    const doctorsWithoutAvailability = result.data.map((doctor) => {
+      const { availability, ...doctorWithoutAvailability } = doctor.toObject();
+      return doctorWithoutAvailability;
+    });
+
     return res.status(200).json({
       isSuccess: true,
       statusCode: 200,
       message: "Doctors retrieved successfully",
-      data: result.data.map((doctor) => doctor.toObject()),
+      data: doctorsWithoutAvailability,
       pagination: {
         totalCount: result.totalCount,
         currentPage: result.currentPage,
