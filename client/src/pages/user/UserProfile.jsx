@@ -39,9 +39,7 @@ import {
 import {
   AlertCircle,
   Calendar,
-  CheckCircle,
   CreditCard,
-  Currency,
   Download,
   Edit,
   Eye,
@@ -57,6 +55,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import { notification } from "antd";
+import { FaCalendarCheck, FaExchangeAlt, FaVials } from "react-icons/fa";
 import TransactionsTab from "../../component/payment/PaymentTabUsers";
 import {
   fetchUserMedicalReports,
@@ -507,7 +506,7 @@ const UserProfile = () => {
                     color="blue.600"
                     boxShadow="md"
                   >
-                    <Icon as={Calendar} boxSize={7} strokeWidth={2.5} />
+                    <Icon as={FaCalendarCheck} boxSize={7} strokeWidth={2.5} />
                   </Flex>
                 </Flex>
               </Stat>
@@ -605,7 +604,7 @@ const UserProfile = () => {
                     color="green.600"
                     boxShadow="md"
                   >
-                    <Icon as={CheckCircle} boxSize={7} strokeWidth={2.5} />
+                    <Icon as={FaVials} boxSize={7} strokeWidth={2.5} />
                   </Flex>
                 </Flex>
               </Stat>
@@ -654,7 +653,7 @@ const UserProfile = () => {
                     color="yellow.600"
                     boxShadow="md"
                   >
-                    <Icon as={Currency} boxSize={7} strokeWidth={2.5} />
+                    <Icon as={FaExchangeAlt} boxSize={7} strokeWidth={2.5} />
                   </Flex>
                 </Flex>
               </Stat>
@@ -1127,260 +1126,6 @@ const UserProfile = () => {
 
             {/* Appointments Tab */}
             <TabPanel px={0}>
-              {/* <Card
-                bg={cardBg}
-                borderRadius="xl"
-                boxShadow="md"
-                overflow="hidden"
-                borderWidth="1px"
-                borderColor={borderColor}
-              >
-                <CardHeader
-                  bg={highlightBg}
-                  py={6}
-                  px={8}
-                  borderBottomWidth="1px"
-                  borderColor={borderColor}
-                >
-                  <Flex justify="space-between" align="center">
-                    <Flex align="center">
-                      <Icon
-                        as={Calendar}
-                        color={primaryColor}
-                        boxSize={6}
-                        mr={3}
-                      />
-                      <Heading
-                        size="md"
-                        color={secondaryColor}
-                        fontWeight="700"
-                      >
-                        Your Appointments
-                      </Heading>
-                    </Flex>
-                    <Button
-                      onClick={() => navigate("/book-appointment")}
-                      bg={primaryColor}
-                      color="white"
-                      size="md"
-                      leftIcon={<Icon as={Calendar} boxSize={4} />}
-                      px={6}
-                      _hover={{
-                        bg: "blue.700",
-                        transform: "translateY(-2px)",
-                        boxShadow: "md",
-                      }}
-                      _active={{
-                        transform: "translateY(0)",
-                      }}
-                      transition="all 0.2s"
-                      borderRadius="lg"
-                      fontWeight="medium"
-                    >
-                      Schedule New
-                    </Button>
-                  </Flex>
-                </CardHeader>
-
-                <CardBody p={{ base: 6, md: 8 }}>
-                  {appointmentsLoading ? (
-                    <VStack spacing={6} align="stretch">
-                      {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} height="80px" borderRadius="lg" />
-                      ))}
-                    </VStack>
-                  ) : (
-                    <TableContainer
-                      borderRadius="xl"
-                      borderWidth="1px"
-                      borderColor={borderColor}
-                      boxShadow="sm"
-                      overflow="hidden"
-                    >
-                      <Table variant="simple">
-                        <Thead bg="gray.50">
-                          <Tr>
-                            <Th py={4} borderColor="gray.100">
-                              Title
-                            </Th>
-                            <Th py={4} borderColor="gray.100">
-                              Date & Time
-                            </Th>
-                            <Th py={4} borderColor="gray.100">
-                              Hospital
-                            </Th>
-                            <Th py={4} borderColor="gray.100">
-                              Status
-                            </Th>
-
-                            <Th py={4} borderColor="gray.100">
-                              Actions
-                            </Th>
-                          </Tr>
-                        </Thead>
-
-                        <Tbody>
-                          {appointments && appointments.length > 0 ? (
-                            appointments.map((appointment) => (
-                              <Tr
-                                key={appointment._id}
-                                _hover={{ bg: "gray.50" }}
-                              >
-                                <Td
-                                  py={4}
-                                  borderColor="gray.100"
-                                  fontWeight="medium"
-                                  color={textColor}
-                                >
-                                  Doctor Appointment
-                                </Td>
-                                <Td
-                                  py={4}
-                                  borderColor="gray.100"
-                                  color={mutedColor}
-                                >
-                                  {formatDate(appointment.date)}
-                                </Td>
-                                <Td
-                                  py={4}
-                                  borderColor="gray.100"
-                                  color={mutedColor}
-                                >
-                                  {appointment.hospital?.name || "N/A"}
-                                </Td>
-                                <Td py={4} borderColor="gray.100">
-                                  <Tag
-                                    colorScheme={getStatusColor(
-                                      appointment.status
-                                    )}
-                                    borderRadius="full"
-                                    size="md"
-                                    py={1}
-                                    px={3}
-                                    fontWeight="medium"
-                                  >
-                                    <Flex align="center">
-                                      <Icon
-                                        as={getStatusIcon(appointment.status)}
-                                        boxSize={3}
-                                        mr={1}
-                                      />
-                                      {appointment.status}
-                                    </Flex>
-                                  </Tag>
-                                </Td>
-
-                                <Td py={4} borderColor="gray.100">
-                                  <HStack spacing={2}>
-                                    <Button
-                                      size="sm"
-                                      colorScheme="blue"
-                                      variant="solid"
-                                      borderRadius="md"
-                                      fontWeight="medium"
-                                      leftIcon={<Icon as={Eye} boxSize={3} />}
-                                    >
-                                      View
-                                    </Button>
-                                    {appointment.status !== "completed" &&
-                                      appointment.status !== "cancelled" && (
-                                        <Button
-                                          size="sm"
-                                          colorScheme="red"
-                                          variant="ghost"
-                                          borderRadius="md"
-                                          fontWeight="medium"
-                                          leftIcon={<Icon as={X} boxSize={3} />}
-                                        >
-                                          Cancel
-                                        </Button>
-                                      )}
-                                  </HStack>
-                                </Td>
-                              </Tr>
-                            ))
-                          ) : (
-                            <Tr>
-                              <Td
-                                colSpan={6}
-                                textAlign="center"
-                                py={16}
-                                borderColor="gray.100"
-                              >
-                                <VStack spacing={6}>
-                                  <Icon
-                                    as={Calendar}
-                                    boxSize={16}
-                                    color="gray.300"
-                                  />
-                                  <Heading
-                                    size="md"
-                                    color={mutedColor}
-                                    fontWeight="medium"
-                                  >
-                                    No appointments found
-                                  </Heading>
-                                  <Text
-                                    color="gray.500"
-                                    maxW="md"
-                                    textAlign="center"
-                                    mb={2}
-                                  >
-                                    You don't have any appointments scheduled
-                                    yet. Book your first appointment.
-                                  </Text>
-                                  <Button
-                                    size="md"
-                                    bg={primaryColor}
-                                    color="white"
-                                    px={8}
-                                    py={6}
-                                    onClick={() =>
-                                      navigate("/book-appointment")
-                                    }
-                                    borderRadius="lg"
-                                    _hover={{
-                                      bg: "blue.700",
-                                      transform: "translateY(-2px)",
-                                      boxShadow: "md",
-                                    }}
-                                    transition="all 0.2s"
-                                    fontWeight="medium"
-                                  >
-                                    Schedule your first appointment
-                                  </Button>
-                                </VStack>
-                              </Td>
-                            </Tr>
-                          )}
-                        </Tbody>
-                      </Table>
-                    </TableContainer>
-                  )}
-
-                  {appointments && appointments.length > 0 && (
-                    <Flex justify="space-between" align="center" mt={8} px={2}>
-                      <Text
-                        color={mutedColor}
-                        fontSize="sm"
-                        fontWeight="medium"
-                      >
-                        Showing {appointments.length} appointments
-                      </Text>
-                      <Button
-                        variant="link"
-                        colorScheme="blue"
-                        size="sm"
-                        rightIcon={<Icon as={ArrowRight} boxSize={4} />}
-                        fontWeight="medium"
-                      >
-                        View All Appointments
-                      </Button>
-                    </Flex>
-                  )}
-                </CardBody>
-              </Card> */}
-
               <AppointmentsTab />
             </TabPanel>
 

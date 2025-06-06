@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import campaignServices from "../../services/campaign/campaign.service";
 import createApiResponse from "../../utils/createApiResponse";
 
@@ -135,6 +135,7 @@ export const handleVolunteerRequest = createAsyncThunk(
       );
 
       if (!response.isSuccess) throw response;
+      console.log("response is", response);
 
       return {
         campaignId,
@@ -143,6 +144,7 @@ export const handleVolunteerRequest = createAsyncThunk(
         updatedRequest: response.data?.data,
       };
     } catch (error) {
+      console.log("error ius", error);
       return rejectWithValue(
         createApiResponse(error, "Failed to handle volunteer request")
       );

@@ -34,6 +34,7 @@ import {
   Text,
   Th,
   Thead,
+  Tooltip,
   Tr,
   useColorModeValue,
   VStack,
@@ -47,7 +48,7 @@ import {
   UserIcon,
   XCircleIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchHospitalTestBookings,
@@ -61,7 +62,6 @@ const TestBookingList = () => {
   const hospitalBookings = useSelector(
     (state) => state?.medicalTestSlice?.hospitalBookings
   );
-  console.log("The hospital bookings are", hospitalBookings);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -69,43 +69,18 @@ const TestBookingList = () => {
   const [updatingId, setUpdatingId] = useState(null);
 
   const hospitalId = useSelector((state) => state?.auth?.user?.data?.hospital);
-  console.log("The hospital Id is", hospitalId);
 
   const itemsPerPage = 10;
 
-  useEffect(() => {
+  // Fetch bookings with current filters
+  const fetchBookings = useCallback(() => {
     if (hospitalId) {
-      dispatch(
-        fetchHospitalTestBookings({
-          hospitalId,
-          filters: {
-            page: currentPage,
-            limit: itemsPerPage,
-          },
-        })
-      );
-    }
-  }, [dispatch, currentPage, hospitalId]);
-
-  const handleStatusChange = async (bookingId, newStatus) => {
-    setUpdatingId(bookingId);
-    try {
-      const result = await dispatch(
-        updateTestBookingStatus({
-          bookingId,
-          status: newStatus,
-        })
-      ).unwrap();
-
-      console.log("Booking status updated:", result);
-
-      notification.success({
-        message: "Status Updated",
-        description: result?.message || `Status changed to ${newStatus}`,
-        duration: 3,
+      console.log("Fetching with filters:", {
+        hospitalId,
+        status: statusFilter,
+        search: searchTerm,
       });
 
-      // Optional: refresh booking list after status change
       dispatch(
         fetchHospitalTestBookings({
           hospitalId,
@@ -117,9 +92,54 @@ const TestBookingList = () => {
           },
         })
       );
-    } catch (error) {
-      console.error("Error updating booking status:", error);
+    }
+  }, [
+    dispatch,
+    hospitalId,
+    currentPage,
+    itemsPerPage,
+    searchTerm,
+    statusFilter,
+  ]);
 
+  // Initial fetch and when dependencies change
+  useEffect(() => {
+    fetchBookings();
+  }, [fetchBookings]);
+
+  const handleStatusChange = async (bookingId, newStatus) => {
+    // First, find the current booking to check its status
+    const booking = filteredBookings.find((b) => b._id === bookingId);
+
+    // Prevent changes to completed bookings
+    if (booking?.status === "completed") {
+      notification.warning({
+        message: "Action Not Allowed",
+        description: "Completed bookings cannot be modified.",
+        duration: 3,
+      });
+      return;
+    }
+
+    // Continue with the update if not completed
+    setUpdatingId(bookingId);
+    try {
+      const result = await dispatch(
+        updateTestBookingStatus({
+          bookingId,
+          status: newStatus,
+        })
+      ).unwrap();
+
+      notification.success({
+        message: "Status Updated",
+        description: result?.message || `Status changed to ${newStatus}`,
+        duration: 3,
+      });
+
+      // Refresh the list after status change
+      fetchBookings();
+    } catch (error) {
       notification.error({
         message: "Update Failed",
         description:
@@ -133,48 +153,34 @@ const TestBookingList = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    dispatch(
-      fetchHospitalTestBookings({
-        hospitalId,
-        filters: {
-          // Wrap in filters object
-          page: 1,
-          limit: itemsPerPage,
-          search: searchTerm,
-          status: statusFilter !== "all" ? statusFilter : undefined,
-        },
-      })
-    );
+    setCurrentPage(1); // Reset to first page when searching
+    fetchBookings();
+  };
+
+  const handleRefresh = () => {
+    // Reset search and filters
+    setSearchTerm("");
+    setStatusFilter("all");
     setCurrentPage(1);
+    fetchBookings();
   };
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
-    dispatch(
-      fetchHospitalTestBookings({
-        hospitalId,
-        filters: {
-          // Wrap in filters object
-          page: newPage,
-          limit: itemsPerPage,
-          search: searchTerm || undefined,
-          status: statusFilter !== "all" ? statusFilter : undefined,
-        },
-      })
-    );
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "pending":
         return "yellow";
+      case "booked": // Added for new status
+        return "blue";
       case "confirmed":
         return "green";
       case "completed":
-        return "blue";
+        return "teal";
       case "cancelled":
         return "red";
-
       default:
         return "gray";
     }
@@ -191,11 +197,13 @@ const TestBookingList = () => {
   const textColorSecondary = useColorModeValue("gray.600", "gray.400");
 
   // Status indicator component
+
   const StatusIndicator = ({ status }) => {
     const statusInfo = {
       pending: { icon: ClockIcon, color: "yellow" },
-      confirmed: { icon: CheckCircleIcon, color: "blue" },
-      completed: { icon: CheckCircleIcon, color: "green" },
+      booked: { icon: CalendarIcon, color: "blue" }, // Added for new status
+      confirmed: { icon: CheckCircleIcon, color: "green" },
+      completed: { icon: CheckCircleIcon, color: "teal" },
       cancelled: { icon: XCircleIcon, color: "red" },
     };
 
@@ -226,7 +234,7 @@ const TestBookingList = () => {
   };
 
   return (
-    <Container maxW="container.xl" py={6}>
+    <Container maxW="container.xl" py={{ base: 4, md: 6 }}>
       <Card
         bg={bgColor}
         borderRadius="lg"
@@ -235,23 +243,29 @@ const TestBookingList = () => {
         borderColor={borderColor}
         overflow="hidden"
       >
+        {/* Header */}
         <CardHeader
           bg={headerBgColor}
           borderBottomWidth="1px"
           borderColor={borderColor}
         >
-          <Flex justify="space-between" align="center">
+          <Flex
+            direction={{ base: "column", md: "row" }}
+            justify="space-between"
+            align={{ base: "flex-start", md: "center" }}
+            gap={4}
+          >
             <Flex align="center" gap={2}>
-              <Icon as={ClipboardIcon} size={24} color="blue.500" />
+              <Icon as={ClipboardIcon} boxSize={6} color="blue.500" />
               <Heading size="lg">Medical Test Bookings</Heading>
             </Flex>
 
             <Button
               size="sm"
-              leftIcon={<Icon as={RefreshCwIcon} size={16} />}
+              leftIcon={<Icon as={RefreshCwIcon} boxSize={4} />}
               colorScheme="blue"
               variant="ghost"
-              onClick={() => handleSearch()}
+              onClick={handleRefresh}
               isLoading={isLoading}
               loadingText="Refreshing"
             >
@@ -260,24 +274,25 @@ const TestBookingList = () => {
           </Flex>
         </CardHeader>
 
-        <CardBody p={5}>
-          {/* Search and Filter */}
+        {/* Body */}
+        <CardBody p={{ base: 4, md: 5 }}>
+          {/* Search and Filter Form */}
           <form onSubmit={handleSearch}>
             <Flex
-              mb={6}
-              gap={4}
               direction={{ base: "column", md: "row" }}
+              gap={4}
+              mb={6}
               bg={headerBgColor}
               p={4}
               borderRadius="md"
               borderWidth="1px"
               borderColor={borderColor}
-              align="center"
             >
+              {/* Search Input */}
               <Box flex={1}>
                 <InputGroup>
                   <InputLeftElement pointerEvents="none">
-                    <Icon as={SearchIcon} color="gray.400" size={18} />
+                    <Icon as={SearchIcon} color="gray.400" boxSize={4} />
                   </InputLeftElement>
                   <Input
                     placeholder="Search by patient name or test"
@@ -289,18 +304,26 @@ const TestBookingList = () => {
                 </InputGroup>
               </Box>
 
-              <HStack spacing={3} width={{ base: "100%", md: "auto" }}>
-                <Flex align="center" gap={2}>
-                  <Icon as={FilterIcon} color="gray.500" size={16} />
+              {/* Filters and Search Button */}
+              <Flex
+                gap={3}
+                direction={{ base: "column", sm: "row" }}
+                align="center"
+                width={{ base: "100%", md: "auto" }}
+              >
+                <Flex align="center" gap={2} width="100%">
+                  <Icon as={FilterIcon} color="gray.500" boxSize={4} />
                   <Select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                     borderRadius="md"
                     bg={bgColor}
-                    width={{ base: "100%", md: "160px" }}
+                    width="100%"
+                    maxW={{ sm: "160px" }}
                   >
                     <option value="all">All Statuses</option>
                     <option value="pending">Pending</option>
+                    <option value="booked">Booked</option>
                     <option value="confirmed">Confirmed</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
@@ -310,15 +333,17 @@ const TestBookingList = () => {
                 <Button
                   type="submit"
                   colorScheme="blue"
-                  leftIcon={<Icon as={SearchIcon} size={16} />}
+                  leftIcon={<Icon as={SearchIcon} boxSize={4} />}
                   borderRadius="md"
+                  width={{ base: "100%", sm: "auto" }}
                 >
                   Search
                 </Button>
-              </HStack>
+              </Flex>
             </Flex>
           </form>
 
+          {/* Loading, Error, or Empty States */}
           {isLoading && !hospitalBookings ? (
             <Flex justify="center" align="center" minH="200px">
               <VStack spacing={3}>
@@ -331,7 +356,7 @@ const TestBookingList = () => {
               <AlertIcon />
               {error?.message ||
                 error?.error ||
-                "Server down right now,  please! try again"}
+                "Server down right now, please try again."}
             </Alert>
           ) : filteredBookings.length === 0 ? (
             <Alert status="info" borderRadius="md" variant="subtle">
@@ -343,15 +368,16 @@ const TestBookingList = () => {
             </Alert>
           ) : (
             <>
-              <Box overflowX="auto" className="bookings-table">
-                <Table variant="simple">
+              {/* Table */}
+              <Box overflowX="auto">
+                <Table variant="simple" size="sm">
                   <Thead bg={headerBgColor}>
                     <Tr>
                       <Th>Patient</Th>
                       <Th>Test Details</Th>
                       <Th>Appointment</Th>
-                      <Th width="120px">Status</Th>
-                      <Th width="160px">Actions</Th>
+                      <Th>Status</Th>
+                      <Th>Actions</Th>
                     </Tr>
                   </Thead>
                   <Tbody>
@@ -361,14 +387,14 @@ const TestBookingList = () => {
                         _hover={{ bg: hoverBgColor }}
                         transition="background 0.2s"
                       >
-                        <Td>
+                        <Td minW="180px">
                           <Flex align="center" gap={3}>
                             <Avatar
                               size="sm"
                               name={booking?.userId?.fullName}
                               bg="blue.500"
                               color="white"
-                              icon={<Icon as={UserIcon} size={20} />}
+                              icon={<Icon as={UserIcon} boxSize={4} />}
                             />
                             <Box>
                               <Text fontWeight="medium">
@@ -380,7 +406,8 @@ const TestBookingList = () => {
                             </Box>
                           </Flex>
                         </Td>
-                        <Td>
+
+                        <Td minW="160px">
                           <Text fontWeight="medium">
                             {booking.testId.testName}
                           </Text>
@@ -388,11 +415,12 @@ const TestBookingList = () => {
                             Rs. {booking.testId.testPrice?.toFixed(2)}
                           </Tag>
                         </Td>
-                        <Td>
+
+                        <Td minW="160px">
                           <HStack spacing={1} mb={1}>
                             <Icon
                               as={CalendarIcon}
-                              size={14}
+                              boxSize={4}
                               color={textColorSecondary}
                             />
                             <Text>
@@ -404,7 +432,7 @@ const TestBookingList = () => {
                           <HStack spacing={1}>
                             <Icon
                               as={ClockIcon}
-                              size={14}
+                              boxSize={4}
                               color={textColorSecondary}
                             />
                             <Text fontSize="sm" color={textColorSecondary}>
@@ -412,25 +440,50 @@ const TestBookingList = () => {
                             </Text>
                           </HStack>
                         </Td>
+
                         <Td>
                           <StatusIndicator status={booking.status} />
                         </Td>
+
                         <Td>
                           <Flex align="center">
-                            <Select
-                              size="sm"
-                              value={booking.status}
-                              onChange={(e) =>
-                                handleStatusChange(booking._id, e.target.value)
+                            <Tooltip
+                              label={
+                                booking.status === "completed"
+                                  ? "Completed bookings cannot be modified"
+                                  : ""
                               }
-                              isDisabled={updatingId === booking._id}
-                              borderRadius="md"
-                              bg={bgColor}
+                              isDisabled={booking.status !== "completed"}
+                              hasArrow
                             >
-                              <option value="pending">Pending</option>
-                              <option value="completed">Completed</option>
-                              <option value="cancelled">Cancelled</option>
-                            </Select>
+                              <Select
+                                size="sm"
+                                value={booking.status}
+                                onChange={(e) =>
+                                  handleStatusChange(
+                                    booking._id,
+                                    e.target.value
+                                  )
+                                }
+                                isDisabled={
+                                  updatingId === booking._id ||
+                                  booking.status === "completed"
+                                }
+                                borderRadius="md"
+                                bg={bgColor}
+                                width="100%"
+                                maxW="140px"
+                                cursor={
+                                  booking.status === "completed"
+                                    ? "not-allowed"
+                                    : "pointer"
+                                }
+                              >
+                                <option value="pending">Pending</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                              </Select>
+                            </Tooltip>
                             {updatingId === booking._id && (
                               <Spinner size="sm" ml={2} color="blue.500" />
                             )}
@@ -450,14 +503,20 @@ const TestBookingList = () => {
         {/* Pagination */}
         {!isLoading && filteredBookings.length > 0 && (
           <CardFooter bg={headerBgColor}>
-            <Flex justify="space-between" w="full" align="center">
+            <Flex
+              direction={{ base: "column", md: "row" }}
+              justify="space-between"
+              w="full"
+              align={{ base: "flex-start", md: "center" }}
+              gap={2}
+            >
               <Text color={textColorSecondary} fontSize="sm">
                 Showing {filteredBookings.length} bookings • Page {currentPage}{" "}
                 of {totalPages}
               </Text>
               <HStack spacing={2}>
                 <IconButton
-                  icon={<Icon as={ChevronLeftIcon} size={18} />}
+                  icon={<Icon as={ChevronLeftIcon} boxSize={4} />}
                   onClick={() => handlePageChange(currentPage - 1)}
                   isDisabled={currentPage === 1 || isLoading}
                   aria-label="Previous page"
@@ -466,7 +525,7 @@ const TestBookingList = () => {
                   variant="outline"
                 />
                 <IconButton
-                  icon={<Icon as={ChevronRightIcon} size={18} />}
+                  icon={<Icon as={ChevronRightIcon} boxSize={4} />}
                   onClick={() => handlePageChange(currentPage + 1)}
                   isDisabled={currentPage === totalPages || isLoading}
                   aria-label="Next page"

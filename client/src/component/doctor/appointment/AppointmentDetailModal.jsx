@@ -1,9 +1,13 @@
-import React from "react";
-import { X, Check, Edit } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { Check, X } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 
 const AppointmentDetailsModal = ({ appointment, onClose }) => {
   if (!appointment) return null;
+
+  const formattedDate = appointment.date
+    ? format(parseISO(appointment.date), "MMMM dd, yyyy")
+    : "N/A";
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -31,9 +35,7 @@ const AppointmentDetailsModal = ({ appointment, onClose }) => {
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="bg-gray-50 p-3 rounded">
             <p className="text-sm text-gray-500">Date & Time</p>
-            <p className="font-medium">
-              {appointment.date}, {appointment.time}
-            </p>
+            <p className="font-medium">{formattedDate}</p>
           </div>
           <div className="bg-gray-50 p-3 rounded">
             <p className="text-sm text-gray-500">Reason for Visit</p>
@@ -78,10 +80,6 @@ const AppointmentDetailsModal = ({ appointment, onClose }) => {
               Mark Completed
             </button>
           )}
-          <button className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300 flex items-center">
-            <Edit size={14} className="mr-1" />
-            Edit Details
-          </button>
         </div>
       </div>
     </div>

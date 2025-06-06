@@ -1,5 +1,5 @@
-import createApiResponse from "../../utils/createApiResponse";
 import axiosInstance from "../../utils/axiosInstance";
+import createApiResponse from "../../utils/createApiResponse";
 
 const createCampaignService = async (campaignData) => {
   try {
@@ -199,8 +199,10 @@ const handleVolunteerRequestService = async (campaignId, requestId, status) => {
       });
     }
 
+    console.log("response is", response);
+
     return createApiResponse({
-      isSuccess: false,
+      isSuccess: true,
       message: response?.data?.message || "Failed to handle volunteer request",
       error: response?.data?.error || null,
     });

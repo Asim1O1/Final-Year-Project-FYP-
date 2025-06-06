@@ -1,5 +1,5 @@
 import { Trash } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import { notification } from "antd";
@@ -260,15 +260,6 @@ const Appointments = () => {
       : [],
   };
 
-  const handleAddAppointment = () => {
-    console.log("Add appointment clicked");
-  };
-
-  // Handler for Reschedule button
-  const handleReschedule = (appointment) => {
-    console.log("Reschedule clicked for appointment:", appointment._id);
-  };
-
   // Function to safely check if error contains a specific string
   const errorIncludes = (searchString) => {
     if (!error) return false;
@@ -350,7 +341,6 @@ const Appointments = () => {
                 handleApproveAppointment={handleApproveAppointment}
                 handleRejectClick={handleRejectClick}
                 handleCompleteAppointment={handleCompleteAppointment}
-                handleReschedule={handleReschedule}
                 handleDeleteClick={handleDeleteClick}
                 setSelectedAppointment={setSelectedAppointment}
               />

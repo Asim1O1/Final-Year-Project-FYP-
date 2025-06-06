@@ -239,7 +239,7 @@ const MedicalReportUpload = () => {
 
   const handleUploadSuccess = () => {
     notification.success({
-      title: "Upload successful",
+      message: "Upload successful",
       description: "Your medical report has been uploaded successfully.",
       status: "success",
       duration: 3,
@@ -287,7 +287,7 @@ const MedicalReportUpload = () => {
     } catch (error) {
       console.error("Error during form submission:", error);
       notification.error({
-        title: "Upload failed",
+        message: "Upload failed",
         description:
           error.message || "An error occurred while uploading your report.",
         status: "error",
@@ -301,15 +301,15 @@ const MedicalReportUpload = () => {
   React.useEffect(() => {
     if (error) {
       console.error("Redux error detected:", error);
-      toast({
-        title: "Error",
+      notification.error({
+        message: "Error",
         description: error.message || "An error occurred",
         status: "error",
-        duration: 5000,
+        duration: 3,
         isClosable: true,
       });
     }
-  }, [error, toast]);
+  }, [error]);
 
   // Handle successful upload
   React.useEffect(() => {

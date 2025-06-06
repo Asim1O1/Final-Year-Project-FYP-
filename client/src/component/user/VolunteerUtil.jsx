@@ -17,7 +17,7 @@ import {
   useToast,
   VStack,
 } from "@chakra-ui/react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 export const VolunteerRequestModal = ({
   isOpen,
@@ -28,8 +28,8 @@ export const VolunteerRequestModal = ({
 }) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
-  const toast = useToast();
 
+  const navigate = useNavigate();
   // Initialize form data when modal opens
   useEffect(() => {
     if (isOpen && campaign?.volunteerQuestions) {
@@ -79,7 +79,7 @@ export const VolunteerRequestModal = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
       // Format the answers for submission
       const answers = campaign.volunteerQuestions.map((question, index) => ({
@@ -88,30 +88,28 @@ export const VolunteerRequestModal = ({
         questionType: question.questionType,
       }));
 
-      onSubmit({ campaignId: campaign._id, answers })
-        .then(() => {
-          toast({
-            title: "Request Submitted",
-            description:
-              "Your volunteer request has been submitted successfully",
-            status: "success",
-            duration: 5000,
-            isClosable: true,
-          });
-          onClose();
-        })
-        .catch((error) => {
-          toast({
-            title: "Error",
-            description: error.message || "Failed to submit volunteer request",
-            status: "error",
-            duration: 5000,
-            isClosable: true,
-          });
+      try {
+        await onSubmit({ campaignId: campaign._id, answers });
+        notification.success({
+          message: "Request Submitted",
+          description: "Your volunteer request has been submitted successfully",
+          status: "success",
+          duration: 3,
+          isClosable: true,
         });
+        navigate("/campaigns");
+        onClose();
+      } catch (error) {
+        notification.error({
+          message: "Error",
+          description: error.message || "Failed to submit volunteer request",
+          status: "error",
+          duration: 3,
+          isClosable: true,
+        });
+      }
     }
   };
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md">
       <ModalOverlay />
@@ -180,7 +178,9 @@ export const VolunteerRequestModal = ({
 import { Box, useDisclosure } from "@chakra-ui/react";
 import { HeartHandshake } from "lucide-react";
 
+import { notification } from "antd";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { volunteerForCampaign } from "../../features/campaign/campaignSlice";
 
 export const VolunteerRequestButton = ({ campaign }) => {
@@ -228,15 +228,16 @@ export const VolunteerRequestButton = ({ campaign }) => {
     "Current Date:",
     currentDate
   );
+  console.log("is past is", isPast);
 
   const handleOpenModal = () => {
     if (!user) {
       console.log("No user logged in - showing login warning toast");
-      toast({
-        title: "Login Required",
+      notification.error({
+        message: "Login Required",
         description: "Please log in to request volunteering",
         status: "warning",
-        duration: 5000,
+        duration: 3,
         isClosable: true,
       });
       return;

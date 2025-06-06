@@ -1,4 +1,13 @@
-import { Bell, Check, Clock, Info, AlertTriangle, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  Check,
+  Clock,
+  Filter,
+  Info,
+  X,
+} from "lucide-react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Notifications = ({
@@ -11,6 +20,33 @@ const Notifications = ({
   clearNotifications,
 }) => {
   const navigate = useNavigate();
+  const notificationsPanelRef = useRef(null);
+
+  // State for filter and sort
+  const [activeFilter, setActiveFilter] = useState("all"); // "all" or "unread"
+  const [sortOrder, setSortOrder] = useState("newest"); // "newest" or "oldest"
+
+  // Apply filters and sorting
+  const getFilteredAndSortedNotifications = () => {
+    // Filter notifications
+    const filteredNotifications =
+      activeFilter === "all"
+        ? notifications
+        : notifications.filter((notification) => !notification.read);
+
+    // Sort notifications
+    return [...filteredNotifications].sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+
+      return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
+    });
+  };
+
+  // Get filtered and sorted notifications
+  const filteredAndSortedNotifications = getFilteredAndSortedNotifications();
+
+  // Notification handlers
   const handleNotificationClick = (notificationId) => {
     if (typeof markAsRead === "function") {
       markAsRead(notificationId);
@@ -18,15 +54,17 @@ const Notifications = ({
       console.warn("markAsRead function is not properly defined");
     }
   };
+
   const handleLearnMoreClick = (notification) => {
     if (notification.type === "campaign" && notification.relatedId) {
       navigate(`/campaigns/${notification.relatedId}`);
+      toggleNotifications(); // Close panel after navigation
     } else if (notification.type === "appointment" && notification.relatedId) {
-      console.log("entered the else");
       navigate(`/appointments/${notification.relatedId}`);
+      toggleNotifications(); // Close panel after navigation
     }
-    // Add more conditions for other types if needed
   };
+
   // Handle mark all as read
   const handleMarkAllAsRead = () => {
     if (typeof markAllAsRead === "function") {
@@ -45,43 +83,44 @@ const Notifications = ({
     }
   };
 
+  // Get icon based on notification type
   const getNotificationIcon = (type) => {
     switch (type) {
       case "appointment":
         return <Clock size={16} className="text-purple-500" />;
-
       case "message":
         return <Info size={16} className="text-blue-500" />;
-
       case "payment":
         return <Check size={16} className="text-green-500" />;
-
       case "campaign":
         return <AlertTriangle size={16} className="text-orange-500" />;
-
       case "test_booking":
         return <Clock size={16} className="text-indigo-500" />;
-
       case "doctor":
         return <Info size={16} className="text-teal-500" />;
-
       case "medical_report":
         return <Info size={16} className="text-pink-500" />;
-
       default:
         return <Info size={16} className="text-gray-500" />;
     }
   };
 
   // Group notifications by date
-  const groupedNotifications = notifications.reduce((groups, notification) => {
-    const date = new Date(notification.createdAt).toLocaleDateString();
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(notification);
-    return groups;
-  }, {});
+  const groupNotificationsByDate = (notificationsToGroup) => {
+    return notificationsToGroup.reduce((groups, notification) => {
+      const date = new Date(notification.createdAt).toLocaleDateString();
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(notification);
+      return groups;
+    }, {});
+  };
+
+  // Grouped notifications after filtering and sorting
+  const groupedNotifications = groupNotificationsByDate(
+    filteredAndSortedNotifications
+  );
 
   // Format relative time
   const getRelativeTime = (timestamp) => {
@@ -93,6 +132,7 @@ const Notifications = ({
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
     if (diffInSeconds < 86400)
       return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 172800) return `Yesterday`;
     return notificationTime.toLocaleDateString();
   };
 
@@ -103,6 +143,8 @@ const Notifications = ({
         onClick={toggleNotifications}
         className="relative p-2 rounded-full hover:bg-blue-50 transition-all duration-300 transform hover:scale-105"
         aria-label="Notifications"
+        aria-expanded={isNotificationsOpen}
+        aria-haspopup="true"
       >
         <Bell
           className="text-gray-600 hover:text-blue-600 transition-colors duration-300"
@@ -117,7 +159,17 @@ const Notifications = ({
 
       {/* Notifications Panel */}
       {isNotificationsOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white shadow-2xl rounded-lg border border-gray-200 overflow-hidden z-50 transition-all duration-300 transform origin-top-right">
+        <div
+          ref={notificationsPanelRef}
+          className="absolute right-0 mt-2 w-96 bg-white shadow-2xl rounded-lg border border-gray-200 overflow-hidden z-50 animate-fadeIn"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Notifications panel"
+          onClick={(e) => {
+            // Prevent click inside the panel from closing it
+            e.stopPropagation();
+          }}
+        >
           {/* Header */}
           <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
             <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -133,6 +185,7 @@ const Notifications = ({
                 <button
                   onClick={handleMarkAllAsRead}
                   className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200"
+                  aria-label="Mark all notifications as read"
                 >
                   Mark all as read
                 </button>
@@ -140,6 +193,7 @@ const Notifications = ({
               <button
                 onClick={toggleNotifications}
                 className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full p-1 transition-colors duration-200"
+                aria-label="Close notifications"
               >
                 <X size={18} />
               </button>
@@ -149,29 +203,63 @@ const Notifications = ({
           {/* Filter/Sort Options */}
           <div className="px-4 py-2 border-b border-gray-200 flex justify-between items-center bg-gray-50">
             <div className="flex gap-2">
-              <button className="text-xs bg-blue-600 text-white px-3 py-1 rounded-full font-medium shadow-sm hover:bg-blue-700 transition-colors duration-200">
+              <button
+                className={`text-xs ${
+                  activeFilter === "all"
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-600 hover:bg-gray-200"
+                } px-3 py-1 rounded-full font-medium shadow-sm transition-colors duration-200`}
+                onClick={() => setActiveFilter("all")}
+                aria-pressed={activeFilter === "all"}
+              >
                 All
               </button>
-              <button className="text-xs text-gray-600 px-3 py-1 rounded-full hover:bg-gray-200 transition-colors duration-200">
+              <button
+                className={`text-xs ${
+                  activeFilter === "unread"
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-600 hover:bg-gray-200"
+                } px-3 py-1 rounded-full font-medium shadow-sm transition-colors duration-200`}
+                onClick={() => setActiveFilter("unread")}
+                aria-pressed={activeFilter === "unread"}
+              >
                 Unread
               </button>
             </div>
-            <select className="text-xs text-gray-600 bg-transparent border-none focus:outline-none cursor-pointer hover:text-blue-600 transition-colors duration-200">
-              <option>Latest first</option>
-              <option>Oldest first</option>
-            </select>
+            <div className="flex items-center gap-1">
+              <Filter size={12} className="text-gray-500" />
+              <select
+                className="text-xs text-gray-600 bg-transparent border-none focus:outline-none cursor-pointer hover:text-blue-600 transition-colors duration-200"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                aria-label="Sort notifications"
+              >
+                <option value="newest">Latest first</option>
+                <option value="oldest">Oldest first</option>
+              </select>
+            </div>
           </div>
 
           {/* Notifications List */}
-          <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-            {notifications.length === 0 ? (
+          <div
+            className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+            role="log"
+            aria-live="polite"
+          >
+            {filteredAndSortedNotifications.length === 0 ? (
               <div className="p-8 text-gray-500 text-center flex flex-col items-center gap-3">
                 <div className="p-4 rounded-full bg-gray-100">
                   <Bell size={32} className="text-gray-400" />
                 </div>
-                <p className="font-medium">No notifications yet</p>
+                <p className="font-medium">
+                  {activeFilter === "all"
+                    ? "No notifications yet"
+                    : "No unread notifications"}
+                </p>
                 <p className="text-xs text-gray-400">
-                  New notifications will appear here
+                  {activeFilter === "all"
+                    ? "New notifications will appear here"
+                    : "All notifications have been read"}
                 </p>
               </div>
             ) : (
@@ -181,17 +269,23 @@ const Notifications = ({
                     <div className="sticky top-0 bg-gray-100 px-4 py-2 text-xs font-medium text-gray-600 border-t border-gray-200 shadow-sm">
                       {date === new Date().toLocaleDateString()
                         ? "Today"
+                        : date ===
+                          new Date(Date.now() - 86400000).toLocaleDateString()
+                        ? "Yesterday"
                         : date}
                     </div>
                     {dateNotifications.map((notification) => (
                       <div
                         key={notification._id}
-                        onClick={() =>
-                          handleNotificationClick(notification._id)
+                        onClick={(e) =>
+                          handleNotificationClick(notification._id, e)
                         }
                         className={`p-4 cursor-pointer border-b border-gray-100 hover:bg-blue-50 transition-colors duration-200 ${
                           notification.read ? "bg-gray-50" : "bg-white"
                         }`}
+                        role="button"
+                        tabIndex="0"
+                        aria-pressed={notification.read}
                       >
                         <div className="flex gap-3">
                           <div className="mt-1">
@@ -211,7 +305,10 @@ const Notifications = ({
                                 {notification.message}
                               </p>
                               {!notification.read && (
-                                <span className="h-2 w-2 bg-blue-600 rounded-full mt-1 ml-2 animate-pulse"></span>
+                                <span
+                                  className="h-2 w-2 bg-blue-600 rounded-full mt-1 ml-2 animate-pulse"
+                                  aria-label="Unread notification"
+                                ></span>
                               )}
                             </div>
 
@@ -236,6 +333,7 @@ const Notifications = ({
                                       handleLearnMoreClick(notification);
                                     }}
                                     className="text-xs text-blue-600 hover:text-blue-800 font-medium bg-blue-50 px-2 py-1 rounded-full hover:bg-blue-100 transition-colors duration-200"
+                                    aria-label={`Learn more about ${notification.message}`}
                                   >
                                     Learn More
                                   </button>
@@ -252,11 +350,12 @@ const Notifications = ({
           </div>
 
           {/* Footer */}
-          {notifications.length > 0 && (
+          {filteredAndSortedNotifications.length > 0 && (
             <div className="p-3 border-t border-gray-200 text-center bg-gradient-to-r from-gray-50 to-gray-100">
               <button
                 onClick={handleClearNotifications}
                 className="text-xs text-gray-600 hover:text-red-600 font-medium transition-colors duration-200 px-3 py-1 rounded-full hover:bg-gray-200"
+                aria-label="Clear all notifications"
               >
                 Clear all notifications
               </button>

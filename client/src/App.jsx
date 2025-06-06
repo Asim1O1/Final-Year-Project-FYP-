@@ -153,9 +153,11 @@ function App() {
         <Route
           path="/tests/:testId"
           element={
-            <MainLayout>
-              <TestDetail />
-            </MainLayout>
+            <CheckAuth role="user">
+              <MainLayout>
+                <TestDetail />
+              </MainLayout>
+            </CheckAuth>
           }
         />
 

@@ -1,52 +1,49 @@
-import React, { useState, useEffect } from "react";
+import { ChevronDownIcon, SettingsIcon } from "@chakra-ui/icons";
 import {
-  Flex,
   Avatar,
+  AvatarBadge,
+  Badge,
+  Box,
+  Button,
+  Divider,
+  Flex,
+  HStack,
+  Icon,
   Menu,
   MenuButton,
-  MenuList,
+  MenuDivider,
   MenuItem,
+  MenuList,
   Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
   ModalBody,
   ModalCloseButton,
-  VStack,
-  Text,
-  Divider,
-  HStack,
-  Badge,
-  useDisclosure,
-  Spinner,
-  useToast,
-  Box,
-  IconButton,
-  Tooltip,
-  MenuDivider,
-  Icon,
-  Button,
-  AvatarBadge,
+  ModalContent,
   ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Text,
+  Tooltip,
+  useDisclosure,
+  VStack,
 } from "@chakra-ui/react";
+import { notification } from "antd";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUserById } from "../../features/user/userSlice";
-import { SettingsIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import CustomLoader from "../common/CustomSpinner";
 
 export const TopNav = () => {
   const dispatch = useDispatch();
-  const toast = useToast();
+
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Get current admin info from Redux store
-  const currentAdmin = useSelector((state) => ({
-    id: state.auth.user?.data?._id,
-    profile: state.userSlice?.user,
-  }));
+  const id = useSelector((state) => state.auth.user?.data?._id);
+  const profile = useSelector((state) => state.userSlice?.user);
+
+  const currentAdmin = useMemo(() => ({ id, profile }), [id, profile]);
 
   // Update time every minute
   useEffect(() => {
@@ -65,11 +62,11 @@ export const TopNav = () => {
       await dispatch(fetchUserById(currentAdmin.id)).unwrap();
       onOpen();
     } catch (error) {
-      toast({
+      notification.error({
         title: "Failed to load profile",
         description: error.message || "Could not retrieve profile information",
         status: "error",
-        duration: 3000,
+        duration: 3,
         isClosable: true,
         position: "top-right",
       });
@@ -77,8 +74,6 @@ export const TopNav = () => {
       setIsLoadingProfile(false);
     }
   };
-
- 
 
   return (
     <Flex
@@ -125,7 +120,7 @@ export const TopNav = () => {
                   <CustomLoader size="sm" thickness="2px" color="blue.500" />
                 ) : (
                   <>
-                    <Avatar 
+                    <Avatar
                       size="sm"
                       name={currentAdmin.profile?.fullName}
                       src={currentAdmin.profile?.avatar}

@@ -1,6 +1,17 @@
+import { DeleteIcon, EditIcon } from "@chakra-ui/icons";
 import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
+  Badge,
   Box,
   Button,
+  Card,
+  CardBody,
+  CardHeader,
   Divider,
   Flex,
   Grid,
@@ -8,28 +19,19 @@ import {
   Icon,
   Text,
   useColorModeValue,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
   useDisclosure,
-  Card,
-  CardHeader,
-  CardBody,
-  Badge,
 } from "@chakra-ui/react";
-import { useEffect, useState, useRef } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { handleGetAllHospitalAdmins } from "../../../features/hospital_admin/hospitalAdminSlice";
-import Pagination from "../../../utils/Pagination";
-import { Building2, Mail, Phone, User, MapPin } from "lucide-react";
-import { DeleteIcon, EditIcon } from "@chakra-ui/icons";
-import UpdateHospitalAdmin from "./UpdateHospitalAdminForm";
-import { handleHospitalAdminDeletion } from "../../../features/hospital_admin/hospitalAdminSlice";
 import { notification } from "antd";
+import { Building2, Mail, MapPin, Phone, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  handleGetAllHospitalAdmins,
+  handleHospitalAdminDeletion,
+} from "../../../features/hospital_admin/hospitalAdminSlice";
+import Pagination from "../../../utils/Pagination";
 import CustomLoader from "../../common/CustomSpinner";
+import UpdateHospitalAdmin from "./UpdateHospitalAdminForm";
 
 const HospitalAdminList = ({ onEdit, onDelete, searchQuery }) => {
   const dispatch = useDispatch();
@@ -69,10 +71,10 @@ const HospitalAdminList = ({ onEdit, onDelete, searchQuery }) => {
     );
   }, [dispatch, currentPage, searchQuery]);
 
-  const { totalPages = 1 } = useSelector(
+  const { totalPages } = useSelector(
     (state) => state?.hospitalAdminSlice?.pagination || {}
   );
-
+  console.log("The total pages are", totalPages);
   const handleDeleteClick = (admin) => {
     setSelectedAdmin(admin);
     onDeleteOpen();

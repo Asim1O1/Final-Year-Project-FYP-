@@ -37,7 +37,7 @@ import {
   Trash,
   Users,
 } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import {
@@ -445,7 +445,7 @@ const CampaignList = ({ onEdit }) => {
                       PARTICIPANTS
                     </Text>
                     <Text fontWeight="semibold" fontSize="sm">
-                      {campaign.participants?.length || 0}
+                      {campaign.volunteers?.length || 0}
                     </Text>
                   </Box>
                 </Flex>

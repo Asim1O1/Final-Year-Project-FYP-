@@ -134,6 +134,45 @@ const messageSlice = createSlice({
       state.error = null;
       state.successMessage = null;
     },
+    // Add a reducer to handle typing status
+    setTypingUsers: (state, action) => {
+      const { userId, isTyping } = action.payload;
+
+      // If user is typing, add them to the typing users
+      if (isTyping) {
+        state.typingUsers = {
+          ...state.typingUsers,
+          [userId]: true,
+        };
+      } else {
+        // If user stopped typing, remove them
+        const newTypingUsers = { ...state.typingUsers };
+        delete newTypingUsers[userId];
+        state.typingUsers = newTypingUsers;
+      }
+
+      // Log the updated typing state for debugging
+      console.log(
+        `🔄 Redux typing state updated for ${userId}: ${
+          isTyping ? "typing" : "stopped typing"
+        }`
+      );
+      console.log("🔄 Current typing users:", state.typingUsers);
+    },
+    // New actions for online user management
+    addOnlineUser: (state, action) => {
+      const userId = action.payload;
+      if (!state.onlineUsers.includes(userId)) {
+        state.onlineUsers.push(userId);
+      }
+      console.log("User came online:", userId, state.onlineUsers);
+    },
+
+    removeOnlineUser: (state, action) => {
+      const userId = action.payload;
+      state.onlineUsers = state.onlineUsers.filter((id) => id !== userId);
+      console.log("User went offline:", userId, state.onlineUsers);
+    },
     setCurrentChat: (state, action) => {
       console.log(
         "The action payload while setting current chat is",
@@ -163,56 +202,127 @@ const messageSlice = createSlice({
     },
 
     updateContactWithLatestMessage: (state, action) => {
-      const message = action.payload;
+      const { message, doctorId } = action.payload;
+
+      // Determine the other party ID (not the doctor)
+      const otherPartyId =
+        message.senderId === doctorId
+          ? message.receiverId
+          : message.senderId._id || message.senderId;
+
       // Update the contact with the latest message
+      let contactUpdated = false;
+
       state.contacts = state.contacts.map((contact) => {
-        if (
-          contact._id === message.senderId ||
-          contact._id === message.receiverId
-        ) {
+        if (contact._id === otherPartyId) {
+          contactUpdated = true;
           return {
             ...contact,
             lastMessage: message.text || "Image sent",
             lastMessageTime: message.createdAt,
+            // Increment unread count if message is from the other party
+            unreadCount:
+              message.senderId === doctorId
+                ? contact.unreadCount || 0
+                : (contact.unreadCount || 0) + 1,
           };
         }
         return contact;
       });
+
+      // Log if contact wasn't found
+      if (!contactUpdated) {
+        console.warn("Contact not found for message:", message);
+      }
     },
+
+    // New action to reorder contacts after new message
+    reorderContactsAfterNewMessage: (state, action) => {
+      const contactId = action.payload;
+
+      // Find the contact
+      const contactIndex = state.contacts.findIndex((c) => c._id === contactId);
+
+      if (contactIndex > 0) {
+        // Only reorder if not already at the top
+        // Pull the contact out
+        const [contact] = state.contacts.splice(contactIndex, 1);
+        // Push it to the front
+        state.contacts.unshift(contact);
+
+        console.log("Reordered contacts, moved to top:", contactId);
+      }
+    },
+
+    // New action to add a new contact when receiving a message from someone not in contacts
+    fetchAndAddNewContact: (state, action) => {
+      // This is a placeholder that will trigger a thunk action
+      // The actual contact addition will happen in the fulfilled case of the thunk
+      console.log("Will fetch contact info for:", action.payload);
+    },
+
+    // Action to add a new contact to the list
+    addNewContact: (state, action) => {
+      const newContact = action.payload;
+
+      // Only add if not already in the list
+      if (!state.contacts.some((c) => c._id === newContact._id)) {
+        // Add to the beginning of the array
+        state.contacts.unshift(newContact);
+        console.log("Added new contact to list:", newContact._id);
+      }
+    },
+
     updateOnlineUsers: (state, action) => {
       state.onlineUsers = action.payload;
     },
+
     updateUnreadCount: (state, action) => {
       console.log("The update unread count", action.payload);
-    
-      const { chatId, count } = action.payload;
-    
-      // Ensure unreadCount is an array before using array methods
+
+      // Ensure unreadCount is an array
       if (!Array.isArray(state.unreadCount)) {
         state.unreadCount = [];
       }
-    
-      const existingCount = state.unreadCount.find((entry) => entry.chatId === chatId);
-    
-      if (existingCount) {
-        // If the chatId already exists, update the count by adding the new count
-        existingCount.count += count;
-      } else {
-        // If the chatId doesn't exist, add it to the unreadCount array with the initial count
-        state.unreadCount.push({ chatId, count });
-      }
-    
-      console.log("Updated unread counts: ", state.unreadCount);
+
+      // Handle both single object and array formats
+      const updates = Array.isArray(action.payload)
+        ? action.payload
+        : [action.payload];
+
+      updates.forEach((update) => {
+        const { chatId, count } = update;
+
+        const existingIndex = state.unreadCount.findIndex(
+          (entry) => entry.chatId === chatId
+        );
+
+        if (existingIndex !== -1) {
+          // OPTION 1: Replace the count (if socket sends total count)
+          state.unreadCount[existingIndex].count = count;
+
+          // OPTION 2: Add to the count (if socket sends incremental updates)
+          // state.unreadCount[existingIndex].count += count;
+        } else {
+          // If the chatId doesn't exist, add it
+          state.unreadCount.push({ chatId, count });
+        }
+      });
+
+      console.log("Updated unread counts:", state.unreadCount);
     },
+
     clearUnreadCountForChat: (state, action) => {
+      console.log("Clearing unread count for chat:", action.payload);
       const chatId = action.payload;
-    
+
       if (Array.isArray(state.unreadCount)) {
-        state.unreadCount = state.unreadCount.filter((item) => item.chatId !== chatId);
+        state.unreadCount = state.unreadCount.filter(
+          (item) => item.chatId !== chatId
+        );
       }
-    }
-    
-    ,
+    },
+
     // In your messageSlice.js
     addOptimisticMessage: (state, action) => {
       state.messages = [...state.messages, action.payload];
@@ -293,6 +403,16 @@ export const {
   addNewMessageToState,
   updateContactWithLatestMessage,
   updateUnreadCount,
-  clearUnreadCountForChat
+  clearUnreadCountForChat,
+  setTypingUsers,
+  addOnlineUser,
+  removeOnlineUser,
+  updateOnlineUsers,
+  reorderContactsAfterNewMessage,
+  fetchAndAddNewContact,
+  addNewContact,
+  addOptimisticMessage,
+  replaceOptimisticMessage,
+  removeOptimisticMessage,
 } = messageSlice.actions;
 export default messageSlice.reducer;

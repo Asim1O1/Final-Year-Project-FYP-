@@ -526,6 +526,62 @@ export const bookMedicalTest = async (req, res, next) => {
         })
       );
     }
+    // NEW VALIDATION: Check if booking time is in the past
+    const now = new Date();
+    const selectedDate = new Date(bookingDate);
+
+    // Reset time to start of day for date comparison
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const selectedDateStart = new Date(selectedDate);
+    selectedDateStart.setHours(0, 0, 0, 0);
+
+    // Check if date is in the past
+    if (selectedDateStart < todayStart) {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "Cannot book for a date in the past",
+          data: null,
+          error: null,
+        })
+      );
+    }
+
+    // Check if booking is for today and time has already passed
+    if (selectedDateStart.getTime() === todayStart.getTime()) {
+      // Parse the booking time (assuming format like "11:00 AM")
+      const [hourMinute, period] = bookingTime.split(" ");
+      const [hours, minutes] = hourMinute.split(":").map(Number);
+
+      // Convert to 24-hour format
+      let bookingHour = hours;
+      if (period === "PM" && hours < 12) bookingHour += 12;
+      if (period === "AM" && hours === 12) bookingHour = 0;
+
+      // Create date object for selected time
+      const selectedDateTime = new Date(selectedDate);
+      selectedDateTime.setHours(bookingHour, minutes, 0, 0);
+
+      // Add buffer time (e.g., 30 minutes) to current time to give users some flexibility
+      const bufferMinutes = 30;
+      const bufferTime = new Date(now);
+      bufferTime.setMinutes(bufferTime.getMinutes() + bufferMinutes);
+
+      if (selectedDateTime < bufferTime) {
+        return res.status(400).json(
+          createResponse({
+            isSuccess: false,
+            statusCode: 400,
+            message: `Cannot book for a time that has already passed or is within ${bufferMinutes} minutes from now`,
+            data: null,
+            error: null,
+          })
+        );
+      }
+    }
 
     // Check if user, test, and hospital exist
     const user = await User.findById(userId);
@@ -598,7 +654,6 @@ export const bookMedicalTest = async (req, res, next) => {
     }
 
     // Determine status based on payment method
-
     const status = paymentMethod === "pay_on_site" ? "booked" : "booked";
     const paymentStatus = paymentMethod === "pay_now" ? "Pending" : "Pending";
 
@@ -609,11 +664,12 @@ export const bookMedicalTest = async (req, res, next) => {
       hospitalId,
       bookingDate: new Date(bookingDate),
       bookingTime,
-      status: status, // Set based on payment method
+      status: status,
       paymentStatus: paymentStatus,
-      paymentMethod: paymentMethod, // Store the payment method
+      paymentMethod: paymentMethod,
       transactionId: null,
       tokenNumber: paymentMethod === "pay_on_site" ? tokenNumber : null,
+      notificationSent: false, // Add notification tracking flag
     });
 
     await newTestBooking.save();
@@ -623,19 +679,29 @@ export const bookMedicalTest = async (req, res, next) => {
     await MedicalTest.findByIdAndUpdate(testId, { status });
     console.log(`MedicalTest ${testId} status updated to ${status}`);
 
-    // Get socket.io instance once
+    // Get socket.io instance
     const io = req.app.get("socketio");
+
+    // Prepare the consolidated notification message
+    const notificationMessage = `Your ${test.testName} test at ${
+      hospital.name
+    } on ${new Date(
+      bookingDate
+    ).toLocaleDateString()} at ${bookingTime} has been ${
+      status === "confirmed" ? "confirmed" : "booked"
+    } successfully.${
+      tokenNumber ? ` Your token number is ${tokenNumber}.` : ""
+    }`;
 
     // 1. NOTIFY HOSPITAL ADMIN(S)
     const hospitalAdmins = await User.find({
       role: "hospital_admin",
-      hospitalId: hospital._id,
+      hospital: hospital._id,
     });
 
     console.log(
       `Found ${hospitalAdmins.length} admin(s) for hospital: ${hospital.name}`
     );
-
     if (hospitalAdmins.length > 0) {
       const adminNotifications = hospitalAdmins.map((admin) => ({
         user: admin._id,
@@ -645,18 +711,16 @@ export const bookMedicalTest = async (req, res, next) => {
         type: "test_booking",
         relatedId: newTestBooking._id,
         hospitalId: hospital._id,
+        createdAt: new Date(), // Ensure createdAt is consistent for DB and socket
       }));
 
       await Notification.insertMany(adminNotifications);
-      console.log(`Admin notifications inserted in DB.`);
+      console.log(`✅ Admin notifications inserted in DB.`);
 
-      // Emit real-time to each admin's room
-      hospitalAdmins.forEach((admin) => {
-        console.log(
-          `Emitting 'new-admin-notification' to admin room: ${admin._id}`
-        );
-        io.to(admin._id.toString()).emit("test_booking", {
-          message: `New test booking at ${hospital.name}`,
+      // Emit real-time notifications using the same objects
+      adminNotifications.forEach((notification) => {
+        io.to(notification.user.toString()).emit("test_booking", {
+          message: notification.message,
           bookingDetails: {
             testName: test.testName,
             patientName: user.fullName,
@@ -664,40 +728,47 @@ export const bookMedicalTest = async (req, res, next) => {
             time: bookingTime,
             tokenNumber: tokenNumber,
           },
-          createdAt: new Date().toISOString(),
+          hospitalId: notification.hospitalId,
+          relatedId: notification.relatedId,
+          createdAt: notification.createdAt.toISOString(),
         });
       });
     } else {
       console.log(`⚠️ No admins found for hospital: ${hospital.name}`);
     }
 
-    // Notify patient
+    // 2. NOTIFY PATIENT - Consolidated notification approach
+    const createdAt = new Date(); // Shared timestamp
+
     const userNotification = new Notification({
       user: userId,
-      message: `Your ${test.name} test at ${hospital.name} on ${new Date(
-        bookingDate
-      ).toLocaleDateString()} at ${bookingTime} has been ${
-        status === "confirmed" ? "confirmed" : "booked"
-      } successfully.${
-        tokenNumber ? ` Your token number is ${tokenNumber}.` : ""
-      }`,
+      message: notificationMessage,
       type: "test_booking",
       relatedId: newTestBooking._id,
-      createdAt: new Date().toISOString(),
+      createdAt,
     });
 
     await userNotification.save();
     console.log("✅ User notification created:", userNotification._id);
 
-    // Emit to the room based on user ID
-    console.log(`Emitting 'new-notification' to user's room: ${userId}`);
+    // Emit the same detailed message via Socket.IO using saved notification
     io.to(userId.toString()).emit("test_booking", {
-      message: `Test booking ${
-        status === "confirmed" ? "confirmed" : "created"
-      }`,
-      bookingId: newTestBooking._id,
-      createdAt: new Date().toISOString(),
+      message: userNotification.message,
+      bookingId: userNotification.relatedId,
+      createdAt: userNotification.createdAt.toISOString(),
+      details: {
+        testName: test.testName,
+        hospitalName: hospital.name,
+        date: new Date(bookingDate).toLocaleDateString(),
+        time: bookingTime,
+        tokenNumber: tokenNumber,
+        status: status,
+      },
     });
+
+    // Update booking with notification status
+    newTestBooking.notificationSent = true;
+    await newTestBooking.save();
 
     // 3. SEND CONFIRMATION EMAIL
     const emailData = {
@@ -806,7 +877,13 @@ export const getHospitalTestBookings = async (req, res, next) => {
     }
 
     // Filter by status if provided and valid
-    const validStatuses = ["pending", "confirmed", "completed", "cancelled"];
+    const validStatuses = [
+      "pending",
+      "confirmed",
+      "completed",
+      "cancelled",
+      "booked",
+    ];
     if (status && validStatuses.includes(status)) {
       query.status = status;
     }

@@ -3,8 +3,10 @@ import Hospital from "../../models/hospital.model.js";
 import Notification from "../../models/notification.model.js";
 import userModel from "../../models/user.model.js";
 import { onlineUsers } from "../../server.js";
+import { emailTemplates } from "../../utils/emailTemplates.js";
 import { paginate } from "../../utils/paginationUtil.js";
 import createResponse from "../../utils/responseBuilder.js";
+import { sendEmail } from "../../utils/sendEmail.js";
 import { logActivity } from "../activity/activity.controller.js";
 
 export const createCampaign = async (req, res, next) => {
@@ -130,18 +132,18 @@ export const createCampaign = async (req, res, next) => {
     }
 
     // Send email notifications
-    // for (const user of users) {
-    //   const data = {
-    //     fullName: user.fullName,
-    //     title: campaign.title,
-    //     date: new Date(campaign.date).toLocaleDateString(),
-    //     location: campaign.location,
-    //   };
-    //   const template = emailTemplates.campaignCreated;
-    //   const subject = emailTemplates.campaignCreated.subject;
+    for (const user of users) {
+      const data = {
+        fullName: user.fullName,
+        title: campaign.title,
+        date: new Date(campaign.date).toLocaleDateString(),
+        location: campaign.location,
+      };
+      const template = emailTemplates.campaignCreated;
+      const subject = emailTemplates.campaignCreated.subject;
 
-    //   await sendEmail(user.email, subject, template, data);
-    // }
+      await sendEmail(user.email, subject, template, data);
+    }
 
     return res.status(201).json(
       createResponse({

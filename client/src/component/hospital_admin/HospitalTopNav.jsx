@@ -1,79 +1,116 @@
-import React, { useEffect, useState } from "react";
+import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
+  Avatar,
+  AvatarBadge,
+  Badge,
+  Box,
+  Button,
+  Divider,
   Flex,
   HStack,
-  Avatar,
-  Text,
-  Box,
+  Icon,
   Menu,
   MenuButton,
-  MenuList,
-  MenuItem,
-  Badge,
-  Divider,
-  Button,
-  VStack,
-  ModalFooter,
-  ModalBody,
-  ModalHeader,
-  ModalCloseButton,
-  AvatarBadge,
-  ModalOverlay,
-  ModalContent,
-  Modal,
   MenuDivider,
-  Icon,
+  MenuItem,
+  MenuList,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Text,
   Tooltip,
   useDisclosure,
-  useToast,
+  VStack,
 } from "@chakra-ui/react";
-import { ChevronDownIcon, LockIcon, SettingsIcon } from "@chakra-ui/icons";
-import CustomLoader from "../common/CustomSpinner";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import CustomLoader from "../common/CustomSpinner";
 
+import { notification } from "antd";
+import { User2Icon } from "lucide-react";
 import { fetchUserById } from "../../features/user/userSlice";
-import { LogOutIcon } from "lucide-react";
 
 export const HospitalTopNav = () => {
   const dispatch = useDispatch();
-  const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true); // Start with loading true
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [profileData, setProfileData] = useState(null);
 
-  // Get current admin info from Redux store with proper structure
-  const currentAdmin = useSelector((state) => ({
-    id: state?.auth?.user?.data?._id,
-    profile: state?.auth?.user?.data,
-  }));
+  const currentAdmin = useSelector((state) => state?.auth?.user?.data);
+  const adminId = currentAdmin?._id;
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000);
 
+    // Fetch profile data on component mount
+    const fetchInitialProfile = async () => {
+      if (adminId) {
+        try {
+          const result = await dispatch(fetchUserById(adminId)).unwrap();
+          setProfileData(result.data || result);
+        } catch (error) {
+          console.error("Failed to load profile:", error);
+        } finally {
+          setIsLoadingProfile(false);
+          setIsInitialLoad(false);
+        }
+      } else {
+        setIsLoadingProfile(false);
+        setIsInitialLoad(false);
+      }
+    };
+
+    fetchInitialProfile();
+
     return () => clearInterval(timer);
-  }, []);
+  }, [adminId, dispatch]);
 
   const handleProfileClick = async () => {
-    if (!currentAdmin.id) return;
+    if (!adminId) {
+      notification.error({
+        message: "Profile Error",
+        description: "No admin ID found. Please try logging in again.",
+        placement: "topRight",
+        duration: 5,
+      });
+      return;
+    }
 
     try {
       setIsLoadingProfile(true);
-      await dispatch(fetchUserById(currentAdmin.id)).unwrap();
+      const result = await dispatch(fetchUserById(adminId)).unwrap();
+      setProfileData(result.data || result);
       onOpen();
     } catch (error) {
-      toast({
-        title: "Failed to load profile",
+      notification.error({
+        message: "Failed to load profile",
         description: error.message || "Could not retrieve profile information",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-        position: "top-right",
+        placement: "topRight",
+        duration: 5,
       });
     } finally {
       setIsLoadingProfile(false);
     }
+  };
+
+  // Merge data with fallbacks
+  const mergedProfileData = {
+    ...(currentAdmin?.profile || {}),
+    ...(profileData || {}),
+    fullName:
+      profileData?.fullName || currentAdmin?.profile?.fullName || "Loading...",
+    role: profileData?.role || currentAdmin?.profile?.role || "Administrator",
+    email:
+      profileData?.email || currentAdmin?.profile?.email || "user@example.com",
+    avatar: profileData?.avatar || currentAdmin?.profile?.avatar,
   };
 
   return (
@@ -123,8 +160,8 @@ export const HospitalTopNav = () => {
                   <>
                     <Avatar
                       size="sm"
-                      name={currentAdmin.profile?.fullName}
-                      src={currentAdmin.profile?.avatar}
+                      name={mergedProfileData?.fullName}
+                      src={mergedProfileData?.avatar}
                       bg="teal.500"
                       _hover={{ transform: "scale(1.05)" }}
                       transition="all 0.2s"
@@ -140,10 +177,10 @@ export const HospitalTopNav = () => {
                       textAlign="left"
                     >
                       <Text fontWeight="medium" fontSize="sm">
-                        {currentAdmin.profile?.fullName || "User"}
+                        {mergedProfileData?.fullName || "User"}
                       </Text>
                       <Text fontSize="xs" color="gray.600">
-                        {currentAdmin.profile?.role || "Administrator"}
+                        {mergedProfileData?.role || "Administrator"}
                       </Text>
                     </Box>
                     <ChevronDownIcon />
@@ -162,26 +199,25 @@ export const HospitalTopNav = () => {
             <VStack px={3} pb={3} pt={1} align="center">
               <Avatar
                 size="md"
-                name={currentAdmin.profile?.fullName}
-                src={currentAdmin.profile?.avatar}
+                name={mergedProfileData?.fullName}
+                src={mergedProfileData?.avatar}
                 bg="teal.500"
               />
               <Text fontWeight="medium" noOfLines={1}>
-                {currentAdmin.profile?.fullName || "User"}
+                {mergedProfileData?.fullName || "User"}
               </Text>
               <Text fontSize="xs" color="gray.500" noOfLines={1} mt="-1">
-                {currentAdmin.profile?.email || "user@example.com"}
+                {mergedProfileData?.email || "user@example.com"}
               </Text>
             </VStack>
             <MenuDivider />
             <MenuItem
-              icon={<Icon as={SettingsIcon} />}
+              icon={<Icon as={User2Icon} />}
               onClick={handleProfileClick}
             >
               My Profile
             </MenuItem>
             <MenuDivider />
-           
           </MenuList>
         </Menu>
       </HStack>
@@ -205,8 +241,8 @@ export const HospitalTopNav = () => {
           {/* Avatar with cleaner positioning */}
           <Avatar
             size="lg"
-            name={currentAdmin.profile?.fullName}
-            src={currentAdmin.profile?.avatar}
+            name={mergedProfileData?.fullName}
+            src={mergedProfileData?.avatar}
             position="absolute"
             top="10"
             left="0"
@@ -232,7 +268,7 @@ export const HospitalTopNav = () => {
           {/* Profile header with name and badge */}
           <ModalHeader pt="10" pb="2" textAlign="center">
             <Text fontSize="xl" fontWeight="semibold">
-              {currentAdmin.profile?.fullName || "User"}
+              {mergedProfileData?.fullName || "Hospital Admin"}
             </Text>
             <Badge
               colorScheme="teal"
@@ -242,7 +278,7 @@ export const HospitalTopNav = () => {
               fontSize="xs"
               mt="1"
             >
-              {currentAdmin.profile?.role?.toUpperCase() || "ADMINISTRATOR"}
+              {mergedProfileData?.role?.toUpperCase() || "ADMINISTRATOR"}
             </Badge>
           </ModalHeader>
 
@@ -255,14 +291,14 @@ export const HospitalTopNav = () => {
               borderLeft="3px solid"
               borderColor="teal.500"
             >
-              {/* Simplified profile info with cleaner spacing */}
               <VStack spacing={3} align="stretch">
                 <HStack justify="space-between">
                   <Text fontSize="sm" color="gray.600">
                     Hospital
                   </Text>
                   <Text fontSize="sm" fontWeight="medium">
-                    {currentAdmin.profile?.hospital || "Central Medical Center"}
+                    {mergedProfileData?.hospital?.name ||
+                      "Central Medical Center"}
                   </Text>
                 </HStack>
 
@@ -273,7 +309,7 @@ export const HospitalTopNav = () => {
                     Email
                   </Text>
                   <Text fontSize="sm" fontWeight="medium">
-                    {currentAdmin.profile?.email || "user@example.com"}
+                    {mergedProfileData?.email || "user@example.com"}
                   </Text>
                 </HStack>
 
@@ -284,10 +320,8 @@ export const HospitalTopNav = () => {
                     Last Active
                   </Text>
                   <Text fontSize="sm" fontWeight="medium">
-                    {currentAdmin.profile?.lastLogin
-                      ? new Date(
-                          currentAdmin.profile.lastLogin
-                        ).toLocaleString()
+                    {mergedProfileData?.lastLogin
+                      ? new Date(mergedProfileData.lastLogin).toLocaleString()
                       : "Recently"}
                   </Text>
                 </HStack>
@@ -299,29 +333,17 @@ export const HospitalTopNav = () => {
                     Account Created
                   </Text>
                   <Text fontSize="sm" fontWeight="medium">
-                    {currentAdmin.profile?.createdAt
+                    {mergedProfileData?.createdAt
                       ? new Date(
-                          currentAdmin.profile.createdAt
+                          mergedProfileData.createdAt
                         ).toLocaleDateString()
                       : "N/A"}
-                  </Text>
-                </HStack>
-
-                <Divider borderColor="gray.200" />
-
-                <HStack justify="space-between">
-                  <Text fontSize="sm" color="gray.600">
-                    Role
-                  </Text>
-                  <Text fontSize="sm" fontWeight="medium">
-                    {currentAdmin.profile?.role || "Administrator"}
                   </Text>
                 </HStack>
               </VStack>
             </Box>
           </ModalBody>
 
-          {/* Minimalistic footer */}
           <ModalFooter
             bg="gray.50"
             borderTop="1px"

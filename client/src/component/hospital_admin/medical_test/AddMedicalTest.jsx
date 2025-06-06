@@ -101,45 +101,59 @@ const AddMedicalTest = ({ isOpen, onClose }) => {
 
     try {
       // Validation
-      if (!formData.testName || !formData.testPrice || !formData.hospital) {
-        console.log("form data .hospital", formData.hospital);
-        throw new Error("Please fill all required fields");
+      if (!formData.testName.trim()) {
+        throw new Error("Test Name is required.");
+      }
+
+      if (!formData.testPrice || isNaN(formData.testPrice)) {
+        throw new Error("Please enter a valid Test Price.");
+      }
+
+      if (!formData.hospital) {
+        throw new Error("Hospital is required.");
       }
 
       const testData = new FormData();
-      testData.append("testName", formData.testName);
-
+      testData.append("testName", formData.testName.trim());
       testData.append("testPrice", parseFloat(formData.testPrice));
       testData.append("hospital", formData.hospital);
-      testData.append("testDescription", formData.testDescription);
+      testData.append("testDescription", formData.testDescription.trim() || "");
 
+      // Add test image if it exists
       if (formData.testImage) {
         testData.append("testImage", formData.testImage);
       }
 
-      console.log("The test data before sending it to the backend:");
+      // Log form data before sending to backend
+      console.log("Form Data before submission:");
       for (let [key, value] of testData.entries()) {
         console.log(key, value);
       }
 
+      // Dispatch createMedicalTest action
       const response = await dispatch(createMedicalTest(testData)).unwrap();
 
-      setRefreshTrigger((prev) => prev + 1);
+      if (response.isSuccess) {
+        setRefreshTrigger((prev) => prev + 1);
 
-      notification.success({
-        message: "Success",
-        description: "Medical test added successfully",
-        duration: 6,
-        isClosable: true,
-      });
+        notification.success({
+          message: "Success",
+          description: "Medical test added successfully.",
+          duration: 6,
+          isClosable: true,
+        });
 
-      setFormData(initialFormData);
-      onClose();
+        // Reset form data
+        setFormData(initialFormData);
+        onClose();
+      } else {
+        throw new Error(response.message || "Failed to add test.");
+      }
     } catch (error) {
       console.log("Error adding test:", error);
       notification.error({
         message: "Failed to add test",
-        description: error.message || "An unknown error occurred",
+        description: error.message || "An unknown error occurred.",
         duration: 3,
         isClosable: true,
       });

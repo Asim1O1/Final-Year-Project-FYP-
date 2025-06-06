@@ -19,7 +19,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { Edit } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { handleHospitalUpdate } from "../../../features/hospital/hospitalSlice";
 

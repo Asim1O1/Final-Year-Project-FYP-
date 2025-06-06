@@ -1,13 +1,12 @@
-import MedicalReport from "../../models/medicalReport.model.js";
-import User from "../../models/user.model.js";
-import Hospital from "../../models/hospital.model.js";
-import createResponse from "../../utils/responseBuilder.js";
-import cloudinary from "../../imageUpload/cloudinaryConfig.js";
 import PDFDocument from "pdfkit";
+import cloudinary from "../../imageUpload/cloudinaryConfig.js";
+import Hospital from "../../models/hospital.model.js";
+import MedicalReport from "../../models/medicalReport.model.js";
 import MedicalTest from "../../models/medicalTest.model.js";
-import TestBooking from "../../models/testBooking.model.js";
 import Notification from "../../models/notification.model.js";
-import { onlineUsers } from "../../server.js";
+import TestBooking from "../../models/testBooking.model.js";
+import User from "../../models/user.model.js";
+import createResponse from "../../utils/responseBuilder.js";
 
 export const uploadMedicalReport = async (req, res, next) => {
   try {
@@ -154,12 +153,13 @@ export const uploadMedicalReport = async (req, res, next) => {
     console.log(`📩 Notification saved for patient ${patient._id}`);
 
     // Emit real-time if user is online (to their room)
-    io.to(patient._id.toString()).emit("medical-report", {
-      id: newReport._id,
-      message,
-      type: "medical_report",
-      createdAt: new Date().toISOString(),
+    io.to(patient._id.toString()).emit("medical_report", {
+      id: notification._id,
+      message: notification.message,
+      type: notification.type,
+      createdAt: notification.createdAt,
     });
+
     console.log(`📡 Real-time notification sent to patient ${patient._id}`);
     // Success response
     return res.status(201).json(

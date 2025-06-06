@@ -33,7 +33,7 @@ import {
   MapPinIcon,
   UsersIcon,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 import { fetchSingleCampaign } from "../../features/campaign/campaignSlice";
@@ -161,7 +161,7 @@ const CampaignDetails = () => {
                 </HStack>
               </Box>
 
-              {campaign.allowVolunteers && isFuture && (
+              {campaign.allowVolunteers && (
                 <VolunteerRequestButton campaign={campaign} />
               )}
             </Flex>
@@ -255,16 +255,27 @@ const CampaignDetails = () => {
                             {campaign.maxVolunteers}
                           </Text>
                         </Flex>
-                        <Progress
-                          value={volunteerPercentage}
-                          colorScheme="purple"
-                          size="sm"
+
+                        {isFuture && (
+                          <Progress
+                            value={volunteerPercentage}
+                            colorScheme="purple"
+                            size="sm"
+                            mt={2}
+                            borderRadius="full"
+                            hasStripe={volunteerPercentage < 100}
+                          />
+                        )}
+
+                        <Text
+                          fontSize="xs"
+                          color="gray.500"
                           mt={2}
-                          borderRadius="full"
-                          hasStripe={volunteerPercentage < 100}
-                        />
-                        <Text fontSize="xs" color="gray.500" mt={2}>
-                          {volunteerSlotsAvailable > 0
+                          fontWeight={!isFuture ? "medium" : "normal"}
+                        >
+                          {!isFuture
+                            ? "Campaign has ended - no longer accepting volunteers"
+                            : volunteerSlotsAvailable > 0
                             ? `${volunteerSlotsAvailable} slots available`
                             : "No slots available"}
                         </Text>

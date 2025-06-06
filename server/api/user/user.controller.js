@@ -96,7 +96,6 @@ export const getAllUsers = async (req, res, next) => {
       })
     );
   } catch (error) {
-    console.error(error);
     return res.status(500).json(
       createResponse({
         isSuccess: false,
@@ -111,15 +110,8 @@ export const updateUser = async (req, res, next) => {
   const userId = req.params.id;
   const updateData = req.body;
 
-  console.log("[UpdateUser] Incoming request to update user with ID:", userId);
-  console.log("[UpdateUser] Update data received:", updateData);
-  console.log("[UpdateUser] Logged-in user ID:", req.user?.id);
-
   // Check if the logged-in user is trying to update their own profile
   if (req.user.id !== userId) {
-    console.warn(
-      `[UpdateUser] Unauthorized update attempt by user ID: ${req.user.id} on user ID: ${userId}`
-    );
     return res.status(403).json(
       createResponse({
         isSuccess: false,
@@ -134,7 +126,6 @@ export const updateUser = async (req, res, next) => {
   try {
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      console.error("[UpdateUser] Invalid user ID format:", userId);
       return res.status(400).json(
         createResponse({
           isSuccess: false,
@@ -144,13 +135,11 @@ export const updateUser = async (req, res, next) => {
       );
     }
 
-    console.log("[UpdateUser] User ID is valid. Proceeding with update...");
-
     // Update user and return the new document
     const updatedUser = await userModel
       .findByIdAndUpdate(userId, updateData, {
-        new: true, // Return updated document
-        runValidators: true, // Ensure validation
+        new: true,
+        runValidators: true,
       })
       .select("-password")
       .populate("hospital")
@@ -160,7 +149,6 @@ export const updateUser = async (req, res, next) => {
       });
 
     if (!updatedUser) {
-      console.error("[UpdateUser] User not found for ID:", userId);
       return res.status(404).json(
         createResponse({
           isSuccess: false,
@@ -169,8 +157,6 @@ export const updateUser = async (req, res, next) => {
         })
       );
     }
-
-    console.log("[UpdateUser] User updated successfully:", updatedUser);
 
     return res.status(200).json(
       createResponse({
@@ -181,7 +167,6 @@ export const updateUser = async (req, res, next) => {
       })
     );
   } catch (error) {
-    console.error("[UpdateUser] Server Error:", error);
     return res.status(500).json(
       createResponse({
         isSuccess: false,

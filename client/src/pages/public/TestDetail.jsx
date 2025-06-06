@@ -63,7 +63,7 @@ export function TestDetail() {
     (state) => state.medicalTestSlice
   );
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingTest, setIsLoadingTest] = useState(true);
+
   const userId = useSelector((state) => state?.auth?.user?.data?._id);
 
   const [formData, setFormData] = useState({
@@ -78,7 +78,7 @@ export function TestDetail() {
 
   const [bookingError, setBookingError] = useState(null);
 
-  const availableTimes = [
+  const [filteredTimes, setFilteredTimes] = useState([
     "09:00 AM",
     "10:00 AM",
     "11:00 AM",
@@ -88,9 +88,9 @@ export function TestDetail() {
     "03:00 PM",
     "04:00 PM",
     "05:00 PM",
-  ];
+  ]);
   const bgColor = useColorModeValue("white", "gray.800");
-  const cardBgColor = useColorModeValue("white", "gray.700");
+
   const mutedColor = useColorModeValue("gray.600", "gray.400");
   const borderColor = useColorModeValue("gray.200", "gray.600");
   const highlightColor = useColorModeValue("blue.50", "blue.900");
@@ -102,8 +102,99 @@ export function TestDetail() {
     }
   }, [dispatch, testId]);
 
+  const updateAvailableTimes = (selectedDate) => {
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+
+    // If selected date is today, filter out past times
+    if (selectedDate === today) {
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+
+      const availableTimes = [
+        "09:00 AM",
+        "10:00 AM",
+        "11:00 AM",
+        "12:00 PM",
+        "01:00 PM",
+        "02:00 PM",
+        "03:00 PM",
+        "04:00 PM",
+        "05:00 PM",
+      ];
+
+      // Filter times that haven't passed yet
+      const filteredTimes = availableTimes.filter((timeString) => {
+        const [time, period] = timeString.split(" ");
+        let [hours, minutes] = time.split(":").map(Number);
+
+        // Convert to 24-hour format
+        if (period === "PM" && hours !== 12) hours += 12;
+        if (period === "AM" && hours === 12) hours = 0;
+
+        // Compare with current time
+        return (
+          hours > currentHour ||
+          (hours === currentHour && minutes > currentMinute)
+        );
+      });
+
+      setFilteredTimes(filteredTimes);
+    } else {
+      // If not today, show all time slots
+      setFilteredTimes([
+        "09:00 AM",
+        "10:00 AM",
+        "11:00 AM",
+        "12:00 PM",
+        "01:00 PM",
+        "02:00 PM",
+        "03:00 PM",
+        "04:00 PM",
+        "05:00 PM",
+      ]);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { id, value } = e.target;
+
+    // If date field is changed, update available times
+    if (id === "bookingDate") {
+      updateAvailableTimes(value);
+
+      // Also reset the time if the current selected time is no longer available
+      if (value === new Date().toISOString().split("T")[0]) {
+        // Check if current selected time would be available after filtering
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+
+        const [time, period] = (formData.bookingTime || "").split(" ");
+        if (time) {
+          let [hours, minutes] = time.split(":").map(Number);
+
+          // Convert to 24-hour format
+          if (period === "PM" && hours !== 12) hours += 12;
+          if (period === "AM" && hours === 12) hours = 0;
+
+          // If selected time has passed, reset it
+          if (
+            hours < currentHour ||
+            (hours === currentHour && minutes <= currentMinute)
+          ) {
+            setFormData((prev) => ({
+              ...prev,
+              bookingTime: "",
+              [id]: value,
+            }));
+            return;
+          }
+        }
+      }
+    }
+
+    // Update the form data as before
     setFormData((prev) => ({
       ...prev,
       [id]: value,
@@ -136,6 +227,29 @@ export function TestDetail() {
               duration: 3,
               placement: "topRight",
             });
+            // Clear the form after successful payment
+            setFormData({
+              name: user?.data?.fullName || "",
+              phone: user?.data?.phone || "",
+              email: user?.data?.email || "",
+              bookingDate: "",
+              bookingTime: "",
+              notes: "",
+              paymentMethod: "pay_on_site",
+            });
+
+            // Reset available times
+            setFilteredTimes([
+              "09:00 AM",
+              "10:00 AM",
+              "11:00 AM",
+              "12:00 PM",
+              "01:00 PM",
+              "02:00 PM",
+              "03:00 PM",
+              "04:00 PM",
+              "05:00 PM",
+            ]);
             navigate("/payment-success", {
               state: { transactionDetails: result },
             });
@@ -210,10 +324,32 @@ export function TestDetail() {
           message: "Test Booked Successfully",
           description: `Your test is confirmed. Token number: ${result.tokenNumber}`,
           status: "success",
-          duration: 5000,
+          duration: 3,
           isClosable: true,
         });
-        // navigate("/bookings");
+        // Clear the form after successful payment
+        setFormData({
+          name: user?.data?.fullName || "",
+          phone: user?.data?.phone || "",
+          email: user?.data?.email || "",
+          bookingDate: "",
+          bookingTime: "",
+          notes: "",
+          paymentMethod: "pay_on_site",
+        });
+
+        // Reset available times
+        setFilteredTimes([
+          "09:00 AM",
+          "10:00 AM",
+          "11:00 AM",
+          "12:00 PM",
+          "01:00 PM",
+          "02:00 PM",
+          "03:00 PM",
+          "04:00 PM",
+          "05:00 PM",
+        ]);
       }
     } catch (error) {
       console.error("Booking error:", error);
@@ -222,7 +358,7 @@ export function TestDetail() {
         description:
           error?.message || "An error occurred while booking the test",
         status: "error",
-        duration: 5,
+        duration: 3,
         isClosable: true,
       });
     } finally {
@@ -243,7 +379,9 @@ export function TestDetail() {
       <Box p={6}>
         <Alert status="error" mb={4}>
           <AlertIcon />
-          Error loading medicalTest details: {error}
+          <Box flex="1">
+            {error?.message || "Error loading medicalTest details."}
+          </Box>
         </Alert>
       </Box>
     );
@@ -502,7 +640,7 @@ export function TestDetail() {
               {bookingError && (
                 <Alert status="error" mb={4} borderRadius="md">
                   <AlertIcon />
-                  {bookingError}
+                  {bookingError?.message || "Error Occured"}
                 </Alert>
               )}
 
@@ -612,7 +750,11 @@ export function TestDetail() {
                       <Box position="relative">
                         <Select
                           id="bookingTime"
-                          placeholder="Select time slot"
+                          placeholder={
+                            filteredTimes.length > 0
+                              ? "Select time slot"
+                              : "No available times for today"
+                          }
                           value={formData.bookingTime}
                           onChange={handleInputChange}
                           size="lg"
@@ -623,8 +765,9 @@ export function TestDetail() {
                             boxShadow: "0 0 0 1px " + accentColor,
                           }}
                           icon={<Clock size={18} />}
+                          isDisabled={filteredTimes.length === 0}
                         >
-                          {availableTimes.map((time) => (
+                          {filteredTimes.map((time) => (
                             <option key={time} value={time}>
                               {time}
                             </option>

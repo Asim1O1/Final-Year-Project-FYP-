@@ -1,8 +1,8 @@
 import { keyframes } from "@chakra-ui/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import { CheckCheck, Filter, Paperclip, Search, Send, X } from "lucide-react";
+import { CheckCheck, Paperclip, Search, Send, X } from "lucide-react";
 
 import {
   Avatar,
@@ -23,6 +23,7 @@ import {
 
 import {
   addNewMessageToState,
+  clearUnreadCountForChat,
   handleGetContactsForSideBar,
   handleGetMessages,
   handleMarkMessagesAsRead,
@@ -86,10 +87,15 @@ const ChatPage = () => {
   console.log("📡 Socket:", socket);
 
   // Online/Typing indicators
-  const isChatUserOnline = currentChat && onlineUsers.includes(currentChat._id);
-  console.log("🔋 Chat user online?", isChatUserOnline);
-  const isChatUserTyping = currentChat && typingUsers[currentChat._id];
-  console.log("⏳ Chat user typing?", isChatUserTyping);
+  const isChatUserOnline = useMemo(
+    () => currentChat && onlineUsers.includes(currentChat._id),
+    [currentChat, onlineUsers]
+  );
+
+  const isChatUserTyping = useMemo(
+    () => currentChat && typingUsers[currentChat._id],
+    [currentChat, typingUsers]
+  );
 
   // Chakra color mode values
   const bgMain = useColorModeValue("gray.50", "gray.900");
@@ -120,12 +126,11 @@ const ChatPage = () => {
     getContacts();
   }, [dispatch, page, search]);
 
-  // Handle Search Input Change
-  const handleSearchChange = (e) => {
+  // Memoize event handlers with useCallback
+  const handleSearchChange = useCallback((e) => {
     setSearch(e.target.value);
     setPage(1);
-  };
-
+  }, []);
   // Socket.io setup
   useEffect(() => {
     // Make sure we always check for socket and userId before proceeding
@@ -217,84 +222,115 @@ const ChatPage = () => {
   }, [currentChat, dispatch]);
 
   // Handle sending messages
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if ((!newMessage.trim() && !image) || !currentChat || !socket) return;
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      if ((!newMessage.trim() && !image) || !currentChat || !socket) return;
 
-    try {
-      setIsSending(true);
-      // Save current message state to variables
-      const pendingText = newMessage;
-      const pendingImage = image;
+      try {
+        setIsSending(true);
+        // Save current message state to variables
+        const pendingText = newMessage;
+        const pendingImage = image;
 
-      // Clear input immediately but don't add to state yet
-      dispatch(setNewMessage(""));
-      dispatch(setImage(null));
-      dispatch(setImagePreview(null));
+        // Clear input immediately but don't add to state yet
+        dispatch(setNewMessage(""));
+        dispatch(setImage(null));
+        dispatch(setImagePreview(null));
 
-      // Send stop typing event when message is sent
-      if (currentChat) {
-        sendStopTypingStatus(currentChat._id);
+        // Send stop typing event when message is sent
+        if (currentChat) {
+          sendStopTypingStatus(currentChat._id);
+        }
+
+        await dispatch(
+          handleSendMessage({
+            receiverId: currentChat._id,
+            text: pendingText,
+            image: pendingImage,
+          })
+        ).unwrap();
+
+        // The socket event will handle adding the message to state
+      } catch (err) {
+        console.error("Error sending message:", err);
+      } finally {
+        setIsSending(false);
+      }
+    },
+    [newMessage, image, currentChat, socket, sendStopTypingStatus, dispatch]
+  );
+  // Typing handler
+  const handleInputTyping = useCallback(
+    (e) => {
+      const value = e.target.value;
+      dispatch(setNewMessage(value));
+
+      if (!currentChat || !socket) {
+        console.warn("Cannot send typing - missing currentChat or socket");
+        return;
       }
 
-      await dispatch(
-        handleSendMessage({
-          receiverId: currentChat._id,
-          text: pendingText,
-          image: pendingImage,
-        })
-      ).unwrap();
+      // Clear any existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
 
-      // The socket event will handle adding the message to state
-    } catch (err) {
-      console.error("Error sending message:", err);
-    } finally {
-      setIsSending(false);
+      // Send typing status immediately
+      sendTypingStatus(currentChat._id);
+
+      // Set timeout to stop typing after 2s inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        sendStopTypingStatus(currentChat._id);
+      }, 3000);
+    },
+    [currentChat, socket, dispatch, sendTypingStatus, sendStopTypingStatus]
+  );
+  // In your chat page component
+  // Replace your existing useEffect for clearing unread counts
+  useEffect(() => {
+    // Skip if there's no current chat
+    if (!currentChat || !currentChat._id || !userId) return;
+
+    console.log("Clearing unread count for chat:", currentChat._id);
+
+    // Clear unread count in Redux
+    dispatch(clearUnreadCountForChat(currentChat._id));
+
+    // Mark messages as read in the backend
+    dispatch(
+      handleMarkMessagesAsRead({
+        senderId: currentChat._id,
+        receiverId: userId,
+      })
+    );
+
+    // This is important: Also emit a socket event to tell the server
+    if (socket && socket.connected) {
+      socket.emit("mark_messages_read", {
+        chatId: currentChat._id,
+        userId: userId,
+      });
     }
-  };
-
-  // Typing handler
-  const handleInputTyping = (e) => {
-    const value = e.target.value;
-    dispatch(setNewMessage(value));
-
-    if (!currentChat || !socket) {
-      console.warn("Cannot send typing - missing currentChat or socket");
-      return;
-    }
-
-    console.log("💡 User typing, sending to:", currentChat._id);
-
-    // Clear any existing timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    // Send typing status immediately
-    sendTypingStatus(currentChat._id);
-
-    // Set timeout to stop typing after 2s inactivity
-    typingTimeoutRef.current = setTimeout(() => {
-      console.log("⏱️ Auto-stop typing after inactivity");
-      sendStopTypingStatus(currentChat._id);
-    }, 3000);
-  };
+  }, [currentChat, userId, dispatch, socket]); // Simplified dependencies // Change to use optional chaining
 
   // Handle image upload
-  const handleImageChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
+  const handleImageChange = useCallback(
+    (e) => {
+      if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
 
-      reader.onloadend = () => {
-        dispatch(setImage(reader.result));
-        dispatch(setImagePreview(reader.result));
-      };
+        reader.onloadend = () => {
+          dispatch(setImage(reader.result));
+          dispatch(setImagePreview(reader.result));
+        };
 
-      reader.readAsDataURL(file);
-    }
-  };
-
+        reader.readAsDataURL(file);
+      }
+    },
+    [dispatch]
+  );
   // Auto scroll to the latest message
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -332,18 +368,6 @@ const ChatPage = () => {
             <Heading size="md" color={textPrimary} fontWeight="bold">
               Messages
             </Heading>
-            <Flex>
-              <Tooltip label="Filter conversations" placement="top">
-                <IconButton
-                  icon={<Filter size={18} />}
-                  variant="ghost"
-                  colorScheme="blue"
-                  size="sm"
-                  borderRadius="full"
-                  mr={2}
-                />
-              </Tooltip>
-            </Flex>
           </Flex>
 
           <InputGroup size="md">
@@ -408,12 +432,9 @@ const ChatPage = () => {
             ) : (
               contacts?.map((contact) => {
                 // Fix the online status check
-                const isOnline =
-                  String(onlineUsers.includes(contact._id)) === "true" ||
-                  onlineUsers.includes(contact._id) === true;
-                console.log("Online status", isOnline);
-
+                const isOnline = onlineUsers.includes(contact._id);
                 const isTyping = typingUsers[contact._id];
+
                 console.log("The is typing is", isTyping);
                 return (
                   <Box

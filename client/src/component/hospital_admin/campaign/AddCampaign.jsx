@@ -31,7 +31,7 @@ import {
 } from "@chakra-ui/react";
 import { notification } from "antd";
 import { Building2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchAllCampaigns,
@@ -257,7 +257,7 @@ const AddCampaignForm = ({ isOpen, onClose }) => {
         notification.error({
           message: "Error",
           description:
-            actionResult?.error?.message ||
+            actionResult?.payload?.message ||
             "There was an error creating the campaign. Please try again.",
           duration: 5,
         });

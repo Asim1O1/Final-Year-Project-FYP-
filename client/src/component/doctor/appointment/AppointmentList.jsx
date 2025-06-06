@@ -1,4 +1,3 @@
-import React from "react";
 import AppointmentItem from "./AppointmentItem";
 
 const AppointmentList = ({
@@ -9,7 +8,7 @@ const AppointmentList = ({
   handleApproveAppointment,
   handleRejectClick,
   handleCompleteAppointment,
-  handleReschedule,
+
   handleDeleteClick,
   setSelectedAppointment,
 }) => {
@@ -25,7 +24,6 @@ const AppointmentList = ({
           handleApproveAppointment={handleApproveAppointment}
           handleRejectClick={handleRejectClick}
           handleCompleteAppointment={handleCompleteAppointment}
-          handleReschedule={handleReschedule}
           handleDeleteClick={handleDeleteClick}
           setSelectedAppointment={setSelectedAppointment}
         />

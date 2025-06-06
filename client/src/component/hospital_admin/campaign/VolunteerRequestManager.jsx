@@ -102,11 +102,12 @@ const VolunteerRequestsManager = () => {
     setProcessingIds((prev) => [...prev, requestIdentifier]);
 
     try {
-      await dispatch(
+      const result = await dispatch(
         handleVolunteerRequest({ campaignId, requestId, status })
       ).unwrap();
+      dispatch(fetchVolunteerRequests({ page: currentPage, limit: 10 }));
 
-      // No need to manually update state - Redux will handle it
+      console.log("The result is", result);
     } catch (err) {
       console.error("Failed to handle request:", err);
     } finally {
@@ -130,6 +131,7 @@ const VolunteerRequestsManager = () => {
   }
 
   if (error) {
+    console.log("the erroir is error");
     return (
       <div className="flex justify-center items-center h-64 text-red-500">
         <AlertCircle className="w-8 h-8 mr-2" />

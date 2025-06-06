@@ -27,10 +27,9 @@ import {
   TabPanels,
   Tabs,
   Text,
-  useToast,
   VStack,
 } from "@chakra-ui/react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import { PhoneIcon } from "@chakra-ui/icons";
@@ -63,13 +62,15 @@ import PasswordToggle from "../../auth/PasswordToggle";
 
 const AddDoctorForm = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
-  const toast = useToast();
-  const [activeTab, setActiveTab] = React.useState(0);
+
+  const [activeTab, setActiveTab] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
   const currentUser = useSelector((state) => state?.auth?.user?.data);
   const hospitalId = currentUser?.hospital;
+
   const [qualificationForm, setQualificationForm] = useState({
     degree: "",
     university: "",
@@ -92,66 +93,7 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
   };
 
   const predefinedSpecialties = PREDEFINED_SPECIALTIES;
-
   const [formData, setFormData] = useState(initialFormData);
-
-  const handleQualificationChange = (e) => {
-    const { name, value } = e.target;
-    setQualificationForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleAddQualification = () => {
-    if (
-      qualificationForm.degree &&
-      qualificationForm.university &&
-      qualificationForm.graduationYear
-    ) {
-      // Generate a unique key for the new qualification
-      const qualificationKey = `qual_${Date.now()}`;
-
-      setFormData((prev) => ({
-        ...prev,
-        qualifications: {
-          ...prev.qualifications, // Keep existing qualifications
-          [qualificationKey]: {
-            // Add new qualification with a unique key
-            degree: qualificationForm.degree,
-            university: qualificationForm.university,
-            graduationYear: qualificationForm.graduationYear,
-          },
-        },
-      }));
-
-      // Clear form fields
-      setQualificationForm({
-        degree: "",
-        university: "",
-        graduationYear: "",
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Please fill all qualification fields",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-    }
-  };
-
-  const removeQualification = (key) => {
-    setFormData((prev) => {
-      const updatedQualifications = { ...prev.qualifications };
-      delete updatedQualifications[key]; // Remove the qualification with the specified key
-      return {
-        ...prev,
-        qualifications: updatedQualifications,
-      };
-    });
-  };
 
   const hospitals = useSelector(
     (state) => state?.hospitalSlice?.hospitals?.hospitals
@@ -161,9 +103,11 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
     (hospital) => hospital._id === currentUser?.hospital
   );
 
+  // Load hospitals
   useEffect(() => {
     dispatch(fetchAllHospitals());
   }, [dispatch]);
+
   useEffect(() => {
     if (adminHospital?._id) {
       setFormData((prev) => ({
@@ -173,11 +117,55 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
     }
   }, [adminHospital]);
 
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle qualification input change
+  const handleQualificationChange = (e) => {
+    const { name, value } = e.target;
+    setQualificationForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Add qualification entry
+  const handleAddQualification = () => {
+    const { degree, university, graduationYear } = qualificationForm;
+
+    if (!degree.trim() || !university.trim() || !graduationYear.trim()) {
+      notification.error({
+        title: "Incomplete Fields",
+        description: "Please fill in all qualification fields.",
+        status: "error",
+        duration: 3,
+        isClosable: true,
+      });
+      return;
+    }
+
+    const key = `qual_${Date.now()}`;
+    setFormData((prev) => ({
+      ...prev,
+      qualifications: {
+        ...prev.qualifications,
+        [key]: { degree, university, graduationYear },
+      },
+    }));
+
+    setQualificationForm({ degree: "", university: "", graduationYear: "" });
+  };
+
+  // Remove qualification entry
+  const removeQualification = (key) => {
+    setFormData((prev) => {
+      const updated = { ...prev.qualifications };
+      delete updated[key];
+      return { ...prev, qualifications: updated };
+    });
+  };
+
+  // Handle profile image change
   const handleProfileImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -185,21 +173,23 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
     }
   };
 
+  // Handle certification upload
   const handleCertificationUpload = (e) => {
     const files = e.target.files;
     if (files) {
-      const certificationImage = Array.from(files).map((file) => ({
+      const newCerts = Array.from(files).map((file) => ({
         documentName: file.name,
         fileType: file.type,
         file,
       }));
       setFormData((prev) => ({
         ...prev,
-        certificationImage: [...prev.certificationImage, ...certificationImage],
+        certificationImage: [...prev.certificationImage, ...newCerts],
       }));
     }
   };
 
+  // Remove certification
   const removeCertification = (index) => {
     setFormData((prev) => ({
       ...prev,
@@ -207,22 +197,119 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
     }));
   };
 
+  // Manual validation
+  const validateForm = () => {
+    const {
+      fullName,
+      phone,
+      specialization,
+      email,
+      gender,
+      yearsOfExperience,
+      consultationFee,
+      address,
+      doctorProfileImage,
+      certificationImage,
+      qualifications,
+    } = formData;
+
+    if (!fullName.trim()) {
+      showError("Full Name is required.");
+      return false;
+    }
+
+    if (!phone.trim()) {
+      showError("Phone number is required.");
+      return false;
+    } else if (!/^\d{10}$/.test(phone.trim())) {
+      showError("Phone number must be 10 digits.");
+      return false;
+    }
+
+    if (!email.trim()) {
+      showError("Email is required.");
+      return false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      showError("Please enter a valid email address.");
+      return false;
+    }
+
+    if (!gender.trim()) {
+      showError("Please select a gender.");
+      return false;
+    }
+
+    if (!specialization.trim()) {
+      showError("Specialization is required.");
+      return false;
+    }
+
+    if (!yearsOfExperience.trim()) {
+      showError("Years of experience is required.");
+      return false;
+    } else if (isNaN(yearsOfExperience) || +yearsOfExperience < 0) {
+      showError("Years of experience must be a non-negative number.");
+      return false;
+    }
+
+    if (!consultationFee.trim()) {
+      showError("Consultation fee is required.");
+      return false;
+    } else if (isNaN(consultationFee) || +consultationFee < 0) {
+      showError("Consultation fee must be a valid non-negative number.");
+      return false;
+    }
+
+    if (!address.trim()) {
+      showError("Address is required.");
+      return false;
+    }
+
+    if (!doctorProfileImage) {
+      showError("Please upload a doctor profile image.");
+      return false;
+    }
+
+    if (!certificationImage.length) {
+      showError("Please upload at least one certification document.");
+      return false;
+    }
+
+    if (!Object.keys(qualifications).length) {
+      showError("Please add at least one qualification.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const showError = (description) => {
+    notification.error({
+      message: "Validation Error",
+      description,
+      duration: 3,
+      isClosable: true,
+    });
+  };
+
+  // Submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+
+    if (!validateForm()) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const formDataToSend = new FormData();
 
       Object.keys(formData).forEach((key) => {
-        if (formData[key] === undefined || formData[key] === null) {
-          return;
-        }
+        if (!formData[key]) return;
 
         if (key === "qualifications") {
-          // Convert object of qualifications into an array
-          const qualificationsArray = Object.values(formData.qualifications);
-          qualificationsArray.forEach((qual, index) => {
+          Object.values(formData.qualifications).forEach((qual, index) => {
             formDataToSend.append(
               `qualifications[${index}][degree]`,
               qual.degree
@@ -242,7 +329,7 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
         ) {
           formDataToSend.append("doctorProfileImage", formData[key]);
         } else if (key === "certificationImage") {
-          formData.certificationImage.forEach((cert, index) => {
+          formData.certificationImage.forEach((cert) => {
             if (cert.file instanceof File) {
               formDataToSend.append("certificationImage", cert.file);
             }
@@ -252,36 +339,24 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
         }
       });
 
-      // Log the FormData to verify its contents
-      for (let [key, value] of formDataToSend.entries()) {
-        console.log(key, value);
-      }
-
-      // Send the FormData to the backend
       const response = await dispatch(
         handleDoctorRegistration(formDataToSend)
       ).unwrap();
 
-      console.log("The response is", response);
       await dispatch(
-        fetchAllDoctors({
-          page: currentPage,
-          limit: 10,
-          hospital: hospitalId,
-        })
+        fetchAllDoctors({ page: currentPage, limit: 10, hospital: hospitalId })
       );
 
       notification.success({
         message: "Success",
         description: response.message,
-        status: "success",
         duration: 3,
         isClosable: true,
       });
+
       setFormData(initialFormData);
       onClose();
     } catch (error) {
-      console.log("The error is", error);
       notification.error({
         message: error.message || "Failed to register doctor",
         description: error?.error,
@@ -356,7 +431,7 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
                   <TabPanel>
                     <Stack spacing={5}>
                       <SimpleGrid columns={2} spacing={6}>
-                        <FormControl isRequired>
+                        <FormControl>
                           <FormLabel fontSize="sm" fontWeight="medium">
                             Full Name
                           </FormLabel>
@@ -375,7 +450,7 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
                           </InputGroup>
                         </FormControl>
 
-                        <FormControl isRequired>
+                        <FormControl>
                           <FormLabel fontSize="sm" fontWeight="medium">
                             Email Address
                           </FormLabel>
@@ -394,7 +469,7 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
                           </InputGroup>
                         </FormControl>
 
-                        <FormControl isRequired>
+                        <FormControl>
                           <FormLabel fontSize="sm" fontWeight="medium">
                             Phone Number
                           </FormLabel>
@@ -413,7 +488,7 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
                           </InputGroup>
                         </FormControl>
 
-                        <FormControl isRequired>
+                        <FormControl>
                           <FormLabel fontSize="sm" fontWeight="medium">
                             Gender
                           </FormLabel>
@@ -430,7 +505,7 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
                           </Select>
                         </FormControl>
 
-                        <FormControl isRequired>
+                        <FormControl>
                           <FormLabel fontSize="sm" fontWeight="medium">
                             Address
                           </FormLabel>
@@ -454,7 +529,6 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
                           name="password"
                           value={formData.password}
                           onChange={handleChange}
-                          isRequired
                           type={showPassword ? "text" : "password"}
                           placeholder="Enter your password"
                           rightElement={
@@ -473,7 +547,7 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
                   {/* Professional Details Tab */}
                   <TabPanel>
                     <Stack spacing={5}>
-                      <FormControl isRequired>
+                      <FormControl>
                         <FormLabel fontSize="sm" fontWeight="medium">
                           Specialization
                         </FormLabel>
@@ -500,7 +574,7 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
                         </InputGroup>
                       </FormControl>
 
-                      <FormControl isRequired>
+                      <FormControl>
                         <FormLabel fontSize="sm" fontWeight="medium">
                           Years of Experience
                         </FormLabel>
@@ -519,7 +593,7 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
                         </InputGroup>
                       </FormControl>
 
-                      <FormControl isRequired>
+                      <FormControl>
                         <FormLabel fontSize="sm" fontWeight="medium">
                           Consultation Fee
                         </FormLabel>
@@ -538,7 +612,7 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
                         </InputGroup>
                       </FormControl>
 
-                      <FormControl isRequired>
+                      <FormControl>
                         <FormLabel fontSize="sm" fontWeight="medium">
                           Hospital
                         </FormLabel>
@@ -653,7 +727,7 @@ const AddDoctorForm = ({ isOpen, onClose }) => {
                   {/* Documents Tab */}
                   <TabPanel>
                     <Stack spacing={6}>
-                      <FormControl isRequired>
+                      <FormControl>
                         <FormLabel fontSize="sm" fontWeight="medium">
                           Profile Image
                         </FormLabel>

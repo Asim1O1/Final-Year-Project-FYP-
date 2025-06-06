@@ -71,23 +71,6 @@ export default function HospitalCard({ hospital }) {
           bgGradient="linear(to-t, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.1) 100%)"
         />
 
-        {/* Premier quality badge */}
-        <Badge
-          position="absolute"
-          top="3"
-          right="3"
-          px="2"
-          py="1"
-          bg={buttonBg}
-          color="white"
-          fontWeight="medium"
-          borderRadius="full"
-          boxShadow="0 1px 3px rgba(0, 0, 0, 0.2)"
-          fontSize="xs"
-        >
-          Premier Care
-        </Badge>
-
         {/* Hospital name on image */}
         <Box position="absolute" bottom="0" left="0" right="0" p="4">
           <Text

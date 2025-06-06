@@ -32,7 +32,7 @@ import {
   Textarea,
   VStack,
 } from "@chakra-ui/react";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import PREDEFINED_SPECIALTIES from "../../../../../constants/Specialties";
@@ -122,11 +122,85 @@ const UpdateDoctorForm = ({ isOpen, onClose, doctorData }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.fullName) newErrors.fullName = "Name is required";
-    if (!formData.email) newErrors.email = "Email is required";
-    if (!formData.phone) newErrors.phone = "Phone number is required";
-    if (!formData.specialization)
-      newErrors.specialization = "Specialization is required";
+    // Full Name
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = "Full Name is required.";
+    }
+
+    // Email
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      newErrors.email = "Please enter a valid email address.";
+    }
+
+    // Phone
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone number is required.";
+    } else if (!/^\d{10}$/.test(formData.phone.trim())) {
+      newErrors.phone = "Phone number must be exactly 10 digits.";
+    }
+
+    // Gender
+    if (!formData.gender.trim()) {
+      newErrors.gender = "Gender is required.";
+    }
+
+    // Specialization
+    if (!formData.specialization.trim()) {
+      newErrors.specialization = "Specialization is required.";
+    }
+
+    // Years of Experience
+    if (
+      formData.yearsOfExperience === "" ||
+      formData.yearsOfExperience === null
+    ) {
+      newErrors.yearsOfExperience = "Years of experience is required.";
+    } else if (
+      isNaN(formData.yearsOfExperience) ||
+      formData.yearsOfExperience < 0
+    ) {
+      newErrors.yearsOfExperience = "Must be a non-negative number.";
+    }
+
+    // Consultation Fee
+    if (formData.consultationFee === "" || formData.consultationFee === null) {
+      newErrors.consultationFee = "Consultation fee is required.";
+    } else if (
+      isNaN(formData.consultationFee) ||
+      formData.consultationFee < 0
+    ) {
+      newErrors.consultationFee = "Must be a non-negative number.";
+    }
+
+    // Address
+    if (!formData.address.trim()) {
+      newErrors.address = "Address is required.";
+    }
+
+    // Hospital
+    if (!formData.hospital) {
+      newErrors.hospital = "Hospital ID is required.";
+    }
+
+    // Password (only required for new doctor)
+    if (!doctorData && !formData.password.trim()) {
+      newErrors.password = "Password is required for new doctor.";
+    }
+
+    // Qualifications
+    if (!formData.qualifications.length) {
+      newErrors.qualifications = "At least one qualification is required.";
+    } else {
+      formData.qualifications.forEach((q, index) => {
+        if (!q.degree || !q.university || !q.graduationYear) {
+          newErrors[
+            `qualification_${index}`
+          ] = `All fields are required for qualification #${index + 1}`;
+        }
+      });
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;

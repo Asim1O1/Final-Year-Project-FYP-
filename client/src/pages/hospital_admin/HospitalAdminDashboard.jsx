@@ -28,7 +28,7 @@ import {
   useColorModeValue,
   VStack,
 } from "@chakra-ui/react";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import {
   FaBell,
   FaBellSlash,
@@ -42,8 +42,8 @@ import {
   FaEllipsisV,
   FaExclamationTriangle,
   FaFlask,
+  FaHandHoldingMedical,
   FaHistory,
-  FaProjectDiagram,
   FaTrash,
   FaUser,
   FaUserCog,
@@ -68,11 +68,13 @@ export const HospitalAdminDashboard = () => {
   const { dashboardStats, error } = useSelector(
     (state) => state?.hospitalAdminSlice || {}
   );
-  const {
-    activities,
-    isLoading,
-    pagination = { currentPage: 1, totalPages: 1 },
-  } = useSelector((state) => state.recentActivitySlice || {});
+  const { isLoading, pagination = { currentPage: 1, totalPages: 1 } } =
+    useSelector((state) => state.recentActivitySlice || {});
+
+  const activities = useSelector(
+    (state) => state?.recentActivitySlice?.activities?.data
+  );
+  console.log("activit", activities);
   const { currentPage, totalPages } = pagination;
 
   const {
@@ -86,6 +88,8 @@ export const HospitalAdminDashboard = () => {
   const headingColor = useColorModeValue("blue.600", "blue.200");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const subtleHoverBg = useColorModeValue("gray.50", "gray.700");
+
+  const mainBg = useColorModeValue("gray.50", "gray.900");
 
   const activityIcons = {
     doctor_created: FaUserMd,
@@ -107,7 +111,7 @@ export const HospitalAdminDashboard = () => {
     "Total Hospitals": Hospital,
     "Total Medical Tests": FaFlask,
     "Total Appointments": FaCalendarCheck,
-    "Total Campaigns": FaProjectDiagram,
+    "Total Campaigns": FaHandHoldingMedical,
   };
 
   const allStats = [
@@ -218,11 +222,7 @@ export const HospitalAdminDashboard = () => {
   }
 
   return (
-    <Box
-      p={{ base: 4, md: 6 }}
-      bg={useColorModeValue("gray.50", "gray.900")}
-      borderRadius="xl"
-    >
+    <Box p={{ base: 4, md: 6 }} bg={mainBg} borderRadius="xl">
       {/* Stats Cards */}
       <SimpleGrid
         columns={{ base: 1, sm: 2, md: 3, lg: 5 }} // Reduced columns to make each card wider
@@ -598,6 +598,7 @@ export const HospitalAdminDashboard = () => {
                           size="sm"
                           variant="ghost"
                           aria-label="Options"
+                          isDisabled={notification.read} // disable if no options
                         />
                         <MenuList>
                           {!notification.read && (

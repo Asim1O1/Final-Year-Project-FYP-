@@ -39,15 +39,17 @@ export const handleUserRegistration = async (req, res, next) => {
     console.log("The req.body in the handleUserRegistration is: ", req.body);
 
     // Check for existing user
+
     const existingUser = await userModel.findOne({
-      $or: [{ email }, { userName }],
+      $or: [{ email }, { userName }, { phone }],
     });
     if (existingUser) {
       return res.status(400).json(
         createResponse({
           isSuccess: false,
           statusCode: 400,
-          message: "Registration failed. Email or username is already in use.",
+          message:
+            "Registration failed. Email, username, or phone is already in use.",
           error: null,
         })
       );

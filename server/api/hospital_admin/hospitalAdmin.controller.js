@@ -25,7 +25,7 @@ export const createHospitalAdmin = async (req, res, next) => {
         createResponse({
           isSuccess: false,
           statusCode: 400,
-          message: "User with this email or username already exists",
+          message: "User with this email already exists",
           error: null,
         })
       );
@@ -38,6 +38,18 @@ export const createHospitalAdmin = async (req, res, next) => {
           isSuccess: false,
           statusCode: 404,
           message: "Hospital not found",
+          error: null,
+        })
+      );
+    }
+
+    // ✅ Check if hospital already has an admin
+    if (hospital.hospital_admin) {
+      return res.status(400).json(
+        createResponse({
+          isSuccess: false,
+          statusCode: 400,
+          message: "This hospital already has an assigned hospital admin",
           error: null,
         })
       );
@@ -60,10 +72,9 @@ export const createHospitalAdmin = async (req, res, next) => {
 
     // Assign the hospital admin to the hospital
     hospital.hospital_admin = hospitalAdmin._id;
-
     await hospital.save();
+
     await logActivity("hospital_admin_created", {
-      // Core Activity Data
       title: `Hospital Admin Created: ${hospitalAdmin.fullName}`,
       description: `${hospitalAdmin.fullName} (email: ${hospitalAdmin.email}) was assigned as a hospital admin.`,
       performedBy: {

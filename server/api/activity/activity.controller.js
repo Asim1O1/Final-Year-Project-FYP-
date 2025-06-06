@@ -1,6 +1,6 @@
 import Activity from "../../models/activity.model.js";
-import createResponse from "../../utils/responseBuilder.js";
 import { paginate } from "../../utils/paginationUtil.js";
+import createResponse from "../../utils/responseBuilder.js";
 
 export const logActivity = async (type, data) => {
   const activityMap = {
@@ -59,14 +59,7 @@ export const getRecentActivities = async (req, res, next) => {
     const { page = 1, limit = 10 } = req.query;
     const currentUserId = req.user?._id;
 
-    console.log("🔍 Request to get recent activities");
-    console.log("📄 Query Params - Page:", page, "| Limit:", limit);
-    console.log("👤 Current User ID:", currentUserId);
-
     if (!currentUserId) {
-      console.warn(
-        "⚠️ Unauthorized access attempt: Missing user ID in request"
-      );
       return res.status(401).json(
         createResponse({
           isSuccess: false,
@@ -76,19 +69,23 @@ export const getRecentActivities = async (req, res, next) => {
       );
     }
 
-    console.log("📦 Fetching activities from database...");
+    // Calculate the date 14 days ago
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
     const result = await paginate(
       Activity,
-      { "performedBy.userId": currentUserId },
-      { page, limit, sort: { createdAt: -1 } }
+      {
+        "performedBy.userId": currentUserId,
+        createdAt: { $gte: fourteenDaysAgo },
+      },
+      {
+        page,
+        limit,
+        sort: { createdAt: -1 },
+      }
     );
 
-    console.log(
-      `✅ Fetched ${
-        result?.docs?.length || 0
-      } activities for user ${currentUserId}`
-    );
     if (result?.docs?.length > 0) {
       console.log("📝 Sample Activity:", result.docs[0]);
     }
@@ -97,7 +94,8 @@ export const getRecentActivities = async (req, res, next) => {
       createResponse({
         isSuccess: true,
         statusCode: 200,
-        message: "User-specific recent activities fetched successfully",
+        message:
+          "User-specific recent activities (last 14 days) fetched successfully",
         data: result,
       })
     );

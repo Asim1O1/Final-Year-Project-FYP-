@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Card,
   CardBody,
@@ -21,7 +22,7 @@ import {
   useDisclosure,
   VStack,
 } from "@chakra-ui/react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
@@ -209,15 +210,25 @@ const AppointmentsTab = () => {
       >
         <CardHeader
           bg={highlightBg}
-          py={4}
-          px={6}
+          py={{ base: 3, md: 4 }}
+          px={{ base: 4, md: 6 }}
           borderBottomWidth="1px"
           borderColor={borderColor}
         >
-          <Flex justify="space-between" align="center" flexWrap="wrap" gap={4}>
+          <Flex
+            justify="space-between"
+            align="center"
+            flexWrap="wrap"
+            gap={4}
+            direction={{ base: "column", sm: "row" }}
+          >
             <Flex align="center">
               <Icon as={Calendar} color={primaryColor} boxSize={5} mr={3} />
-              <Heading size="md" color={secondaryColor} fontWeight="semibold">
+              <Heading
+                size={{ base: "sm", md: "md" }}
+                color={secondaryColor}
+                fontWeight="semibold"
+              >
                 Your Appointments
               </Heading>
             </Flex>
@@ -225,7 +236,7 @@ const AppointmentsTab = () => {
               onClick={() => navigate("/book-appointment")}
               bg={primaryColor}
               color="white"
-              size="sm"
+              size={{ base: "xs", sm: "sm" }}
               leftIcon={<Icon as={Calendar} boxSize={4} />}
               px={5}
               _hover={{
@@ -246,7 +257,7 @@ const AppointmentsTab = () => {
           </Flex>
         </CardHeader>
 
-        <CardBody p={{ base: 4, md: 6 }}>
+        <CardBody p={{ base: 3, md: 6 }}>
           {appointmentsLoading ? (
             <VStack spacing={4} align="stretch">
               {[1, 2, 3].map((i) => (
@@ -265,9 +276,9 @@ const AppointmentsTab = () => {
                 borderWidth="1px"
                 borderColor={borderColor}
                 boxShadow="xs"
-                overflow="hidden"
+                overflowX="auto"
               >
-                <Table variant="simple" size="md">
+                <Table variant="simple" size={{ base: "sm", md: "md" }}>
                   <Thead bg="gray.50">
                     <Tr>
                       {[
@@ -281,12 +292,13 @@ const AppointmentsTab = () => {
                         <Th
                           key={header}
                           py={3}
-                          px={4}
+                          px={{ base: 2, md: 4 }}
                           borderColor="gray.200"
                           color="gray.600"
                           fontWeight="semibold"
-                          fontSize="sm"
+                          fontSize={{ base: "xs", md: "sm" }}
                           textTransform="capitalize"
+                          whiteSpace="nowrap"
                         >
                           {header}
                         </Th>
@@ -312,41 +324,50 @@ const AppointmentsTab = () => {
                           >
                             <Td
                               py={3}
-                              px={4}
+                              px={{ base: 2, md: 4 }}
                               borderColor="gray.100"
                               fontWeight="medium"
                               color={textColor}
+                              fontSize={{ base: "xs", md: "sm" }}
                             >
                               {appointment.title || "Doctor Appointment"}
                             </Td>
                             <Td
                               py={3}
-                              px={4}
+                              px={{ base: 2, md: 4 }}
                               borderColor="gray.100"
                               color={mutedColor}
                               whiteSpace="nowrap"
+                              fontSize={{ base: "xs", md: "sm" }}
                             >
                               {formatDate(appointment.date)}
                             </Td>
                             <Td
                               py={3}
-                              px={4}
+                              px={{ base: 2, md: 4 }}
                               borderColor="gray.100"
                               color={mutedColor}
+                              fontSize={{ base: "xs", md: "sm" }}
                             >
                               {appointment.hospital?.name || "N/A"}
                             </Td>
                             <Td
                               py={3}
-                              px={4}
+                              px={{ base: 2, md: 4 }}
                               borderColor="gray.100"
                               color={mutedColor}
+                              fontSize={{ base: "xs", md: "sm" }}
                             >
                               {appointment.doctor?.fullName ||
                                 appointment.fullName ||
                                 "N/A"}
                             </Td>
-                            <Td py={3} px={4} borderColor="gray.100">
+                            <Td
+                              py={3}
+                              px={{ base: 2, md: 4 }}
+                              borderColor="gray.100"
+                              fontSize={{ base: "xs", md: "sm" }}
+                            >
                               <Tag
                                 colorScheme={getStatusColor(appointment.status)}
                                 borderRadius="full"
@@ -361,15 +382,24 @@ const AppointmentsTab = () => {
                                     boxSize={2.5}
                                     mr={1.5}
                                   />
-                                  {appointment.status}
+                                  <Box
+                                    as="span"
+                                    fontSize={{ base: "xs", md: "sm" }}
+                                  >
+                                    {appointment.status}
+                                  </Box>
                                 </Flex>
                               </Tag>
                             </Td>
 
-                            <Td py={3} px={4} borderColor="gray.100">
+                            <Td
+                              py={3}
+                              px={{ base: 2, md: 4 }}
+                              borderColor="gray.100"
+                            >
                               <HStack spacing={2}>
                                 <Button
-                                  size="xs"
+                                  size={{ base: "xs", sm: "xs" }}
                                   colorScheme="blue"
                                   variant="outline"
                                   borderRadius="md"
@@ -379,12 +409,17 @@ const AppointmentsTab = () => {
                                     navigate(`/appointments/${appointment._id}`)
                                   }
                                 >
-                                  View
+                                  <Box
+                                    as="span"
+                                    display={{ base: "none", sm: "inline" }}
+                                  >
+                                    View
+                                  </Box>
                                 </Button>
 
                                 {isCancellable && (
                                   <Button
-                                    size="xs"
+                                    size={{ base: "xs", sm: "xs" }}
                                     colorScheme="red"
                                     variant="ghost"
                                     borderRadius="md"
@@ -394,7 +429,12 @@ const AppointmentsTab = () => {
                                       initiateCancelAppointment(appointment)
                                     }
                                   >
-                                    Cancel
+                                    <Box
+                                      as="span"
+                                      display={{ base: "none", sm: "inline" }}
+                                    >
+                                      Cancel
+                                    </Box>
                                   </Button>
                                 )}
                               </HStack>
@@ -413,7 +453,7 @@ const AppointmentsTab = () => {
                           <VStack spacing={4}>
                             <Icon as={Calendar} boxSize={12} color="gray.300" />
                             <Heading
-                              size="md"
+                              size={{ base: "sm", md: "md" }}
                               color={mutedColor}
                               fontWeight="medium"
                             >
@@ -423,13 +463,14 @@ const AppointmentsTab = () => {
                               color="gray.500"
                               maxW="md"
                               textAlign="center"
-                              fontSize="sm"
+                              fontSize={{ base: "xs", md: "sm" }}
+                              px={4}
                             >
                               You don't have any appointments scheduled yet.
                               Book your first appointment.
                             </Text>
                             <Button
-                              size="sm"
+                              size={{ base: "sm", md: "sm" }}
                               bg={primaryColor}
                               color="white"
                               px={6}
@@ -456,8 +497,20 @@ const AppointmentsTab = () => {
 
               {appointments?.appointments &&
                 appointments.appointments.length > 0 && (
-                  <Flex justify="space-between" align="center" mt={6} px={2}>
-                    <Text color={mutedColor} fontSize="xs" fontWeight="medium">
+                  <Flex
+                    justify="space-between"
+                    align="center"
+                    mt={6}
+                    px={2}
+                    flexDirection={{ base: "column", md: "row" }}
+                    gap={{ base: 4, md: 0 }}
+                  >
+                    <Text
+                      color={mutedColor}
+                      fontSize={{ base: "xs", md: "sm" }}
+                      fontWeight="medium"
+                      mb={{ base: 2, md: 0 }}
+                    >
                       Showing {appointments.appointments.length} of{" "}
                       {appointments.totalCount} appointments
                     </Text>
@@ -465,7 +518,7 @@ const AppointmentsTab = () => {
                       currentPage={currentPage}
                       totalPages={totalPages}
                       onPageChange={handlePageChange}
-                      size="sm"
+                      size={{ base: "xs", md: "sm" }}
                     />
                   </Flex>
                 )}
@@ -473,13 +526,20 @@ const AppointmentsTab = () => {
           )}
         </CardBody>
       </Card>
-      <Modal isOpen={isOpen} onClose={onClose} isCentered>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        isCentered
+        size={{ base: "xs", md: "md" }}
+      >
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Cancel Appointment</ModalHeader>
+          <ModalHeader fontSize={{ base: "md", md: "lg" }}>
+            Cancel Appointment
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
-            <Text mb={4}>
+            <Text mb={4} fontSize={{ base: "sm", md: "md" }}>
               Are you sure you want to cancel your appointment on{" "}
               <strong>
                 {appointmentToCancel && formatDate(appointmentToCancel.date)}
@@ -488,12 +548,15 @@ const AppointmentsTab = () => {
             </Text>
 
             <FormControl>
-              <FormLabel>Reason for cancellation</FormLabel>
+              <FormLabel fontSize={{ base: "sm", md: "md" }}>
+                Reason for cancellation
+              </FormLabel>
               <Textarea
                 placeholder="Please specify your reason for cancellation..."
                 value={cancellationReason}
                 onChange={(e) => setCancellationReason(e.target.value)}
                 resize="vertical"
+                size={{ base: "sm", md: "md" }}
               />
             </FormControl>
           </ModalBody>
@@ -504,6 +567,7 @@ const AppointmentsTab = () => {
               mr={3}
               onClick={onClose}
               isDisabled={isCancelling}
+              size={{ base: "sm", md: "md" }}
             >
               Go Back
             </Button>
@@ -512,6 +576,7 @@ const AppointmentsTab = () => {
               onClick={confirmCancelAppointment}
               isLoading={isCancelling}
               loadingText="Cancelling..."
+              size={{ base: "sm", md: "md" }}
             >
               Confirm Cancellation
             </Button>

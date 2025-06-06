@@ -1,39 +1,39 @@
-import React, { useEffect, useState } from "react";
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-  FormControl,
-  FormLabel,
-  FormErrorMessage,
-  InputGroup,
-  Stack,
-  Select,
-  Text,
-  SimpleGrid,
-  Flex,
-  Icon,
   Box,
-  InputRightElement,
-  useColorModeValue,
+  Button,
+  Flex,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
+  Icon,
+  Input,
+  InputGroup,
   InputLeftElement,
+  InputRightElement,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Select,
+  SimpleGrid,
+  Stack,
+  Text,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { notification } from "antd";
-import { useDispatch, useSelector } from "react-redux";
 import { Building2, Lock, Mail, MapPin, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
+import { PhoneIcon } from "@chakra-ui/icons";
+import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
 import {
   handleGetAllHospitalAdmins,
   handleHospitalAdminCreation,
 } from "../../../features/hospital_admin/hospitalAdminSlice";
 import PasswordToggle from "../../auth/PasswordToggle";
-import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
-import { PhoneIcon } from "@chakra-ui/icons";
 import CustomLoader from "../../common/CustomSpinner";
 
 const AddHospitalAdmin = ({ isOpen, onClose, searchQuery }) => {
@@ -47,7 +47,7 @@ const AddHospitalAdmin = ({ isOpen, onClose, searchQuery }) => {
   const hospitals = useSelector(
     (state) => state?.hospitalSlice?.hospitals?.hospitals
   );
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage] = useState(1);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -77,47 +77,65 @@ const AddHospitalAdmin = ({ isOpen, onClose, searchQuery }) => {
 
   const validateForm = () => {
     const newErrors = {};
+    const { fullName, email, phone, address, hospitalId, password } = formData;
 
-    if (!formData.fullName.trim()) {
+    // Full Name validation
+    if (!fullName.trim()) {
       newErrors.fullName = "Full name is required";
+    } else if (fullName.length > 100) {
+      newErrors.fullName = "Name too long (max 100 characters)";
     }
 
-    if (!formData.email.trim()) {
+    // Email validation
+    if (!email.trim()) {
       newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = "Invalid email format";
     }
 
-    if (!formData.phone.trim()) {
+    // Phone validation
+    if (!phone.trim()) {
       newErrors.phone = "Phone number is required";
-    } else if (!/^\+?[\d\s-]{10,}$/.test(formData.phone)) {
-      newErrors.phone = "Invalid phone number";
+    } else {
+      const cleanedPhone = phone.replace(/[\s-]/g, "");
+      if (!/^\+?\d{10,15}$/.test(cleanedPhone)) {
+        newErrors.phone = "Invalid phone number (10-15 digits, + optional)";
+      }
     }
 
-    if (!formData.address.trim()) {
+    // Address validation
+    if (!address.trim()) {
       newErrors.address = "Address is required";
+    } else if (address.length > 200) {
+      newErrors.address = "Address too long (max 200 characters)";
     }
 
-    if (!formData.hospitalId) {
+    // Hospital selection
+    if (!hospitalId) {
       newErrors.hospitalId = "Please select a hospital";
     }
 
-    if (!formData.password) {
+    // Password validation
+    if (!password) {
       newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+    } else if (password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
+    } else if (!/[A-Z]/.test(password)) {
+      newErrors.password =
+        "Password must contain at least one uppercase letter";
+    } else if (!/[0-9]/.test(password)) {
+      newErrors.password = "Password must contain at least one number";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
       notification.error({
-        message: "Form Error",
+        message: "Validation Error",
         description: "Please check all fields and try again",
         duration: 2,
       });
@@ -404,16 +422,14 @@ const AddHospitalAdmin = ({ isOpen, onClose, searchQuery }) => {
                           boxShadow: "0 0 0 1px var(--chakra-colors-blue-400)",
                         }}
                       />
-                      {showPassword && (
-                        <InputRightElement width="3rem">
-                          <PasswordToggle
-                            showPassword={showPassword}
-                            togglePasswordVisibility={() =>
-                              setShowPassword(!showPassword)
-                            }
-                          />
-                        </InputRightElement>
-                      )}
+                      <InputRightElement width="3rem">
+                        <PasswordToggle
+                          showPassword={showPassword}
+                          togglePasswordVisibility={() =>
+                            setShowPassword(!showPassword)
+                          }
+                        />
+                      </InputRightElement>
                     </InputGroup>
                     <FormErrorMessage>{errors.password}</FormErrorMessage>
                   </FormControl>

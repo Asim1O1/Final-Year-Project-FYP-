@@ -2,12 +2,9 @@ import doctorModel from "../../models/doctor.model.js";
 import Message from "../../models/message.model.js";
 import User from "../../models/user.model.js";
 
-import { onlineUsers } from "../../server.js";
-
-import createResponse from "../../utils/responseBuilder.js";
-import cloudinary from "../../imageUpload/cloudinaryConfig.js";
 import mongoose from "mongoose";
-import Notification from "../../models/notification.model.js";
+import cloudinary from "../../imageUpload/cloudinaryConfig.js";
+import createResponse from "../../utils/responseBuilder.js";
 
 // Backend message controller
 
@@ -170,14 +167,16 @@ export const sendMessage = async (req, res, next) => {
 
     // Update unread counts for both users
     const receiverUnread = await Message.countDocuments({
-      receiverId,
-      read: false,
-    });
-    const senderUnread = await Message.countDocuments({
-      receiverId: senderId,
+      senderId: senderId, // Only count messages from this sender
+      receiverId: receiverId, // To this receiver
       read: false,
     });
 
+    const senderUnread = await Message.countDocuments({
+      senderId: receiverId, // Only count messages from the other user
+      receiverId: senderId, // To the current user
+      read: false,
+    });
     // Update this in your sendMessage function
     io.to(receiverId.toString()).emit("chatCountUpdate", {
       chatId: senderId.toString(), // Add this line
@@ -217,10 +216,13 @@ export const markMessagesAsRead = async (req, res, next) => {
 
     // Fixed field names to be consistent with schema
     await Message.updateMany(
-      { senderId: senderId, receiverId: receiverId, read: false },
+      {
+        senderId: senderId,
+        receiverId: receiverId,
+        read: false,
+      },
       { $set: { read: true } }
     );
-
     const io = req.app.get("socketio");
     io.to(senderId).emit("messages-read", { senderId, receiverId });
 

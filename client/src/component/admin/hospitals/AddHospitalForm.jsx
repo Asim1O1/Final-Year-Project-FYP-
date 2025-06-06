@@ -1,39 +1,44 @@
-import React, { useState } from "react";
 import {
   Box,
   Button,
-  Input,
-  Heading,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   FormControl,
+  FormErrorMessage,
   FormLabel,
   Grid,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  VStack,
+  Heading,
   HStack,
   IconButton,
+  Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Select,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Text,
+  VStack,
 } from "@chakra-ui/react";
-import { X } from "lucide-react";
 import { notification } from "antd";
-import { handleHospitalRegistration } from "../../../features/hospital/hospitalSlice";
+import { X } from "lucide-react";
+import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
+import {
+  fetchAllHospitals,
+  handleHospitalRegistration,
+} from "../../../features/hospital/hospitalSlice";
 
-import PREDEFINED_SPECIALTIES from "../../../../../constants/Specialties";
 import { SpinnerIcon } from "@chakra-ui/icons";
+import PREDEFINED_SPECIALTIES from "../../../../../constants/Specialties";
 const AddHospitalForm = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
-  const [currentPage, setCurrentPage] = useState(1);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   const { isLoading } = useSelector((state) => state?.hospitalSlice);
 
@@ -42,97 +47,203 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
     location: "",
     contactNumber: "",
     email: "",
-    hospitalImage: "",
+    hospitalImage: null,
     specialties: [],
   });
+
+  const validateField = (fieldName, value) => {
+    let error = "";
+
+    switch (fieldName) {
+      case "name":
+        if (!value || value.trim() === "") {
+          error = "Hospital name is required.";
+        } else if (value.length < 3) {
+          error = "Hospital name must be at least 3 characters.";
+        } else if (value.length > 100) {
+          error = "Hospital name must be less than 100 characters.";
+        }
+        break;
+
+      case "location":
+        if (!value || value.trim() === "") {
+          error = "Hospital address is required.";
+        } else if (value.length < 10) {
+          error = "Address must be at least 10 characters.";
+        } else if (value.length > 200) {
+          error = "Address must be less than 200 characters.";
+        }
+        break;
+
+      case "contactNumber":
+        if (!value || value.trim() === "") {
+          error = "Contact number is required.";
+        } else if (!/^\d{10}$/.test(value)) {
+          error = "Contact number must be a valid 10-digit number.";
+        }
+        break;
+
+      case "email":
+        if (!value || value.trim() === "") {
+          error = "Email is required.";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          error = "Please enter a valid email address.";
+        } else if (value.length > 100) {
+          error = "Email must be less than 100 characters.";
+        }
+        break;
+
+      case "hospitalImage":
+        if (!value) {
+          error = "Hospital image is required.";
+        } else if (value.size > 5 * 1024 * 1024) {
+          // 5MB limit
+          error = "Image size must be less than 5MB.";
+        } else if (!["image/jpeg", "image/png"].includes(value.type)) {
+          error = "Only JPG and PNG images are allowed.";
+        }
+        break;
+
+      case "specialties":
+        if (!value || value.length === 0) {
+          error = "At least one specialty is required.";
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    setErrors((prev) => ({ ...prev, [fieldName]: error }));
+    return !error;
+  };
+
+  const handleBlur = (fieldName) => {
+    setTouched((prev) => ({ ...prev, [fieldName]: true }));
+    validateField(fieldName, formData[fieldName]);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Validate the field if it's been touched
+    if (touched[name]) {
+      validateField(name, value);
+    }
   };
-  const handleImageChange = (e, setFormData) => {
+
+  const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setFormData((prev) => ({
         ...prev,
         hospitalImage: file,
       }));
+
+      // Validate the image if the field is touched
+      if (touched.hospitalImage) {
+        validateField("hospitalImage", file);
+      }
     }
   };
 
-  const predefinedSpecialties = PREDEFINED_SPECIALTIES;
+  const handleSpecialtyChange = (e) => {
+    const value = e.target.value;
+    if (value && !formData.specialties.includes(value)) {
+      const newSpecialties = [...formData.specialties, value];
+      setFormData((prev) => ({
+        ...prev,
+        specialties: newSpecialties,
+      }));
+
+      // Validate specialties
+      validateField("specialties", newSpecialties);
+    }
+  };
+
+  const removeSpecialty = (indexToRemove) => {
+    const newSpecialties = formData.specialties.filter(
+      (_, index) => index !== indexToRemove
+    );
+    setFormData((prev) => ({
+      ...prev,
+      specialties: newSpecialties,
+    }));
+
+    // Validate specialties
+    if (touched.specialties) {
+      validateField("specialties", newSpecialties);
+    }
+  };
+
   const handleValidation = () => {
-    const errors = {};
+    // Validate all fields
+    const fieldsToValidate = [
+      "name",
+      "location",
+      "contactNumber",
+      "email",
+      "hospitalImage",
+      "specialties",
+    ];
 
-    // Validate Hospital Name
-    if (!formData.name || formData.name.trim() === "") {
-      errors.name = "Hospital name is required.";
-    } else if (formData.name.length < 3) {
-      errors.name = "Hospital name must be at least 3 characters.";
-    }
+    let isValid = true;
+    const newTouched = {};
+    const newErrors = {};
 
-    // Validate Address
-    if (!formData.location || formData.location.trim() === "") {
-      errors.location = "Hospital address is required.";
-    }
+    fieldsToValidate.forEach((field) => {
+      newTouched[field] = true;
+      const value = formData[field];
+      const fieldValid = validateField(field, value);
+      if (!fieldValid) {
+        newErrors[field] = errors[field] || `${field} is invalid`;
+        isValid = false;
+      }
+    });
 
-    // Validate Contact Number
-    if (!formData.contactNumber || formData.contactNumber.trim() === "") {
-      errors.contactNumber = "Contact number is required.";
-    } else if (!/^\d{10}$/.test(formData.contactNumber)) {
-      errors.contactNumber = "Contact number must be a valid 10-digit number.";
-    }
+    setTouched((prev) => ({ ...prev, ...newTouched }));
+    setErrors((prev) => ({ ...prev, ...newErrors }));
 
-    // Validate Email (if applicable)
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = "Please enter a valid email address.";
-    }
-
-    // Validate Hospital Image
-    if (!formData.hospitalImage) {
-      errors.hospitalImage = "Hospital image is required.";
-    }
-
-    return errors;
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      const errors = handleValidation();
-      if (Object.keys(errors).length > 0) {
-        Object.values(errors).forEach((message) => {
-          notification.error({
-            message: "Validation Error",
-            description: message,
-            duration: 3,
-          });
+    if (!handleValidation()) {
+      // Show the first error in a notification
+      const firstErrorKey = Object.keys(errors).find((key) => errors[key]);
+      if (firstErrorKey) {
+        notification.error({
+          message: "Validation Error",
+          description: errors[firstErrorKey],
+          duration: 3,
         });
-        return;
+      }
+      return;
+    }
+
+    try {
+      const hospitalData = new FormData();
+
+      // Add simple field values
+      hospitalData.append("name", formData.name);
+      hospitalData.append("location", formData.location);
+      hospitalData.append("contactNumber", formData.contactNumber);
+      hospitalData.append("email", formData.email);
+
+      // Add file
+      if (formData.hospitalImage) {
+        hospitalData.append("hospitalImage", formData.hospitalImage);
       }
 
-      const hospitalData = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (Array.isArray(value)) {
-          value.forEach((item, index) => {
-            if (typeof item === "object") {
-              Object.entries(item).forEach(([subKey, subValue]) => {
-                hospitalData.append(`${key}[${index}][${subKey}]`, subValue);
-              });
-            } else {
-              hospitalData.append(`${key}[${index}]`, item);
-            }
-          });
-        } else {
-          hospitalData.append(key, value);
-        }
+      // Add specialties as array
+      formData.specialties.forEach((specialty, index) => {
+        hospitalData.append(`specialties[${index}]`, specialty);
       });
 
-      console.log("The hospital data is", hospitalData);
-
       const result = await dispatch(handleHospitalRegistration(hospitalData));
-      console.log("The resultt while adding hospital i is", result);
 
       if (handleHospitalRegistration.fulfilled.match(result)) {
         notification.success({
@@ -142,18 +253,22 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
             "Hospital has been registered successfully!",
           duration: 3,
         });
+
+        // Reset form
         setFormData({
           name: "",
           location: "",
           contactNumber: "",
           email: "",
-          hospitalImage: "",
+          hospitalImage: null,
           specialties: [],
         });
+        setErrors({});
+        setTouched({});
 
-        await dispatch(
-          fetchAllHospitals({ page: currentPage, limit: 10 })
-        ).unwrap();
+        // Refresh list with current page
+        await dispatch(fetchAllHospitals({ page: 1, limit: 10 })).unwrap();
+
         onClose();
       } else if (handleHospitalRegistration.rejected.match(result)) {
         notification.error({
@@ -175,150 +290,197 @@ const AddHospitalForm = ({ isOpen, onClose }) => {
   };
 
   return (
-    <>
-      <Modal isOpen={isOpen} onClose={onClose} size="4xl">
-        <ModalOverlay />
-        <ModalOverlay />
-        <ModalContent as="form" onSubmit={handleSubmit}>
-          <ModalHeader>Add New Hospital</ModalHeader>
-          <ModalBody>
-            <Tabs>
-              <TabList>
-                <Tab>Basic Info</Tab>
-                <Tab>Specialties</Tab>
-              </TabList>
+    <Modal isOpen={isOpen} onClose={onClose} size="4xl">
+      <ModalOverlay />
+      <ModalContent as="form" onSubmit={handleSubmit}>
+        <ModalHeader>Add New Hospital</ModalHeader>
+        <ModalBody>
+          <Tabs>
+            <TabList>
+              <Tab>Basic Info</Tab>
+              <Tab>Specialties</Tab>
+            </TabList>
 
-              <TabPanels>
-                <TabPanel>
-                  <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                    <FormControl isRequired>
-                      <FormLabel>Hospital Name</FormLabel>
-                      <Input
-                        placeholder="Enter hospital name"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                      />
-                    </FormControl>
-                    <FormControl isRequired>
-                      <FormLabel>Location</FormLabel>
-                      <Input
-                        placeholder="Enter location"
-                        name="location"
-                        value={formData.location}
-                        onChange={handleChange}
-                      />
-                    </FormControl>
-                    <FormControl isRequired>
-                      <FormLabel>Contact Number</FormLabel>
-                      <Input
-                        placeholder="Enter contact number"
-                        name="contactNumber"
-                        value={formData.contactNumber}
-                        onChange={handleChange}
-                      />
-                    </FormControl>
-                    <FormControl isRequired>
-                      <FormLabel>Email</FormLabel>
-                      <Input
-                        placeholder="Enter email"
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                      />
-                    </FormControl>
-                    <FormControl gridColumn="span 2">
-                      <FormLabel>Hospital Image</FormLabel>
-                      <Input
-                        type="file"
-                        name="hospitalImage"
-                        accept="image/*"
-                        onChange={(e) => handleImageChange(e, setFormData)}
-                      />
-                    </FormControl>
-                  </Grid>
-                </TabPanel>
+            <TabPanels>
+              <TabPanel>
+                <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                  <FormControl
+                    isRequired
+                    isInvalid={touched.name && !!errors.name}
+                  >
+                    <FormLabel>Hospital Name</FormLabel>
+                    <Input
+                      placeholder="Enter hospital name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      onBlur={() => handleBlur("name")}
+                    />
+                    {touched.name && errors.name && (
+                      <FormErrorMessage>{errors.name}</FormErrorMessage>
+                    )}
+                  </FormControl>
 
-                <TabPanel>
-                  <VStack align="stretch" spacing={4}>
-                    <Box>
-                      <Heading size="sm" mb={2}>
-                        Specialties
-                      </Heading>
-                      <FormControl isRequired>
-                        <FormLabel>Select Specialties</FormLabel>
-                        <Select
-                          placeholder="Select specialties"
-                          onChange={(e) => {
-                            const newSpecialties = [
-                              ...formData.specialties,
-                              e.target.value,
-                            ];
-                            setFormData({
-                              ...formData,
-                              specialties: newSpecialties,
-                            });
-                          }}
-                        >
-                          {predefinedSpecialties.map((specialty, index) => (
-                            <option key={index} value={specialty}>
-                              {specialty}
-                            </option>
-                          ))}
-                        </Select>
-                      </FormControl>
+                  <FormControl
+                    isRequired
+                    isInvalid={touched.location && !!errors.location}
+                  >
+                    <FormLabel>Location</FormLabel>
+                    <Input
+                      placeholder="Enter location"
+                      name="location"
+                      value={formData.location}
+                      onChange={handleChange}
+                      onBlur={() => handleBlur("location")}
+                    />
+                    {touched.location && errors.location && (
+                      <FormErrorMessage>{errors.location}</FormErrorMessage>
+                    )}
+                  </FormControl>
 
-                      {formData.specialties.length > 0 && (
-                        <Box mt={2}>
-                          <Heading size="sm" mb={2}>
-                            Selected Specialties
-                          </Heading>
-                          <VStack spacing={2}>
-                            {formData.specialties.map((specialty, index) => (
-                              <HStack key={index} mb={2}>
-                                <Box>{specialty}</Box>
-                                <IconButton
-                                  icon={<X />}
-                                  onClick={() => {
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      specialties: prev.specialties.filter(
-                                        (_, idx) => idx !== index
-                                      ),
-                                    }));
-                                  }}
-                                  size="sm"
-                                  colorScheme="red"
-                                />
-                              </HStack>
-                            ))}
-                          </VStack>
-                        </Box>
+                  <FormControl
+                    isRequired
+                    isInvalid={touched.contactNumber && !!errors.contactNumber}
+                  >
+                    <FormLabel>Contact Number</FormLabel>
+                    <Input
+                      placeholder="Enter contact number"
+                      name="contactNumber"
+                      value={formData.contactNumber}
+                      onChange={handleChange}
+                      onBlur={() => handleBlur("contactNumber")}
+                    />
+                    {touched.contactNumber && errors.contactNumber && (
+                      <FormErrorMessage>
+                        {errors.contactNumber}
+                      </FormErrorMessage>
+                    )}
+                  </FormControl>
+
+                  <FormControl
+                    isRequired
+                    isInvalid={touched.email && !!errors.email}
+                  >
+                    <FormLabel>Email</FormLabel>
+                    <Input
+                      placeholder="Enter email"
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      onBlur={() => handleBlur("email")}
+                    />
+                    {touched.email && errors.email && (
+                      <FormErrorMessage>{errors.email}</FormErrorMessage>
+                    )}
+                  </FormControl>
+
+                  <FormControl
+                    gridColumn="span 2"
+                    isRequired
+                    isInvalid={touched.hospitalImage && !!errors.hospitalImage}
+                  >
+                    <FormLabel>Hospital Image</FormLabel>
+                    <Input
+                      type="file"
+                      name="hospitalImage"
+                      accept="image/jpeg, image/png"
+                      onChange={handleImageChange}
+                      onBlur={() => handleBlur("hospitalImage")}
+                    />
+                    {touched.hospitalImage && errors.hospitalImage && (
+                      <FormErrorMessage>
+                        {errors.hospitalImage}
+                      </FormErrorMessage>
+                    )}
+                    {formData.hospitalImage && (
+                      <Text mt={1} fontSize="sm">
+                        Selected: {formData.hospitalImage.name}
+                      </Text>
+                    )}
+                  </FormControl>
+                </Grid>
+              </TabPanel>
+
+              <TabPanel>
+                <VStack align="stretch" spacing={4}>
+                  <Box>
+                    <Heading size="sm" mb={2}>
+                      Specialties
+                    </Heading>
+                    <FormControl
+                      isInvalid={touched.specialties && !!errors.specialties}
+                    >
+                      <FormLabel>Select Specialties</FormLabel>
+                      <Select
+                        placeholder="Select specialties"
+                        name="specialty"
+                        value=""
+                        onChange={handleSpecialtyChange}
+                        onBlur={() => handleBlur("specialties")}
+                      >
+                        {PREDEFINED_SPECIALTIES.map((specialty, index) => (
+                          <option key={index} value={specialty}>
+                            {specialty}
+                          </option>
+                        ))}
+                      </Select>
+                      {touched.specialties && errors.specialties && (
+                        <FormErrorMessage>
+                          {errors.specialties}
+                        </FormErrorMessage>
                       )}
-                    </Box>
-                  </VStack>
-                </TabPanel>
-              </TabPanels>
-            </Tabs>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              colorScheme="blue"
-              isLoading={isLoading}
-              loadingText="Saving..."
-              spinner={<SpinnerIcon size="sm" />}
-            >
-              Save Hospital
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
+                    </FormControl>
+
+                    {formData.specialties.length > 0 && (
+                      <Box mt={4} p={4} borderWidth="1px" borderRadius="md">
+                        <Heading size="sm" mb={2}>
+                          Selected Specialties ({formData.specialties.length})
+                        </Heading>
+                        <VStack align="stretch" spacing={2}>
+                          {formData.specialties.map((specialty, index) => (
+                            <HStack
+                              key={index}
+                              justify="space-between"
+                              p={2}
+                              bg="gray.50"
+                              borderRadius="md"
+                            >
+                              <Box>{specialty}</Box>
+                              <IconButton
+                                icon={<X />}
+                                onClick={() => removeSpecialty(index)}
+                                size="sm"
+                                colorScheme="red"
+                                aria-label={`Remove ${specialty}`}
+                              />
+                            </HStack>
+                          ))}
+                        </VStack>
+                      </Box>
+                    )}
+                  </Box>
+                </VStack>
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" mr={3} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            colorScheme="blue"
+            isLoading={isLoading}
+            loadingText="Saving..."
+            spinner={<SpinnerIcon size="sm" />}
+          >
+            Save Hospital
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 };
 

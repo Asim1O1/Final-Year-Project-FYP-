@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Box,
   Button,
@@ -10,15 +9,16 @@ import {
   Text,
   useBreakpointValue,
 } from "@chakra-ui/react";
+import { useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 
-import AuthLayout from "../../layouts/AuthLayout";
+import { notification } from "antd";
+import { useDispatch, useSelector } from "react-redux";
 import ImageSection from "../../component/auth/ImageSection";
 import InputForm from "../../component/auth/InputForm";
 import PasswordToggle from "../../component/auth/PasswordToggle";
-import { notification } from "antd";
 import { loginUser } from "../../features/auth/authSlice";
-import { useDispatch, useSelector } from "react-redux";
+import AuthLayout from "../../layouts/AuthLayout";
 
 const LoginPage = () => {
   const dispatch = useDispatch();
@@ -116,7 +116,9 @@ const LoginPage = () => {
                     fontWeight="medium"
                     _hover={{
                       color: "#007BB5",
-                      textDecoration: "underline",
+                    }}
+                    _focus={{
+                      textDecoration: "none",
                     }}
                   >
                     Forgot password?
@@ -156,7 +158,7 @@ const LoginPage = () => {
                       fontWeight="medium"
                       _hover={{
                         color: "#007BB5",
-                        textDecoration: "underline",
+                        textDecoration: "none",
                       }}
                     >
                       Register

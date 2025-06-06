@@ -1,28 +1,27 @@
-import { useEffect } from "react";
 import {
-  VStack,
-  HStack,
-  Text,
-  Box,
   Badge,
+  Box,
   Button,
+  HStack,
   IconButton,
   Menu,
   MenuButton,
-  MenuList,
   MenuItem,
+  MenuList,
+  Text,
   useToast,
+  VStack,
 } from "@chakra-ui/react";
+import { useEffect } from "react";
+import { FiCheck, FiEye, FiMoreVertical, FiTrash2 } from "react-icons/fi";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  handleGetNotifications,
   handleClearAllNotifications,
+  handleGetNotifications,
   handleMarkAllNotificationsAsRead,
   handleMarkNotificationAsRead,
 } from "../../features/notification/notificationSlice";
-import { FiMoreVertical, FiCheck, FiTrash2, FiEye } from "react-icons/fi";
 import CustomLoader from "../common/CustomSpinner";
-import { notification } from "antd";
 
 export const Notifications = () => {
   const dispatch = useDispatch();
@@ -196,6 +195,7 @@ export const Notifications = () => {
                   icon={<FiMoreVertical />}
                   size="sm"
                   variant="ghost"
+                  isDisabled={notification.read} // disable if no menu items
                 />
                 <MenuList>
                   {!notification.read && (

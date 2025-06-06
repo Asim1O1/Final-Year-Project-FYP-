@@ -176,7 +176,7 @@ export const getAllHospitalAdminsService = async (queryParams = {}) => {
       data: {
         hospitalAdmins:
           response.data?.data?.hospitalAdmins || response.data?.data || [],
-        pagination: response.data?.data?.pagination || null,
+        pagination: response.data?.pagination || null,
       },
     });
   } catch (error) {

@@ -14,7 +14,7 @@ export const handleGetRecentActivities = createAsyncThunk(
           message: response.message || "Failed to fetch recent activities",
         });
       }
-      return response.data;
+      return response;
     } catch (error) {
       return rejectWithValue(
         createApiResponse({

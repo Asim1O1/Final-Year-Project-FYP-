@@ -1,26 +1,25 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
+  Button,
   Container,
   Flex,
-  Input,
-  Button,
   Heading,
-  Text,
+  Input,
   Stack,
-  HStack,
-  Box,
+  Text,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
 
-import { fetchAllCampaigns } from "../../features/campaign/campaignSlice";
-import CampaignList from "../../component/hospital_admin/campaign/CampaignList";
 import AddCampaignForm from "../../component/hospital_admin/campaign/AddCampaign";
+import CampaignList from "../../component/hospital_admin/campaign/CampaignList";
 import UpdateCampaignForm from "../../component/hospital_admin/campaign/UpdateCampaign";
+import { fetchAllCampaigns } from "../../features/campaign/campaignSlice";
 
 import { useDispatch, useSelector } from "react-redux";
 
+import { notification } from "antd";
 import { Plus } from "lucide-react";
 import { fetchAllHospitals } from "../../features/hospital/hospitalSlice";
 
@@ -85,11 +84,12 @@ const CampaignManagement = () => {
   // Handle errors
   useEffect(() => {
     if (campaignsError) {
-      toast({
-        title: "Error loading campaigns",
-        description: campaignsError,
+      notification.error({
+        message: "Error loading campaigns",
+        description:
+          campaignsError || "Unexpected error while campaign management",
         status: "error",
-        duration: 5000,
+        duration: 5,
         isClosable: true,
       });
     }

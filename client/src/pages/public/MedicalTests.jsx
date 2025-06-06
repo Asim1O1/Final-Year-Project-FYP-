@@ -1,48 +1,47 @@
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import {
+  Badge,
   Box,
   Button,
-  Heading,
-  Text,
-  SimpleGrid,
-  Flex,
   Card,
-  useColorModeValue,
-  Icon,
-  Badge,
-  Skeleton,
-  Image,
-  HStack,
-  Divider,
   Container,
+  Divider,
   Fade,
-  VStack,
-  useDisclosure,
+  Flex,
   FormControl,
   FormLabel,
-  Select,
+  HStack,
+  Heading,
+  Icon,
+  Image,
   Input,
   InputGroup,
   InputLeftElement,
+  Select,
+  SimpleGrid,
+  Skeleton,
   SlideFade,
+  Text,
+  VStack,
+  useColorModeValue,
+  useDisclosure,
 } from "@chakra-ui/react";
+import { AnimatePresence } from "framer-motion";
 import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
-  Clock,
   MapPin,
   RefreshCcw,
   Search,
   Star,
   X,
 } from "lucide-react";
-import { fetchAllMedicalTests } from "../../features/medical_test/medicalTestSlice";
-import { fetchAllHospitals } from "../../features/hospital/hospitalSlice";
-import Pagination from "../../utils/Pagination";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
+import { fetchAllHospitals } from "../../features/hospital/hospitalSlice";
+import { fetchAllMedicalTests } from "../../features/medical_test/medicalTestSlice";
+import Pagination from "../../utils/Pagination";
 
 const MedicalTests = () => {
   const dispatch = useDispatch();
@@ -802,32 +801,6 @@ const MedicalTests = () => {
                       </Text>
 
                       {/* Stats/Info row with enhanced visual appeal */}
-                      <Flex mb={5} justify="flex-start">
-                        <Flex
-                          align="center"
-                          bg="gray.50"
-                          px={3}
-                          py={1}
-                          borderRadius="full"
-                          mr={3}
-                          _dark={{ bg: "gray.700" }}
-                        >
-                          <Icon
-                            as={Clock}
-                            size={14}
-                            color="blue.500"
-                            mr={1.5}
-                          />
-                          <Text
-                            fontSize="xs"
-                            fontWeight="medium"
-                            color="gray.600"
-                            _dark={{ color: "gray.300" }}
-                          >
-                            {test.duration || "45-60"} min
-                          </Text>
-                        </Flex>
-                      </Flex>
 
                       {/* Divider for visual separation */}
                       <Divider my={4} borderColor={dividerColor} />
