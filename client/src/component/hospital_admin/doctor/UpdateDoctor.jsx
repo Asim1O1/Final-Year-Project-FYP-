@@ -35,7 +35,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import PREDEFINED_SPECIALTIES from "../../../../../constants/Specialties";
+import PREDEFINED_SPECIALTIES from "@shared/Specialties";
 import {
   fetchAllDoctors,
   handleDoctorUpdate,

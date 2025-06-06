@@ -35,7 +35,7 @@ import { Users } from "./pages/admin/Users";
 
 // Hospital Admin Pages
 import VolunteerRequestsManager from "./component/hospital_admin/campaign/VolunteerRequestManager.jsx";
-import TestBookingList from "./component/hospital_admin/test_booking/test_bookingList.jsx";
+import TestBookingList from "./component/hospital_admin/test_booking/Test_BookingList.jsx";
 import MedicalReports from "./component/hospital_admin/test_report/MedicalReports.jsx";
 import MedicalReportUpload from "./component/hospital_admin/test_report/UploadReport.jsx";
 import { HospitalAdminLayout } from "./layouts/HospitalAdminLayout.jsx";

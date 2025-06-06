@@ -2,7 +2,7 @@ import { Filter, MapPin, RefreshCw, Search, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 
-import PREDEFINED_SPECIALTIES from "../../../../constants/Specialties.js";
+import PREDEFINED_SPECIALTIES from "@shared/Specialties";
 import { fetchAllHospitals } from "../../features/hospital/hospitalSlice";
 
 function TopSection() {

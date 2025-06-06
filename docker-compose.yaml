@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   server:
@@ -12,7 +11,9 @@ services:
       - /app/server/node_modules
 
   client:
-    build: ./client
+    build:
+      context: .
+      dockerfile: client/Dockerfile
     ports:
       - "3000:3000"
     env_file:

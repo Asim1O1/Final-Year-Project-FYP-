@@ -1,30 +1,28 @@
-import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Button,
   Container,
   Flex,
   Heading,
-  useDisclosure,
   InputGroup,
   InputLeftElement,
-  TagLabel,
-  TagCloseButton,
-  Text,
   Tag,
+  TagCloseButton,
+  TagLabel,
+  Text,
+  useDisclosure,
 } from "@chakra-ui/react";
-import { Plus, Search } from "lucide-react";
 import { Input } from "antd";
+import { Plus } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 import HospitalForm from "../../component/admin/hospitals/AddHospitalForm";
 import HospitalList from "../../component/admin/hospitals/HospitalLists";
 import { fetchAllHospitals } from "../../features/hospital/hospitalSlice";
 
-import { useDispatch, useSelector } from "react-redux";
 import { debounce } from "lodash";
+import { useDispatch, useSelector } from "react-redux";
 import Pagination from "../../utils/Pagination";
-
-import PREDEFINED_SPECIALTIES from "../../../../constants/Specialties";
 
 const HospitalManagement = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();

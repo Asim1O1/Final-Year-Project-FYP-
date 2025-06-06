@@ -53,7 +53,7 @@ import {
   handleDoctorRegistration,
 } from "../../../features/doctor/doctorSlice";
 
-import PREDEFINED_SPECIALTIES from "../../../../../constants/Specialties";
+import PREDEFINED_SPECIALTIES from "@shared/Specialties";
 
 import { fetchAllHospitals } from "../../../features/hospital/hospitalSlice";
 

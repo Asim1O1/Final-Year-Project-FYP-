@@ -1,31 +1,29 @@
-import { useState, useEffect } from "react";
+import { ChevronRightIcon } from "@chakra-ui/icons";
 import {
+  Badge,
   Box,
-  Container,
-  Heading,
-  SimpleGrid,
-  Text,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
+  Container,
   Flex,
-  VStack,
   HStack,
+  Heading,
   Icon,
-  useColorModeValue,
-  Badge,
   ScaleFade,
-  chakra,
+  SimpleGrid,
+  Text,
+  VStack,
+  useColorModeValue,
 } from "@chakra-ui/react";
-import { ChevronRightIcon, SearchIcon } from "@chakra-ui/icons";
+import { useEffect, useState } from "react";
+import { FaRegCalendarAlt, FaStethoscope } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { FaStethoscope, FaRegCalendarAlt } from "react-icons/fa";
-import StepIndicator from "../../component/common/StepIndicator";
-import { SearchBar } from "../../component/common/SearchBar";
 import SpecialtyCard from "../../component/common/SpecialityCard";
+import StepIndicator from "../../component/common/StepIndicator";
 
+import PREDEFINED_SPECIALTIES from "@shared/Specialties";
 import Pagination from "../../utils/Pagination";
-import PREDEFINED_SPECIALTIES from "../../../../constants/Specialties";
 
 const specialties = PREDEFINED_SPECIALTIES;
 

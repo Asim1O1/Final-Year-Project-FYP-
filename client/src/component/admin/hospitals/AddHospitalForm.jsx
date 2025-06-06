@@ -34,7 +34,7 @@ import {
 } from "../../../features/hospital/hospitalSlice";
 
 import { SpinnerIcon } from "@chakra-ui/icons";
-import PREDEFINED_SPECIALTIES from "../../../../../constants/Specialties";
+import PREDEFINED_SPECIALTIES from "@shared/Specialties";
 const AddHospitalForm = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
   const [errors, setErrors] = useState({});

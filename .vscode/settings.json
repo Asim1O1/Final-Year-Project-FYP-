@@ -1,0 +1,194 @@
+{
+  // THEME & APPEARANCE
+  "workbench.colorTheme": "Arbiter", // Rich, modern theme with balanced contrast
+  "workbench.iconTheme": "dobri-theme-icons", // Comprehensive icon coverage
+  // Clean Microsoft Fluent design
+  "workbench.preferredDarkColorTheme": "Catppuccin Mocha",
+  "workbench.preferredLightColorTheme": "Catppuccin Latte",
+  "workbench.colorCustomizations": {
+    "editorCursor.foreground": "#F5A97F", // Catppuccin peach cursor for visibility
+    "terminalCursor.foreground": "#F5A97F"
+  },
+
+  // TYPOGRAPHY OPTIMIZATIONS
+  "editor.fontFamily": "'Monaco','JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace", // Prioritizing better coding fonts
+  "editor.fontSize": 13.3, // Slightly larger for better readability
+  "editor.lineHeight": 1.7, // More balanced spacing
+  "editor.letterSpacing": 0.3, // Subtle letter spacing for clarity
+  "editor.fontWeight": "480", // Slightly lighter for crispness
+  "editor.fontLigatures": true, // Programming ligatures
+
+  // CURSOR & SELECTION
+  "editor.cursorBlinking": "phase", // Smoother animation
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.cursorStyle": "line",
+  "editor.cursorWidth": 2,
+  "editor.smoothScrolling": true,
+  "editor.mouseWheelScrollSensitivity": 1.2,
+  "editor.linkedEditing": true, // Auto-edit paired HTML tags
+
+  // BETTER COMMENTS EXTENSION CONFIGURATION
+  "better-comments.tags": [
+    {
+      "tag": "!",
+      "color": "#F5A97F",
+      "strikethrough": false,
+      "backgroundColor": "transparent"
+    }, // Warning
+    {
+      "tag": "?",
+      "color": "#F2CDCD",
+      "strikethrough": false,
+      "backgroundColor": "transparent"
+    }, // Question
+    {
+      "tag": "//",
+      "color": "#B8C0E0",
+      "strikethrough": true,
+      "backgroundColor": "transparent"
+    }, // Strikethrough
+    {
+      "tag": "todo",
+      "color": "#ABE9B3",
+      "strikethrough": false,
+      "backgroundColor": "transparent"
+    }, // Todo
+    {
+      "tag": "*",
+      "color": "#DDB6F2",
+      "strikethrough": false,
+      "backgroundColor": "transparent"
+    } // Important
+  ],
+
+  // ERROR LENS CONFIGURATION
+  "errorLens.enabledDiagnosticLevels": ["error", "warning", "info"],
+  "errorLens.excludeBySource": ["eslint(prettier)"],
+  "errorLens.fontWeight": "500",
+  "errorLens.margin": "1ch",
+  "errorLens.fontStyleItalic": true,
+  "errorLens.messageEnabled": true,
+  "errorLens.messageMaxChars": 80,
+
+  // INDENTATION SETTINGS
+  "workbench.tree.indent": 4, // Reduced from 10 for cleaner sidebar appearance
+  "editor.tabSize": 2, // Adding explicit tab size setting for cleaner code view
+  "editor.insertSpaces": true, // Use spaces instead of tabs for consistency
+  "editor.detectIndentation": true, // Respects file's existing indentation
+
+  // INDENT RAINBOW - SOFTER COLORS
+  "indentRainbow.colors": [
+    "rgba(245, 169, 127, 0.03)", // Reduced opacity from 0.06
+    "rgba(242, 205, 205, 0.03)",
+    "rgba(245, 224, 179, 0.03)",
+    "rgba(166, 227, 161, 0.03)",
+    "rgba(148, 226, 213, 0.03)",
+    "rgba(137, 220, 235, 0.03)",
+    "rgba(116, 199, 236, 0.03)"
+  ],
+  "indentRainbow.errorColor": "rgba(243, 139, 168, 0.2)", // Softer error highlight
+  "indentRainbow.indicatorStyle": "classic",
+
+  // INDENT GUIDES - CLEANER APPEARANCE
+
+  "editor.guides.highlightActiveIndentation": true, // Highlight active indent
+
+  // UI REFINEMENTS
+  "window.titleBarStyle": "custom",
+  "editor.minimap.renderCharacters": false,
+  "editor.minimap.scale": 2,
+  "editor.minimap.showSlider": "always",
+  "editor.minimap.maxColumn": 80,
+  "editor.scrollbar.verticalScrollbarSize": 10,
+
+  "workbench.tree.renderIndentGuides": "always",
+  "workbench.list.smoothScrolling": true,
+  "breadcrumbs.enabled": true,
+  "editor.glyphMargin": true,
+  "editor.renderLineHighlight": "all",
+  "editor.guides.indentation": true,
+
+  // BRACKET PAIR COLORIZATION
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "editor.guides.bracketPairsHorizontal": "active",
+  "editor.guides.highlightActiveBracketPair": true,
+  "editor.matchBrackets": "always",
+
+  // TERMINAL AESTHETICS
+  "terminal.integrated.fontFamily": "'JetBrains Mono', 'MesloLGS NF', monospace",
+  "terminal.integrated.fontSize": 14,
+  "terminal.integrated.lineHeight": 1.4,
+  "terminal.integrated.fontWeight": "normal",
+  "terminal.integrated.cursorStyle": "line",
+  "terminal.integrated.cursorWidth": 2,
+  "terminal.integrated.cursorBlinking": true,
+  "terminal.integrated.gpuAcceleration": "on",
+  "terminal.integrated.tabs.enabled": true,
+  "terminal.integrated.tabs.showActiveTerminal": "always",
+
+  // CODE FORMATTING & QUALITY
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": false, // Avoid unexpected formatting
+  "editor.defaultFormatter": null, // Set per language
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "editor.wordWrap": "off",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+
+  // FLUENT ICONS REFINEMENTS
+  "workbench.productIconTheme": "fluent-icons",
+  "workbench.layoutControl.enabled": true,
+  "workbench.editor.decorations.badges": true,
+  "workbench.editor.decorations.colors": true,
+
+  // GIT INTEGRATION
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "git.autofetch": true,
+  "diffEditor.ignoreTrimWhitespace": false,
+
+  // EXPLORER & EDITOR TABS
+  "explorer.compactFolders": false, // Better folder structure visualization
+  "explorer.confirmDelete": true,
+  "explorer.confirmDragAndDrop": false,
+  "workbench.editor.tabSizing": "shrink",
+  "workbench.editor.tabCloseButton": "right",
+  "workbench.editor.limit.enabled": true,
+  "workbench.editor.limit.value": 8,
+  "workbench.editor.enablePreview": false,
+
+  // PERFORMANCE OPTIMIZATIONS
+  "editor.suggest.shareSuggestSelections": true,
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": false,
+    "strings": false
+  },
+  "search.followSymlinks": false, // Better performance
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true
+  },
+  "editor.acceptSuggestionOnCommitCharacter": true,
+  "editor.accessibilitySupport": "off", // Unless needed
+  "editor.suggest.localityBonus": true,
+  "workbench.editor.tabActionLocation": "right",
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}
