@@ -5,28 +5,28 @@ WORKDIR /app
 # Install build dependencies for Alpine
 RUN apk add --no-cache python3 make g++
 
-# Copy package.json and package-lock.json (they're in the same directory as Dockerfile)
-COPY package*.json ./
+# Copy package.json and package-lock.json from client folder
+COPY client/package*.json ./
 
-# Copy shared folder from parent directory
-COPY ../shared/ ./shared/
+# Copy shared folder into /app/shared
+COPY shared/ ./shared/
 
 # Clean npm cache and install dependencies
 RUN npm cache clean --force
 RUN npm install --include=optional
 RUN npm install @rollup/rollup-linux-x64-musl --save-optional
 
-# Copy the rest of the client code (current directory)
-COPY . .
+# Copy the rest of the client code
+COPY client/. .
 
-# Debug: List the file structure
-RUN echo "=== Checking file structure ===" && \
-  find src -name "*.jsx" -o -name "*.js" | head -20 && \
-  echo "=== Checking specific path ===" && \
-  ls -la src/component/hospital_admin/test_booking/ 2>/dev/null || echo "Directory not found"
-
+# Build the application
 RUN npm run build
 
+# Install serve to serve the built application
 RUN npm install -g serve
+
+# Expose port 5173 (Vite's default)
 EXPOSE 5173
-CMD ["serve", "-s", "dist"]
+
+# Serve the built application
+CMD ["serve", "-s", "dist", "-l", "5173"]
