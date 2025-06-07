@@ -7,12 +7,12 @@ import {
   Heading,
   IconButton,
   Input,
-  keyframes,
   Spinner,
   Text,
   useColorModeValue,
   useToast,
 } from "@chakra-ui/react";
+import { keyframes } from "@emotion/react";
 import { CameraIcon, CheckCheck, FileText, Search, Send } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
