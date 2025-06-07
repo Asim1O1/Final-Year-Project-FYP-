@@ -4,11 +4,11 @@ import {
   Button,
   Fade,
   Icon,
-  keyframes,
   useBreakpointValue,
   useColorModeValue,
   useToken,
 } from "@chakra-ui/react";
+import { keyframes } from "@emotion/react";
 import { useEffect, useState } from "react";
 
 import DoctorSection from "../../component/sections/DoctorSection";
