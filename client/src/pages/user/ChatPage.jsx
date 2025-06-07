@@ -1,4 +1,4 @@
-import { keyframes } from "@chakra-ui/react";
+import { keyframes } from "@emotion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
