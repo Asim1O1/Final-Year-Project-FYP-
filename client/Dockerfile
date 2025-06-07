@@ -5,19 +5,19 @@ WORKDIR /app
 # Install build dependencies for Alpine
 RUN apk add --no-cache python3 make g++
 
-# Copy package.json and package-lock.json from client folder
-COPY client/package*.json ./
+# Copy package.json and package-lock.json (they're in the same directory as Dockerfile)
+COPY package*.json ./
 
-# Copy shared folder into /app/shared
-COPY shared/ ./shared/
+# Copy shared folder from parent directory
+COPY ../shared/ ./shared/
 
 # Clean npm cache and install dependencies
 RUN npm cache clean --force
 RUN npm install --include=optional
 RUN npm install @rollup/rollup-linux-x64-musl --save-optional
 
-# Copy the rest of the client code
-COPY client/. .
+# Copy the rest of the client code (current directory)
+COPY . .
 
 # Debug: List the file structure
 RUN echo "=== Checking file structure ===" && \
