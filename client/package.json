@@ -10,14 +10,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@babel/core": "^7.27.4",
+    "@babel/runtime": "^7.27.6",
     "@chakra-ui/icons": "^2.2.4",
     "@chakra-ui/react": "^2.7.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@reduxjs/toolkit": "^2.5.0",
     "antd": "^5.22.7",
-    "axios": "^1.7.9",
+    "axios": "^1.9.0",
     "date-fns": "^4.1.0",
+    "esbuild": "^0.25.5",
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.469.0",
     "react": "^18.3.1",
@@ -25,7 +28,7 @@
     "react-feather": "^2.0.10",
     "react-icons": "^5.4.0",
     "react-redux": "^9.2.0",
-    "react-router-dom": "^7.1.1",
+    "react-router-dom": "^7.6.2",
     "react-scrollbars-custom": "^4.1.1",
     "simplebar": "^6.3.0",
     "socket.io-client": "^4.8.1",
@@ -42,6 +45,6 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.16",
     "globals": "^15.14.0",
-    "vite": "^6.0.5"
+    "vite": "^6.3.5"
   }
 }
