@@ -175,13 +175,13 @@ npm audit fix --force
 
 ## 🚢 Deployment
 
-### Backend Deployment (Railway/Render)
+### Backend Deployment (Render)
 1. Create account on Railway or Render
 2. Connect your GitHub repository
 3. Set environment variables in the platform
 4. Deploy the `server` directory
 
-### Frontend Deployment (Vercel/Netlify)
+### Frontend Deployment (Netlify)
 1. Create account on Vercel or Netlify
 2. Connect your GitHub repository
 3. Set build command: `npm run build`
@@ -204,39 +204,15 @@ We welcome contributions! Please follow these steps:
 - Write meaningful commit messages
 - Add comments for complex logic
 
----
 
-## 📝 License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
 
 ## 👨‍💻 Author
 
 **Asim Khadka**
 - GitHub: [@Asim1O1](https://github.com/Asim1O1)
-- Email: your-email@example.com
-- LinkedIn: [Your LinkedIn Profile](https://linkedin.com/in/yourprofile)
+- Email: asimkhadka52@gmail.com
+- LinkedIn: www.linkedin.com/in/asim-khadka
 
----
 
-## 🙏 Acknowledgments
-
-- Thanks to all contributors who helped build this project
-- Special thanks to the open-source community for the amazing tools and libraries
-- Healthcare workers who inspired this project
-
----
-
-## 📞 Support
-
-If you encounter any issues or have questions:
-
-1. Check the [Issues](https://github.com/yourusername/medconnect/issues) page
-2. Create a new issue if your problem isn't already reported
-3. Contact the maintainer via email
-
----
 
 **⭐ If you found this project helpful, please give it a star!**
